@@ -7,7 +7,7 @@ setup(
     author_email='william.rucker@gmail.com',
     packages=['UWI'],
     install_requires=['numpy', 'math'],
-    python_requires='>3.6.2'
+    python_requires='>3.6.2',
     license='MIT',
     description='Oilfield API string manager',
     long_description=open('README.txt').read()
