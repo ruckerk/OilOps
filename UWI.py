@@ -1,3 +1,6 @@
+import numpy as np
+import math
+
 class UWI:
     def __init__(self, str_name):
         self.str = str(str_name)
