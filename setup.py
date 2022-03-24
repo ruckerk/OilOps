@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='UWI',
+    name='PetroOps',
     version = '0.0.1',
     url='https://github.com/ruckerk/PetroOps',
     author='W Kurt Rucker',
@@ -10,6 +10,6 @@ setup(
     install_requires=['numpy'],
     python_requires='>3.6.2',
     license='MIT',
-    description='Oilfield API string manager',
+    description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
 )
