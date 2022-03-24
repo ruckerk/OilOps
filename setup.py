@@ -6,7 +6,7 @@ setup(
     url='https://github.com/ruckerk/PetroOps',
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
-    packages=['UWI'],
+    packages=['PetroOps'],
     install_requires=['numpy'],
     python_requires='>3.6.2',
     license='MIT',
