@@ -10,9 +10,8 @@ class UWI:
             self.int = None
 
     def show(self):
-        print(self)
         print(self.str)
-        print(type(self.str))
+        print(self.int)
 
     def str2num(self):
         str_in = self.str
