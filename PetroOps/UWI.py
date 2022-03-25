@@ -1,5 +1,6 @@
 import numpy as np
-import math, re
+import math
+import re
 
 class UWI:
     def __init__(self, str_name):
