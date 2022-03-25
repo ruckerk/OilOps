@@ -2,7 +2,7 @@ import numpy as np
 import math
 import re
 
-class UWI:
+class WELLAPI:
     def __init__(self, str_name):
         self.str = str(str_name)
         if isinstance(str_name,(int,float)) == True:
