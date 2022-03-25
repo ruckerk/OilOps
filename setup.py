@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='PetroOps',
-    version = '0.0.1',
+    version = '0.0.2',
     url='https://github.com/ruckerk/PetroOps',
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
