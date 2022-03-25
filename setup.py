@@ -8,7 +8,7 @@ setup(
     author_email='william.rucker@gmail.com',
     packages=['PetroOps'],
     install_requires=['numpy'],
-    python_requires='>3.6.2',
+    python_requires='>3.0.0',
     license='MIT',
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
