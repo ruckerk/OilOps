@@ -16,30 +16,28 @@ class UWI:
 
     def str2num(self):
         str_in = self.str
-        try:
-            if (str_in.upper() == 'NONE'):
-                return None
-            if self.int == None:
-                str_in = str(str_in)
-                str_in = str_in.strip()
-                str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
-                c = len(re.findall('-',str_in))
-                if c>1:
-                    val = re.sub(r'[^0-9\.]','',str(str_in))
-                else:
-                    val = re.sub(r'[^0-9\.-]','',str(str_in))
-                if val == '':
-                    return None
-                try:
-                    val = int(val)
-                except:
-                    val = None
-            else:
-                val = self.int 
-            return val
-        except:
-            print("CANNOT CONVERT STRING TO NUMBER: " + str(str_in))
+  
+        if (str_in.upper() == 'NONE'):
             return None
+        if self.int == None:
+            str_in = str(str_in)
+            str_in = str_in.strip()
+            str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
+            c = len(re.findall('-',str_in))
+            if c>1:
+                val = re.sub(r'[^0-9\.]','',str(str_in))
+            else:
+                val = re.sub(r'[^0-9\.-]','',str(str_in))
+            if val == '':
+                return None
+            try:
+                val = int(val)
+            except:
+                val = None
+        else:
+            val = self.int 
+        return val
+
 
     def API2INT(self,length = 10):
         val_in = self.str
