@@ -6,5 +6,5 @@ UWI is an API manager than easily converts API# from numeric or dashed strings t
 CO branch tools are for collecting Colorado public well data
 LAS branch is for petrophysics
 PRODUCTION branch is for production analysis
-SPACING branch contains well spacing tools
+SURVEY branch contains well spacing tools
 MAPS branch manipulates shapefiles and maps
