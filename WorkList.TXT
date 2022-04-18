@@ -1,0 +1,18 @@
+Update SHP files
+https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP
+https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP
+
+Use API list for query list
+
+Pull Logs to folder
+Pull Surveys to folder
+Pull Scouts to table
+Pull Production to table
+
+Pull Frac Focus to folder
+https://www.fracfocus.org/index.php?p=data-download
+
+Merge surveys to table
+Summarize surveys to table
+
+Summarize Frac Focus to table
