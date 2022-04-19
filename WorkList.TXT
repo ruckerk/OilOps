@@ -16,3 +16,19 @@ Merge surveys to table
 Summarize surveys to table
 
 Summarize Frac Focus to table
+
+BVH calculation
+  improve clustering
+  improve Pickett statistics
+
+Well spacing calculation
+  sigmoid function for degradation to infer aspect ratio
+  recalibrate scale factor for sigmoid function to match 1 to degredation
+
+Parent Child calculation
+  volume produced at time of child completion
+ 
+Pad grouping assignment
+  cluster on completion date, azimuth (0-180), and overlap > 2000 ft
+
+
