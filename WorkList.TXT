@@ -34,4 +34,4 @@ Parent Child calculation
 Pad grouping assignment
   cluster on completion date, azimuth (0-180), and overlap > 2000 ft
 
-
+Possibly incorporate SpatiaLite (SQLSpatial for SQLite)
