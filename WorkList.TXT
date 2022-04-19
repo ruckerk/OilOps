@@ -9,6 +9,9 @@ Pull Surveys to folder
 Pull Scouts to table
 Pull Production to table
 
+Update COGCC SQL
+https://dnrftp.state.co.us/
+
 Pull Frac Focus to folder
 https://www.fracfocus.org/index.php?p=data-download
 
