@@ -5,7 +5,7 @@ import pandas as pd
 from urllib.request import urlopen 
 import numpy as np
 from bs4 import BeautifulSoup as BS
-from math import ceil
+from math import ceil, floor
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from time import sleep
@@ -248,7 +248,8 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
         for i in SUBSET:
         #for shaperec in r.iterShapeRecords(): if 1==1:
             ct+=1
-            print(str(ct)+" of "+str(total))
+            if (math.floor(ct/20)*20) == ct:
+                 print(str(ct)+" of "+str(total))
             shaperec=r.shapeRecord(i)
             Xshaperec=shaperec.shape            
             points = np.array(shaperec.shape.points).T
@@ -344,6 +345,11 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                                  ,'GOR_MO2-4','GOR_MO5-7','GOR_MO11-13','GOR_MO23-25','GOR_MO35-37','GOR_MO47-49'
                                  ,'OWR_MO2-4','OWR_MO5-7','OWR_MO11-13','OWR_MO23-25','OWR_MO35-37','OWR_MO47-49'
                                  ,'Production_Formation'])
+    MonthArray = np.arange(3,49,3)
+    for i in MonthArray:
+        OUTPUT[str(i)+'Mo_CumOil'] = np.nan
+        OUTPUT[str(i)+'Mo_CumGas'] = np.nan
+        OUTPUT[str(i)+'Mo_CumWtr'] = np.nan
                         
     if len(UWIs[0])<=1:
         UWIs=[UWIs]
@@ -351,7 +357,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     ct = 0
     t1 = time.perf_counter()
     for UWI in UWIs:
-        print(str(ct)+' of '+str(len(UWIs)))
+        if (math.floor(ct/20)*20) == ct:
+            print(str(ct)+' of '+str(len(UWIs)))
         ct+=1
         html = soup = pdf = None 
         #print(UWI)
@@ -491,26 +498,50 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                         OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf[WTR][0:pdf[GAS].idxmax()].sum()
 
                     # Emily uses Month 1 begins at 1st month w/ +14days oil prod
-                    MONTH1 = pdf.loc[(pdf[DAYSON]>14) & (pdf[OIL]>0),DATE].min()
-                    OUTPUT.at[UWI,'EM_Month1'] = MONTH1
-                    
-                    pdf['EM_PRODMONTH'] = (pd.to_datetime(pdf[DATE]).dt.year - MONTH1.year)*12+(pd.to_datetime(pdf[DATE]).dt.month - MONTH1.month)+1
-                    
-                    OUTPUT.at[UWI,'GOR_MO2-4']  = pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),OIL].sum()
-                    OUTPUT.at[UWI,'GOR_MO5-7']  = pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),OIL].sum()
-                    OUTPUT.at[UWI,'GOR_MO11-13']  = pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),OIL].sum()
-                    OUTPUT.at[UWI,'GOR_MO23-25']  = pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),OIL].sum()
-                    OUTPUT.at[UWI,'GOR_MO35-37']  = pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),OIL].sum()
-                    OUTPUT.at[UWI,'GOR_MO47-49']  = pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),OIL].sum()
-                    if pdf[[WTR,OIL,GAS]].dropna(how='any').shape[0]>3:
-                        OUTPUT.at[UWI,'OWR_MO2-4']  = pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),WTR].sum()
-                        OUTPUT.at[UWI,'OWR_MO5-7']  = pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),WTR].sum()
-                        OUTPUT.at[UWI,'OWR_MO11-13']  = pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),WTR].sum()
-                        OUTPUT.at[UWI,'OWR_MO23-25']  = pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),WTR].sum()
-                        OUTPUT.at[UWI,'OWR_MO35-37']  = pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),WTR].sum()
-                        OUTPUT.at[UWI,'OWR_MO47-49']  = pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),WTR].sum()
-                    
+                    if len(pdf[DATE].dropna())>10:
+                        MONTH1 = pdf.loc[(pdf[DAYSON]>14) & (pdf[OIL]>0),DATE].min()
+                        OUTPUT.at[UWI,'Month1'] = MONTH1
+
+                        if not isinstance(MONTH1,float):
+                            pdf['EM_PRODMONTH'] = (pd.to_datetime(pdf[DATE]).dt.year - MONTH1.year)*12+(pd.to_datetime(pdf[DATE]).dt.month - MONTH1.month)+1
+
+##                            OUTPUT.at[UWI,'GOR_MO2-4']  = pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),OIL].sum()
+##                            OUTPUT.at[UWI,'GOR_MO5-7']  = pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),OIL].sum()
+##                            OUTPUT.at[UWI,'GOR_MO11-13']  = pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),OIL].sum()
+##                            OUTPUT.at[UWI,'GOR_MO23-25']  = pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),OIL].sum()
+##                            OUTPUT.at[UWI,'GOR_MO35-37']  = pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),OIL].sum()
+##                            OUTPUT.at[UWI,'GOR_MO47-49']  = pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),OIL].sum()
+
+##                            if pdf[[WTR,OIL,GAS]].dropna(how='any').shape[0]>3:
+##                                OUTPUT.at[UWI,'OWR_MO2-4']  = pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),WTR].sum()
+##                                OUTPUT.at[UWI,'OWR_MO5-7']  = pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),WTR].sum()
+##                                OUTPUT.at[UWI,'OWR_MO11-13']  = pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),WTR].sum()
+##                                OUTPUT.at[UWI,'OWR_MO23-25']  = pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),WTR].sum()
+##                                OUTPUT.at[UWI,'OWR_MO35-37']  = pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),WTR].sum()
+##                                OUTPUT.at[UWI,'OWR_MO47-49']  = pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),WTR].sum()
+##                                                            
+##                                OUTPUT.at[UWI,'OWC_MO3']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<3),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=3),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=3),WTR].sum())
+##                                OUTPUT.at[UWI,'OWC_MO6']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<6),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=6),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=6),WTR].sum())
+##                                OUTPUT.at[UWI,'OWC_MO12']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<12),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=12),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=12),WTR].sum())
+##                                OUTPUT.at[UWI,'OWC_MO24']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<24),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=24),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=24),WTR].sum())
+##                                OUTPUT.at[UWI,'OWC_MO36']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<36),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=36),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=36),WTR].sum())
+##                                OUTPUT.at[UWI,'OWC_MO48']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<48),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<48),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=48),WTR].sum())
+
+                            for i in MonthArray:
+                                if max(pdf['EM_PRODMONTH']) >= i:
+                                    i_dwn = i-1
+                                    i_up = i+1
+                                    OUTPUT[str(i)+'Mo_CumOil'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),OIL].sum()
+                                    OUTPUT[str(i)+'Mo_CumGas'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),GAS].sum()
+                                    OUTPUT[str(i)+'Mo_CumWtr'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),WTR].sum()
+                                    if pdf.loc[pdf['EM_PRODMONTH']>=i,[OIL,GAS]].dropna(how='any').shape[0]>=1:
+                                        OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
+                                    if pdf.loc[pdf['EM_PRODMONTH']>=i,[OIL,WTR]].dropna(how='any').shape[0]>=1:
+                                        OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
+                                        OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
+                                           
                 OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
+                    
                 
             ERROR = 1
             OUTPUT=OUTPUT.dropna(how='all')
@@ -549,7 +580,61 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                  ,[OWR_MO23-25] REAL
                  ,[OWR_MO35-37] REAL
                  ,[OWR_MO47-49] REAL
+                 ,[OWC_MO3] REAL
+                 ,[OWC_MO6] REAL
+                 ,[OWC_MO12] REAL
+                 ,[OWC_MO24] REAL
+                 ,[OWC_MO36] REAL
+                 ,[OWC_MO48] REAL
                  ,[Production_Formation] TEXT
+                 ,[3Mo_CumOil] REAL
+                 ,[6Mo_CumOil] REAL
+                 ,[9Mo_CumOil] REAL
+                 ,[12Mo_CumOil] REAL
+                 ,[15Mo_CumOil] REAL
+                 ,[18Mo_CumOil] REAL
+                 ,[21Mo_CumOil] REAL
+                 ,[24Mo_CumOil] REAL
+                 ,[27Mo_CumOil] REAL
+                 ,[30Mo_CumOil] REAL
+                 ,[33Mo_CumOil] REAL
+                 ,[36Mo_CumOil] REAL
+                 ,[39Mo_CumOil] REAL
+                 ,[42Mo_CumOil] REAL
+                 ,[45Mo_CumOil] REAL
+                 ,[48Mo_CumOil] REAL
+                 ,[3Mo_CumGas] REAL
+                 ,[6Mo_CumGas] REAL
+                 ,[9Mo_CumGas] REAL
+                 ,[12Mo_CumGas] REAL
+                 ,[15Mo_CumGas] REAL
+                 ,[18Mo_CumGas] REAL
+                 ,[21Mo_CumGas] REAL
+                 ,[24Mo_CumGas] REAL
+                 ,[27Mo_CumGas] REAL
+                 ,[30Mo_CumGas] REAL
+                 ,[33Mo_CumGas] REAL
+                 ,[36Mo_CumGas] REAL
+                 ,[39Mo_CumGas] REAL
+                 ,[42Mo_CumGas] REAL
+                 ,[45Mo_CumGas] REAL
+                 ,[48Mo_CumGas] REAL
+                 ,[3Mo_CumWtr] REAL
+                 ,[6Mo_CumWtr] REAL
+                 ,[9Mo_CumWtr] REAL
+                 ,[12Mo_CumWtr] REAL
+                 ,[15Mo_CumWtr] REAL
+                 ,[18Mo_CumWtr] REAL
+                 ,[21Mo_CumWtr] REAL
+                 ,[24Mo_CumWtr] REAL
+                 ,[27Mo_CumWtr] REAL
+                 ,[30Mo_CumWtr] REAL
+                 ,[33Mo_CumWtr] REAL
+                 ,[36Mo_CumWtr] REAL
+                 ,[39Mo_CumWtr] REAL
+                 ,[42Mo_CumWtr] REAL
+                 ,[45Mo_CumWtr] REAL
+                 ,[48Mo_CumWtr] REAL
                  )
                  '''
 
@@ -592,7 +677,7 @@ if 1==1:
     DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
     pathname = path.dirname(sys.argv[0])
     adir = path.abspath(pathname)
-    dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\PROD"
+    dir_add = path.abspath(path.dirname(sys.argv[0]))+"/PROD"
     
     if not path.exists(dir_add):
         makedirs(dir_add)
@@ -659,7 +744,7 @@ if 1==1:
     UWIlist = (RESULT.loc[RESULT.TEST==True,'API'].apply(UWI10)*10000).astype(str).str.zfill(14).to_list()
 
     # ADD VERTICAL DATA
-    wfile = 'wells.shp'
+    wfile = 'Wells.shp'
     wdf = shp.Reader(wfile)
     wdf = read_shapefile(wdf)
     wdf['UWI10'] = wdf.API_Label.str.replace(r'[^0-9]','',regex=True).apply(UWI10)
@@ -678,6 +763,7 @@ if 1==1:
         RESULT = GROUP_IN_TC_AREA(poly_df,wwdf)
     UWIlist2 = (RESULT.loc[RESULT.TEST==True,'API'].apply(UWI10)*10000).astype(str).str.zfill(14).to_list()
     UWIlist = UWIlist+UWIlist2
+
 
     #UWIlist = np.array_split(UWIlist,2)[0]
 ##    # SQL DB
@@ -729,7 +815,7 @@ if 1==1:
     #RESULT = Get_Scouts(UWIlist,SQLDB)
 
     
-    outfile = dir_add+'\\PROD_PULL_'+datetime.datetime.now().strftime("%d%m%Y")+".csv"
+    outfile = dir_add+'/PROD_PULL_'+datetime.datetime.now().strftime("%m%d%Y")+".csv"
     RESULT.to_csv(outfile,sep=',')
 
 ##    SQLDB = '\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\prod_data.db'
@@ -760,10 +846,80 @@ if 1==1:
 ########################
 #
 
-
+def listjoin(list_in, sep="_"):
+    list_in = list(set(list_in))
+    list_in = sorted(list_in)
+    list_in = [s.strip() for s in list_in]
+    str_out = sep.join(list_in)
+    return str_out
+    
 #"_".join(OUTPUT.Production_Formation.unique())
 
-# check 
-OUTPUT.Production_Formation.str.sub("-","_")
-OUTPUT.Production_Formation.str.split("-")
+FM_DICT = {re.compile('NIO[BRA]*',re.I):'NIOBRARA',
+           re.compile('SHARON[ \-_]*SPRINGS',re.I):'NIOBRARA',
+           re.compile('F[OR]*T[ \-_]*H[AYS]*',re.I):'CODELL',
+           re.compile('TIMPAS',re.I):'CODELL',
+           re.compile('COD[DEL]*',re.I):'CODELL',
+           re.compile('CARLILE',re.I):'CODELL',
+           re.compile('J[ _\-0-9]*S[A]*ND',re.I):'JSAND',
+           re.compile('(^|[ \-])(J[ SAND\-]*)($|\-)'):r'\1JSAND\3',
+           re.compile('D[ _\-0-9]*S[A]*ND',re.I):'DSAND',
+           re.compile('(^|[ \-])(D[ SAND\-]*)($|\-)'):r'\1DSAND\3',
+           re.compile('(^|_)J_',re.I):r'\1JSAND_',
+           re.compile('(^|_)D[ &_]+',re.I):r'\1DSAND_'
+           }
+
+#if 1==1:
+#    RESULT.Production_Formation = backup.copy()
+RESULT.Production_Formation = RESULT.Production_Formation.str.replace("-","_")
+RESULT.Production_Formation = RESULT.Production_Formation.replace(FM_DICT,regex=True)
+    
+RESULT.Production_Formation = RESULT.Production_Formation.str.split("_")
+RESULT.Production_Formation = RESULT.Production_Formation.apply(listjoin)
+
+RESULT['ProdFmList'] = RESULT.Production_Formation.str.split("_")
+
+FMLIST = ['NIOBRARA','CODELL','JSAND']
+RESULT['ProdFmList'] = RESULT.Production_Formation
+for i in FMLIST:
+    RESULT[i+'_PRODUCTION']=0
+    RESULT.loc[RESULT.Production_Formation.str.contains(i),i+'_PRODUCTION']=1
+    RESULT['ProdFmList'] = RESULT.ProdFmList.str.replace(i,'')
+
+RESULT['OTHER_PRODUCTION'] = 0
+RESULT.loc[RESULT['ProdFmList'].str.contains(r'[A-Z]',case=False,regex=True),'OTHER_PRODUCTION'] = 1
+RESULT = RESULT.drop(columns=['ProdFmList'])
+
+outfile = 'PROD_PULL_'+datetime.datetime.now().strftime("%m%d%Y")+".csv"
+RESULT.to_csv(dir_add+'/'+outfile)
+
+### list of fm names
+##fmlist=[]
+##for x in RESULT['ProdFmList']:
+##    fmlist.extend(x)
+##    fmlist = list(set(fmlist))
+
+        
+
+
+# DEFINE FUNCTION FOR ZONE DETECTION
+# def IsZone(ZoneArray,ZoneName(s),OnlyFlag)
+# parse array into list of all zones
+# find all zones matching criteria
+# if only flag = 1, then return fields with only search zone
+# if only flag = 0, then return fields with any search zone
+# "_".join(OUTPUT.Production_Formation.drop_duplicates())
+#list(set("_".join(OUTPUT.Production_Formation.drop_duplicates()).split("_")))
+# TIMPAS, NIOBRARA, FORT HAYS, CODELL, CARLILE
+# J SAND
+# COLUMN: NIO-COD: r"NIO|COD|(FORT or FT) H|CARL|TIMPAS
+# COLUMN: J :"J"
+
+
+#dir_add = '\\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\PROD'
+#RESULT=pd.DataFrame()
+#for f in listdir(dir_add):
+#    df = pd.read_csv(dir_add+'\\'+f)
+#    RESULT = pd.concat([RESULT,df],axis=0,join='outer',ignore_index=True)
+
 
