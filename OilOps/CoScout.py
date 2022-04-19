@@ -1,4 +1,4 @@
-import datetime,re,io,csv,sys,requests,selenium,math
+import datetime,re,io,csv,sys,requests,selenium,math, os
 #urllib,
 import multiprocessing,warnings,concurrent.futures
 from os import path, listdir, remove, makedirs
@@ -22,6 +22,9 @@ from tkinter import filedialog
 
 import sqlite3
 from pyproj import Transformer
+
+# no perf interval data in Emily's table for 05123505910000
+
 
 # COORDINATE REFERENCES
 # EPSG 4267
@@ -98,7 +101,7 @@ def GROUP_IN_TC_AREA(tc,wells):
     return(out)
 
 def requests_retry_session(
-    retries=4,
+    retries=6,
     backoff_factor=0.4,
     status_forcelist=(500, 502, 504),
     session=None,
@@ -155,7 +158,8 @@ def Summarize_Page(df_in,string):
         try:
             itemlist=itemlist.remove('')
         except: None
-        itemlist=pd.Series(itemlist).dropna().sort_values().tolist()
+        itemlist = pd.Series(itemlist).dropna().sort_values().tolist()
+        itemlist = list(set(itemlist))
         Summary.loc[:len(itemlist)-1,item]=itemlist
 
     Summary=Summary.dropna(axis=0,how='all')
@@ -180,6 +184,8 @@ def Summarize_Page(df_in,string):
             Summary.loc[0,item]=pd.to_datetime(Summary[item],infer_datetime_format=True,errors='coerce').max()
         elif (len(Summary[item].dropna())>1) & ('TOP' in item.upper()):
             Summary.loc[0,item]=pd.to_numeric(Summary[item],errors='coerce').min()
+        elif ('TREAT' in item.upper()) & ('SUMMARY' in item.upper()):
+            Summary.loc[0,item]=Summary[item].str.cat(sep=' ')
         elif len(Summary[item].dropna())>1:
             Summary.loc[0,item]=pd.to_numeric(Summary[item],errors='coerce').max()
     return(Summary.loc[0,:])
@@ -207,13 +213,17 @@ def Summarize_Page(df_in,string):
 # TSummary needs to be parsed into depth intervals with labels
 
 def Get_Scouts(UWIs,db=None):
+    #if 1==1:
     Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
                'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
                'TOTAL FLUID USED','MAX PRESSURE','TOTAL GAS USED','FLUID DENSITY','TYPE OF GAS',
                'NUMBER OF STAGED INTERVALS','TOTAL ACID USED','MIN FRAC GRADIENT','RECYCLED WATER USED',
                'TOTAL FLOWBACK VOLUME','PRODUCED WATER USED','TOTAL PROPPANT USED',
                'TUBING SIZE','TUBING SETTING DEPTH','# OF HOLES','INTERVAL TOP','INTERVAL BOTTOM','^HOLE SIZE','FORMATION NAME','1ST PRODUCTION DATE',
-               'BBLS_H2O','BBLS_OIL','CALC_GOR', 'GRAVITY_OIL','BTU_GAS']
+               'BBLS_H2O','BBLS_OIL','CALC_GOR', 'GRAVITY_OIL','BTU_GAS','TREATMENT SUMMARY']
+
+    status_pat = re.compile(r'Status:([\sA-Z]*)[0-9]{1,2}/[0-9]{1,2}/[0-9]{1,2}', re.I)
+                
     OUTPUT=[]
     pagedf=[]
     xSummary = None
@@ -222,9 +232,14 @@ def Get_Scouts(UWIs,db=None):
     adir = path.abspath(pathname)
     warnings.simplefilter("ignore")
     if isinstance(UWIs,list) == False:
-        UWIs=list(UWIs)
+        UWIs=[UWIs]
     for UWI in UWIs:
-        print(UWI+" "+datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        #if 1==1:
+        UWI = str(UWI)
+        if len(UWI)%2 == 1:
+            UWI = UWI.zfill(len(UWI)+1)
+            
+        print(UWI+" "+datetime.datetime.now().strftime("%d/%m/%Y_%H:%M:%S"))
         docurl = None
         connection_attempts = 4 
         #Screen for Colorado wells
@@ -245,11 +260,31 @@ def Get_Scouts(UWIs,db=None):
         if len(pagedf)>0:
             xSummary = Summarize_Page(pagedf,Strings)
             xSummary['UWI']=UWI
+
+            # Status code
+            STAT_CODE = None
+            try:
+                status = status_pat.search(pagedf.iloc[1,0])
+                status = status.group(1)
+                STAT_CODE = status.strip()
+            except:
+                print('status error')
+                pass
+
+            xSummary['WELL_STATUS'] = STAT_CODE
+            
             xSummary = pd.DataFrame([xSummary.values],columns= xSummary.index.tolist())
+
             if type(OUTPUT)==list:
                 OUTPUT=xSummary
             else:
                 OUTPUT=OUTPUT.append(xSummary,ignore_index=True)
+
+    FILENAME = str(UWIs[0])+'_'+str(UWIs[-1])+"_"+datetime.datetime.now().strftime("%d%m%Y_%H%M%S")
+    FILENAME = path.join(dir_add,FILENAME) 
+    DF_UNSTRING(OUTPUT).to_json(FILENAME+'.JSON')
+    DF_UNSTRING(OUTPUT).to_parquet(FILENAME+'.PARQUET')
+    
     if db != None:
         DATECOLS = [col for col in OUTPUT.columns if 'DATE' in col.upper()]
         for k in DATECOLS:
@@ -268,8 +303,11 @@ def Get_Scouts(UWIs,db=None):
         #TBL_COLS = [d[0] for d in curs.description]
         #ADD_COLS = list(set(SQL_COLS).difference(TBL_COLS))
         OUTPUT.to_sql(TABLE_NAME,conn,if_exists='append',index=False)
+
+        #OUTPUT.to_csv(FILENAME)
+
     return(OUTPUT)
-        
+
 ##def read_shapefile(sf):
 ##    # https://towardsdatascience.com/mapping-with-matplotlib-pandas-geopandas-and-basemap-in-python-d11b57ab5dac
 ##    #fetching the headings from the shape file
@@ -402,9 +440,125 @@ def check_EPSG(epsg1):
         OUTPUT = 'Invalid'
     return(OUTPUT)
 
+def CheckDuplicate(fname):
+    ct = ''
+    while os.path.exists(fname):
+        pattern = re.compile('.*_([0-9]*)\.(?:[0-9a-zA-Z]{3,4})',re.I)
+        ct = re.search(pattern, fname)
+        try:
+            ct = ct.group(1)
+            ct = int(ct)
+            ct += 1
+            ct = '_'+str(ct)
+        except:
+            ct = '_1'
+        
+        pattern = re.compile(r'(.*)(_[0-9]{1,4})(\.[a-z0-9]{3,4})',re.I)
+        fname = re.sub(pattern,r'\1'+ct+r'\3',fname)
+    return(fname)
+
+def DF_UNSTRING(df_IN):
+    df_IN=df_IN.copy()
+
+    #DATES
+    DATECOLS = [col for col in df_IN.columns if 'DATE' in col.upper()]
+    for k in DATECOLS:
+        # common date problems
+        # "REPORTED: "
+        #  Prior to rule 205A.b.(2)(A)
+        #pattern = re.compile(r'.*Prior to rule.*|reported:',re.I)
+        
+        #if pd.to_datetime(df_IN[k].str.replace(pattern,'').fillna(np.nan),errors='coerce').count() != df_IN[k].str.replace(pattern,'').count():
+        #    df_IN.loc[pd.to_datetime(df_IN[k].str.replace(pattern,'').fillna(np.nan),errors='coerce').isna() != df_IN[k].str.replace(pattern,'').isna()][k].str.replace(pattern,'')
+        #    DATECOLS.remove(k)
+        #else:
+        #    df_IN[k]=pd.to_datetime(df_IN[k].fillna(np.nan),errors='coerce')
+        df_IN[k] = pd.to_datetime(df_IN[k],errors='coerce')
+
+
+    #FLOATS
+    FLOAT_MASK = (df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce').count() - df_IN.count()==0)   
+    FLOAT_KEYS = df_IN.keys()[FLOAT_MASK]
+    
+    #INTEGERS
+    INT_MASK = (df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce').fillna(0.0).apply(np.floor)-df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce')==0).fillna(0.0).max()
+    #INT_MASK = (df_IN.apply(pd.to_numeric, downcast = 'integer', errors = 'coerce') - df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce') == 0).max()
+    INT_KEYS = df_IN[FLOAT_KEYS].keys()[INT_MASK]
+
+    #xx=(df_IN.apply(pd.to_numeric, downcast = 'integer', errors = 'coerce') - df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce') == 0)
+    #for k in  df_IN.keys():
+    #    df_IN.loc[xx[k]==False,k]
+
+    #Force Unique Key Lists
+    FLOAT_KEYS = list(set(FLOAT_KEYS)-set(INT_KEYS) - set(DATECOLS))
+    INT_KEYS = list(set(INT_KEYS) - set(DATECOLS))
+    
+    df_IN[FLOAT_KEYS] = df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce')
+    df_IN[INT_KEYS] = df_IN[INT_KEYS].apply(pd.to_numeric, downcast = 'integer', errors = 'coerce')
+    
+    return(df_IN)
+
+def STIM_VALS_FROM_TXT(row): 
+    TERMS = {'FLUID1':r'([0-9,\.]*) GAL',
+             'FLUID2':r'([0-9,\.]*) BBL',
+             'PROP`':r'([0-9,\.]*) *(?:#|LBS)',
+             'PRESSURE':r'([0-9,\.]*) *PSI'}
+    for k in TERMS.keys():
+        # if 1==1:
+        TERMS[k] = re.findall(TERMS[k],row,re.I)
+        TERMS[k] = [re.sub(r',', '', i) for i in TERMS[k]]
+        TERMS[k] = [re.sub('^$', '0', i) for i in TERMS[k]]
+        TERMS[k] = np.array(TERMS[k])
+        if TERMS[k].size == 0:
+            TERMS[k] = 0
+            continue            
+        else:
+            TERMS[k] = TERMS[k].astype(np.float)
+        if k == 'PRESSURE':
+            try:
+                TERMS[k] = TERMS[k].max()
+            except:
+                pass
+        else:
+            try:
+                TERMS[k] = TERMS[k].sum()
+            except:
+                pass
+        if isinstance(TERMS[k],np.ndarray):
+            TERMS[k] = 0
+    return(TERMS)
+
+def STIM_SUMMARY_TO_ARRAY(row):
+    
+    data = STIM_VALS_FROM_TXT(str(row))
+    data = list(data.values())
+    FLUID = data[0]+data[1]
+    if FLUID == 0:
+        FLUID = np.nan
+    PROP = data[2]
+    if PROP ==0:
+        PROP = np.nan
+    PSI = data[3]
+    if PSI == 0:
+        PSI = np.nan
+        
+    OUT = pd.Series([FLUID,PROP,PSI])
+    return(OUT)
+
+def TRYDICT(TERM,D):
+    try:
+        out = D[TERM]
+    except:
+        out = None
+    return out
+        
+
+#df = pd.read_csv(path.join(dir_add,'SCOUT_PULL_10082021 (copy).csv'))
+
+# xx['TREATMENT_SUMMARY'].apply(STIM_SUMMARY_TO_ARRAY).rename(columns={0:'FluidBBLS',1:'PropLBS',2:'MaxPSI'})
+# x = xx['TREATMENT_SUMMARY'].apply(STIM_SUMMARY_TO_ARRAY).rename(columns={0:'FluidBBLS',1:'PropLBS',2:'MaxPSI'}).reset_index().rename(columns={'UWI':'UWI10'})
 
 if __name__ == "__main__":
-
     #if 1==1:
     # Initialize constants
     URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=123&APISeq=XNUMBERX&APIWB=00&Year=All'
@@ -412,9 +566,20 @@ if __name__ == "__main__":
     pathname = path.dirname(sys.argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(path.abspath(path.dirname(sys.argv[0])),"SCOUTS")
-    quit()
+
     if not path.exists(dir_add):
         makedirs(dir_add)
+
+    outfile_key = 'SCOUT_PULL_SUMMARY_'
+    outfile = path.join(dir_add,outfile_key+datetime.datetime.now().strftime("%d%m%Y"))
+
+    DATES = dict()
+    try:
+        lastfile = sorted(glob.glob(path.join(dir_add,outfile_key+'*arquet')),key = os.path.getctime)[0]
+        df = pd.read_parquet(lastfile)
+        DATES = dict(zip(df.UWI,df.STATUS_DATE))
+        del df
+    except: pass
         
     #Read UWI files and form UWI list
     UWIlist=[]
@@ -465,7 +630,7 @@ if __name__ == "__main__":
     data=np.array_split(sdf,processors)
 
     func = partial(GROUP_IN_TC_AREA,poly_df)
-
+    quit()
     if processors > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(func, a): a for a in data}        
@@ -503,6 +668,19 @@ if __name__ == "__main__":
     #CoList=CoList[3000:3050]
     print ("starting map function")
     processors = max(1,multiprocessing.cpu_count())
+    
+    #quit()
+
+if 1==1:
+##    #lst = pd.read_csv('PullScoutSummary.csv')
+##    if path.exists('PullScoutSummary.PARQUET'):
+##        lst = pd.read_parquet('PullScoutSummary.PARQUET')
+##        lst=lst.UWI10.astype(str).zfill(10)
+##        lst=lst.to_list()
+##    else:
+##        lst=[]
+
+    
     #batch = max(int(len(CoList)/2000),processors)
     data=np.array_split(UWIlist,processors)
 
@@ -512,27 +690,78 @@ if __name__ == "__main__":
 ##    data = np.array_split(CoList,batch)
     print ("starting map function")
     # outfile = "BTU_API_PULL_"+datetime.datetime.now().strftime("%d%m%Y")+".csv"
-    #quit()
+
     #processors = 0
     if processors > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(Get_Scouts, a): a for a in data}
         RESULT=pd.DataFrame()
         for i in f.keys():
-            RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
+            try:
+                RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
+            except:
+                pass
     else:
         RESULT = Get_Scouts(UWIlist)
-  
-    #RESULT = Get_Scouts(UWIlist,SQLDB)
-    outfile = dir_add+'\\SCOUT_PULL_'+datetime.datetime.now().strftime("%d%m%Y")+".csv"
-    RESULT.to_csv(outfile,sep=',')
 
-    SQLDB = '\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\prod_data.db'
+    for f in listdir(dir_add):
+        if 'parquet' in f.lower():
+            a=pd.read_parquet(path.join(dir_add,f))
+            b=pd.concat([a,b],axis=0, join='outer',ignore_index=True)
+            b.dropna(axis=1,how='all',inplace=True)
+            b = DF_UNSTRING(b) # BACKUP VERSION FOR RESULT
+    
+    #DF_UNSTRING TESTING if True:
+##    a = DF_UNSTRING(b)
+##    test = (b.groupby('UWI').FACILITYID.count()>1)
+##    test.loc[test==True].index.to_list()
+##    u2 = test.loc[test==True].index.to_list()
+##    #b.loc[b.UWI == u2[0],:].T
+##
+##    for u in u2:
+##        (b.loc[b.UWI == u,:].astype(str).T.apply(list,axis=1)).apply(set).apply(len).to_list()
+##
+##    lst = list()
+##    for k in a.keys():
+##        if (a[k]==b[k]).unique().size >1:
+##            lst.append(k)
+##            print (a[k].dtypes)
+##            print (b[k].dtypes)
+##
+##    for k in lst:
+##        m = (a[k]!=b[k])
+##        pd.concat([a.loc[m,k],b.loc[m,k]], axis = 1)
+    
+    Problem_Columns = ['LAT/LON','TREATMENT_SUMMARY','STATUS_DATE','1ST_PRODUCTION_DATE']
+    RESULT = RESULT.loc[RESULT.drop(Problem_Columns, axis=1).drop_duplicates().index]
+
+    
+    RESULT[['TREAT_FLUID','TREAT_PROPPANT','TREAT_PRESSURE']] = RESULT.TREATMENT_SUMMARY.apply(STIM_SUMMARY_TO_ARRAY)
+    
+
+##    if 1==1:
+##        cts = R.FACILITYID.value_counts()
+##        dbl = cts.loc[cts>1].index.values
+##        R.loc[R.FACILITYID.isin(dbl)]
+    
+    #RESULT = Get_Scouts(UWIlist,SQLDB)
+    #outfile = path.join(dir_add,'SCOUT_PULL_SUMMARY_'+datetime.datetime.now().strftime("%d%m%Y"))
+    #RESULT.to_csv(outfile+'.csv',sep=',')
+    RESULT.to_json(outfile+'.json')
+    RESULT.to_parquet(outfile+'.parquet')
+    
+if 1==1:
+    #SQLDB = '\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\prod_data.db'
+    SQLDB = 'prod_data.db'
     pd_sql_types={'object':'TEXT',
-                  'int64':'INTEGER',
+                  'int8':'INTEGER',
+                  'int16':'INTEGER',
+                  'int32':'INTEGER',
+                  'int64':'INTEGER',                  
+                  'float32':'REAL',
                   'float64':'REAL',
                   'bool':'TEXT',
-                  'datetime[64]':'TEXT',
+                  'datetime64[ns]':'TEXT',
                   'timedelta[ns]':'REAL',
                   'category':'TEXT'
         }
