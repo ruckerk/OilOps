@@ -10,7 +10,6 @@ setup(
     install_requires=['adjustText', 
                       'bs4', 
                       'easygui', 
-                      'functools',
                       'futures3',
                       'matplotlib', 
                       'multiprocess', 
