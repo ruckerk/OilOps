@@ -26,9 +26,10 @@ setup(
                       'shapely',
                       'sklearn',
                       'sqlalchemy', 
-                      'sqlite3', 
-                      'tabula.io', 
-                      'urllib'],
+                      'sqlite', 
+                      'tabula-py', 
+                      'urllib',
+                      'urllib3'],
     license='GPL',
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
