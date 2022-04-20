@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name='PetroOps',
+    name='OilOps',
     version = '0.0.2',
-    url='https://github.com/ruckerk/PetroOps',
+    url='https://github.com/ruckerk/OilOps',
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
     packages=['PetroOps'],
