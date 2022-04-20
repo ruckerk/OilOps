@@ -27,7 +27,6 @@ setup(
                       'sklearn',
                       'sqlalchemy', 
                       'tabula-py', 
-                      'urllib',
                       'urllib3'],
     license='GPL',
     description='Oilfield Operations Tools',
