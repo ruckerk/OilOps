@@ -1,5 +1,5 @@
-from .WELLAPI import WELLAPI
-from .SurveysFromPDF import SurveysFromPDF
-from .Gunbarrel import Gunbarrel
-from .OneLine import OneLine
-from .SUMMARIZE_COGCC_SQL import SUMMARIZE_COGCC_SQL
+import OilOps.WELLAPI
+import OilOps.SurveysFromPDF
+import OilOps.Gunbarrel
+import OilOps.OneLine
+import OilOps.SUMMARIZE_COGCC_SQL
