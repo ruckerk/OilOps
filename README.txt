@@ -9,3 +9,6 @@ PRODUCTION folder is for production analysis
 SURVEY folder contains well spacing tools
 MAPS folder manipulates shapefiles and maps
 DATA folder contains data acquisition processes
+
+
+pip install -e git+https://github.com/ruckerk/OilOps
