@@ -54,54 +54,56 @@ def CondenseSurveyCols(df_in):#if 1==1:
     extra_cols = max(0,df_in.shape[1]-len(sdict)-1)
     df_in = df_in.apply(pd.to_numeric,errors='coerce').dropna(thresh=extra_cols,axis=0).dropna(how='any',axis=1)
     return df_in
+
+if __name__ == '__main__':
     
-skeys = ['MD','INC','TVD']
+    skeys = ['MD','INC','TVD']
 
-pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(sys.argv[0])
 
-pdf_list = []
-for file in listdir(pathname):
-    if file.lower().endswith(".pdf"):
-        pdf_list.append(file)
+    pdf_list = []
+    for file in listdir(pathname):
+        if file.lower().endswith(".pdf"):
+            pdf_list.append(file)
 
-SUMMARY = pd.DataFrame()
-for f in pdf_list:
-    print(f)
-    with suppress(Exception):
-        df = read_pdf(f,pages='all')
+    SUMMARY = pd.DataFrame()
+    for f in pdf_list:
+        print(f)
+        with suppress(Exception):
+            df = read_pdf(f,pages='all')
 
-    rtxt = r'[0-9]{2}[-]*[0-9]{3}[-]*[0-9]{5}'
+        rtxt = r'[0-9]{2}[-]*[0-9]{3}[-]*[0-9]{5}'
 
-    try:
-        r=GetKeyRow(df[0],[rtxt],True)
-        lst = (' '.join(df[0].iloc[r[0]].astype(str).to_list())).split(' ')
-        r = re.compile(rtxt)
-        API = list(filter(r.match, lst))[0]
-    except:
-        API = None
-    
-    for idf in df:
-        x=idf.copy(deep=True)
-        if idf.empty:
-            continue
-        r = GetKeyRow(idf,skeys)
-        
-        if r == None:
-            continue
-        r=r[0]
-        idf = idf.loc[r:,:]
-        idf = CondenseSurveyCols(idf)
-        
-        if idf.empty:
-            continue
+        try:
+            r=GetKeyRow(df[0],[rtxt],True)
+            lst = (' '.join(df[0].iloc[r[0]].astype(str).to_list())).split(' ')
+            r = re.compile(rtxt)
+            API = list(filter(r.match, lst))[0]
+        except:
+            API = None
 
-        idf['API'] = API
-        idf['File'] = f
-        
-        
-        SUMMARY=pd.concat([SUMMARY,idf],axis = 0, join='outer',ignore_index=True)
-        SUMMARY.sort_values('MD',ignore_index=True).dropna(how='all',axis=0)
+        for idf in df:
+            x=idf.copy(deep=True)
+            if idf.empty:
+                continue
+            r = GetKeyRow(idf,skeys)
 
-        #SUMMARY['API']=API
+            if r == None:
+                continue
+            r=r[0]
+            idf = idf.loc[r:,:]
+            idf = CondenseSurveyCols(idf)
 
-SUMMARY.to_excel('Summary.xlsx')
+            if idf.empty:
+                continue
+
+            idf['API'] = API
+            idf['File'] = f
+
+
+            SUMMARY=pd.concat([SUMMARY,idf],axis = 0, join='outer',ignore_index=True)
+            SUMMARY.sort_values('MD',ignore_index=True).dropna(how='all',axis=0)
+
+            #SUMMARY['API']=API
+
+    SUMMARY.to_excel('Summary.xlsx')
