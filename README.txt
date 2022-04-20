@@ -8,3 +8,4 @@ LAS folder is for petrophysics
 PRODUCTION folder is for production analysis
 SURVEY folder contains well spacing tools
 MAPS folder manipulates shapefiles and maps
+DATA folder contains data acquisition processes
