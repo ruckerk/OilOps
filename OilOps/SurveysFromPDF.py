@@ -55,8 +55,7 @@ def CondenseSurveyCols(df_in):#if 1==1:
     df_in = df_in.apply(pd.to_numeric,errors='coerce').dropna(thresh=extra_cols,axis=0).dropna(how='any',axis=1)
     return df_in
 
-if __name__ == '__main__':
-    
+def main():    
     skeys = ['MD','INC','TVD']
 
     pathname = path.dirname(sys.argv[0])
@@ -107,3 +106,6 @@ if __name__ == '__main__':
             #SUMMARY['API']=API
 
     SUMMARY.to_excel('Summary.xlsx')
+
+if __name__ == '__main__':
+    main()
