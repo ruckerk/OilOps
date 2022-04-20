@@ -7,7 +7,7 @@ setup(
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
     packages=['OilOps'],
-    install_requires=['adjust_text', 
+    install_requires=['adjustText', 
                       'bs4', 
                       'concurrent.futures', 
                       'easygui', 
@@ -29,7 +29,7 @@ setup(
                       'sqlite3', 
                       'tabula.io', 
                       'urllib'],
-    license='MIT',
+    license='GPL',
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
 )
