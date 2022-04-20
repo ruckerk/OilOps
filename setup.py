@@ -26,7 +26,6 @@ setup(
                       'shapely',
                       'sklearn',
                       'sqlalchemy', 
-                      'sqlite', 
                       'tabula-py', 
                       'urllib',
                       'urllib3'],
