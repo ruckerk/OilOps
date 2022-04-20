@@ -17,7 +17,6 @@ setup(
                       'numpy', 
                       'pandas ', 
                       'psutil',
-                      'pylab', 
                       'pyproj ',
                       'pyproj',
                       'pyshp',
