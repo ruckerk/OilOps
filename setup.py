@@ -6,7 +6,7 @@ setup(
     url='https://github.com/ruckerk/OilOps',
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
-    packages=['PetroOps'],
+    packages=['OilOps'],
     install_requires=['adjust_text>0.0.0', 
                       'bs4>0.0.0', 
                       'concurrent.futures>0.0.0', 
