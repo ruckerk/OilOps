@@ -11,7 +11,7 @@ setup(
                       'bs4', 
                       'easygui', 
                       'functools',
-                      'futures',
+                      'futures3',
                       'matplotlib', 
                       'multiprocess', 
                       'numpy', 
