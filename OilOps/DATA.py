@@ -3,6 +3,7 @@ import wget
 from zipfile import ZipFile
 import os,sys, shutil
 from glob import glob
+from ._FUNCS_ import *
 
 def CO_BASEDATA():
     pathname = os.path.dirname(sys.argv[0])
