@@ -9,7 +9,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 import shapefile as shp #pyshp
 from shapely.geometry import Polygon, Point, LineString
-from pyproj import Transformer, CRS, 
+from pyproj import Transformer, CRS
 import easygui
 from tkinter import filedialog
 from selenium import webdriver
