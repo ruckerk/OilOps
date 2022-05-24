@@ -3,7 +3,7 @@ import pylab
 import matplotlib.ticker as tkr
 from adjustText import adjust_text
 
-if __name__ == '__main__':
+def STAIR_PLOT(ULIST):
     ProdKey = 'EconOilEUR_MBO'
 
     # subset or wells in plotting order
@@ -124,5 +124,5 @@ if __name__ == '__main__':
     #cbar.set_label('EUR [MBBL]', rotation=270)
     
     pylab.tight_layout()
-    
-    plt.show()
+    plt.save('STAIRPLOT_'+str(ULIST[0])+'_'+str(ULIST[-1])+'.PNG')
+    plt.close()
