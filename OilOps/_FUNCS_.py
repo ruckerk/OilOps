@@ -20,7 +20,9 @@ from bs4 import BeautifulSoup as BS
 from zipfile import ZipFile
 import glob
 import urllib,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.futures
-
+import pylab
+import matplotlib.ticker as tkr
+from adjustText import adjust_text
 
 
 def DF_UNSTRING(df_IN):
