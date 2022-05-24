@@ -107,5 +107,4 @@ def main():
 
     SUMMARY.to_excel('Summary.xlsx')
 
-if __name__ == '__main__':
-    main()
+
