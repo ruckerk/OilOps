@@ -10,5 +10,4 @@ SURVEY folder contains well spacing tools
 MAPS folder manipulates shapefiles and maps
 DATA folder contains data acquisition processes
 
-
-pip install -e git+https://github.com/ruckerk/OilOps#egg=OilOps
+pip install -I --no-deps  git+https://github.com/ruckerk/OilOps#egg=OilOps
