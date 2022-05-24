@@ -1,9 +1,9 @@
 # requires xlrd, openpyxl
 import pandas as pd
 import numpy as np
-import re, datetime
+import re, datetime, wget
 from requests.packages.urllib3.util.retry import Retry
-from os import path, listdir
+from os import path, listdir, remove, makedirs
 from math import floor
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -16,6 +16,12 @@ from selenium import webdriver
 from selenium.webdriver import Firefox
 from selenium.webdriver import Chrome
 from selenium.webdriver.firefox.options import Options
+from bs4 import BeautifulSoup as BS
+from zipfile import ZipFile
+import glob
+import urllib,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.futures
+
+
 
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
