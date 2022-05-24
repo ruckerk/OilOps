@@ -1,14 +1,6 @@
 # update base files
-import wget
-from zipfile import ZipFile
-import os,sys, shutil
-from glob import glob
 from ._FUNCS_ import *
-import urllib,datetime,re,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.futures
-from os import path, listdir, remove, makedirs
-import pandas as pd
-import numpy as np
-from bs4 import BeautifulSoup as BS
+
 
 #Define Functions for multiprocessing iteration
 
