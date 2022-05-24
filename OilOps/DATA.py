@@ -4,6 +4,13 @@ from zipfile import ZipFile
 import os,sys, shutil
 from glob import glob
 from ._FUNCS_ import *
+import urllib,datetime,re,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.futures
+from os import path, listdir, remove, makedirs
+import pandas as pd
+import numpy as np
+from bs4 import BeautifulSoup as BS
+
+#Define Functions for multiprocessing iteration
 
 def CO_BASEDATA():
     pathname = os.path.dirname(sys.argv[0])
@@ -57,18 +64,6 @@ def CO_BASEDATA():
        # Extract all the contents of zip file in current directory
        zipObj.extractall()
     os.remove(filename)
-
-import urllib,datetime,re,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.futures
-from os import path, listdir, remove, makedirs
-import pandas as pd
-import numpy as np
-from bs4 import BeautifulSoup as BS
-from selenium import webdriver
-from selenium.webdriver import Firefox
-from selenium.webdriver.firefox.options import Options
-#from multiprocessing import Pool, cpu_count
-
-#Define Functions for multiprocessing iteration
 
 def Get_LAS(UWIS):
     #if 1==1:
@@ -173,7 +168,7 @@ def Get_LAS(UWIS):
                                 
                 ERROR = 1
  
- def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
+def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     #if 1==1:
     #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
