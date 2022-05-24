@@ -27,7 +27,9 @@ setup(
                       'tabula-py', 
                       'urllib3',
                       'xlrd', 
-                      'openpyxl'],
+                      'openpyxl',
+                      'tkinter'
+                     ],
     license='GPL',
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
