@@ -151,7 +151,7 @@ def DF_UNSTRING(df_IN):
 
     return(df_IN)
 
-if 1==1:   
+def ONELINE_COMPILE():   
     SQLFILE = 'SQL_WELL_SUMMARY.PARQUET'
     SCOUTFILE = path.join('SCOUTS','SCOUT_PULL_SUMMARY_10122021.parquet')
     SPACINGFILE = path.join('SURVEYS','3D_Spacing_07042022_0824.PARQUET') #01/17/2022
@@ -335,7 +335,7 @@ if 1==1:
     #df_GOR['UWI10']=df_GOR['UWI10'].apply(API10)
     #OUT = pd.merge(OUT,df_GOR,how='left',on='UWI10',suffixes = ('','_GOR'))
 
-if 1==1:
+
     OUT = OUT.dropna(axis=0,how='all')
     OUT = OUT.dropna(axis=1,how='all')
 
@@ -354,25 +354,9 @@ if 1==1:
     #CALC USEABLE VALUES
     TC_OUT = OUT.copy()
 
-#>>> TC_DF=pd.read_excel('TypeCurveWells_All.xlsx')
-#>>> TC_UWIS = TC_DF.API_Label.apply(API10).copy()
-#>>> TC_OUT = OUT.loc[OUT.UWI10.isin(TC_UWIS),:].copy()
-#>>> TC_OUT=DF_UNSTRING(TC_OUT)
-
     dXY = ['dxy1','dxy2','dxy3','dxy4','dxy5']
     dZ = ['dz1','dz2','dz3','dz4','dz5']
 
-##def LimitFilter(num,Limit_Type='LOW', limit = 0):
-##    if upper(Limit_Type) == 'LOW':
-##        if num<limit:
-##            num = np.nan
-##    else:
-##        if num>limit:
-##            num = np.nan
-
-
-#OUT
-if 1==1:
     OUT['Rel_Nearest'] = (abs((np.array(OUT[dXY])/500)**2 + (np.array(OUT[dZ])/200)**2).min(axis=1))**(1/2)
 
     OUT['dXY1_Left'] = abs(OUT[dXY].clip(upper=0)).replace(0,np.nan).min(axis=1)
@@ -531,205 +515,7 @@ if 1==1:
     OUT.to_parquet(outfile+'.PARQUET')
 
 ######################################################################################################
-    
-    quit()
+
 
 ######################################################################################################
 
-#TC_OUT
-if 1==1:
-    TC_OUT['Rel_Nearest'] = (abs((np.array(TC_OUT[dXY])/450)**2 + (np.array(TC_OUT[dZ])/300)**2).min(axis=1))**(1/2)
-
-    TC_OUT['dXY1_Left'] = abs(TC_OUT[dXY].clip(upper=0)).replace(0,np.nan).min(axis=1)
-    LEFT_MIN = abs(TC_OUT[dXY].clip(upper=0)).replace(0,np.nan).idxmin(axis=1)
-
-    TC_OUT['dXY1_Right'] = abs(TC_OUT[dXY].clip(lower=0)).replace(0,np.nan).min(axis=1)
-    RIGHT_MIN = abs(TC_OUT[dXY].clip(lower=0)).replace(0,np.nan).idxmin(axis=1)
-
-    for i in TC_OUT.index:
-        try:
-            COL = re.sub('xy','z',LEFT_MIN[i])
-            TC_OUT.loc[i,'dZ1_Left'] = TC_OUT.loc[i,COL]
-        except: pass
-        try:
-            COL = re.sub('xy','z',RIGHT_MIN[i])
-            TC_OUT.loc[i,'dZ1_RIGHT'] = TC_OUT.loc[i,COL]
-        except: pass
-
-    KeyData_Dict = {
-        'Completion_Date':r'(?:Stim|Treat|Comp|Job).*Date',
-        'FirstProduction_Date':r'First.*Prod|1st.*prod|month1',
-        'Lateral_Length':r'perf.*int|lat.*len',
-        'STIM_FLUID':r'STIM.*FLUID|TOTAL.*FLUID',
-        'STIM_PROPPANT':r'TOTAL.*PROPPANT',
-        'PeakOil_CumOil':r'peak.*oil.*cum.*oil',
-        'PeakOil_CumGas':r'peak.*oil.*cum.*gas'
-        }
-
-    keys = TC_OUT.keys()
-
-
-    for k in KeyData_Dict:
-        kkey = KeyData_Dict[k]
-        pattern = re.compile(kkey,re.I)
-        k_sub = list(filter(pattern.match, keys))
-        print(k_sub)
-        TC_OUT[k] = TC_OUT[k_sub].max(axis=1)
-
-
-#####################
-#####################
-    #if 1==1:
-    # PERF INTERVAL
-    TC_OUT['PerfInterval'] = None
-    mask = (abs(TC_OUT.INTERVAL_TOP - TC_OUT.INTERVAL_BOTTOM) > 0)
-    TC_OUT.loc[mask,'PerfInterval'] = abs(TC_OUT.loc[mask,'INTERVAL_TOP'] - TC_OUT.loc[mask,'INTERVAL_BOTTOM'])
-
-    # LATERAL_LENGTH -> 'LatLen
-
-    # API10
-    TC_OUT['API10'] = TC_OUT['UWI10'].apply(UWI10)
-
-    # API12
-    keys = ['API', 'APINumber','UWI/API','UWI/API_PETRAV','API14x', 'UWI10']
-    mask = TC_OUT.index
-    for k in keys:
-        if (pd.to_numeric(TC_OUT.loc[mask,k], errors = 'coerce').dropna().min()>1e10) & (pd.to_numeric(TC_OUT.loc[mask,k], errors = 'coerce').dropna().min()<(1e13-1)):
-            TC_OUT.loc[mask,'API12'] = TC_OUT.loc[mask,k].apply(UWI12)
-            mask = TC_OUT['API12'].isna()
-
-    # API14
-    keys = ['API', 'APINumber','UWI/API','UWI/API_PETRAV','API14x', 'UWI10']
-    mask = TC_OUT.index
-    for k in keys:
-        if (pd.to_numeric(TC_OUT.loc[mask,k], errors = 'coerce').dropna().min()>1e12) & (pd.to_numeric(TC_OUT.loc[mask,k], errors = 'coerce').dropna().min()<(1e14-1)):
-            TC_OUT.loc[mask,'API14'] = TC_OUT.loc[mask,k].apply(UWI14)
-            mask = TC_OUT['API14'].isna()
-
-    # WELL NAME
-    keys = ['WellName','WELLNAME','WELL_NAME/NO', 'WELLNAME_PETRAV']
-    mask = TC_OUT.index
-    TC_OUT['WELL_NAME']=None
-    for k in keys:
-        TC_OUT.loc[mask,'WELL_NAME'] = TC_OUT.loc[mask,k]
-        mask = TC_OUT['WELL_NAME'].isna()
-
-    # WELL NUMBER if 1==1:
-    keys = ['WellNumber', 'WELLNO', 'WellNumber']
-    mask = TC_OUT.index
-    TC_OUT['WELL_NUMBER']=None
-    for k in keys:
-        TC_OUT.loc[mask,'WELL_NUMBER'] = TC_OUT.loc[mask,k]
-        mask = TC_OUT['WELL_NUMBER'].isna()
-
-    # OPERATOR if 1==1:
-    keys = ['OperatorName','OPERATOR','Operator']
-    mask = TC_OUT.index
-    TC_OUT['OPERATOR_']=None
-    for k in keys:
-        TC_OUT.loc[mask,'OPERATOR_'] = TC_OUT.loc[mask,k]
-        mask = TC_OUT['OPERATOR_'].isna()
-
-    # STATUS ?
-
-    # STIM_FLUID
-    TC_OUT['STIM_FLUID']=TC_OUT['TotalBaseWaterVolume']/42
-    mask = (TC_OUT['STIM_FLUID']>1000)==False
-    TC_OUT.loc[mask,'STIM_FLUID']=TC_OUT.loc[mask,'TotalFluid']
-    mask = (TC_OUT['STIM_FLUID']>1000)==False
-    TC_OUT.loc[mask,'STIM_FLUID']=TC_OUT.loc[mask,'TOTAL_FLUID_USED']
-    #mask = (TC_OUT['STIM_FLUID']>1000)==False
-    #TC_OUT.loc[mask,'STIM_FLUID']=TC_OUT.loc[mask,'TREAT_FLUID']
-
-    # FLUID_INTENSITY & FLUID_INTENSITY_TYPE
-    mask = TC_OUT['PerfInterval'].isna()
-    TC_OUT.loc[~mask,'STIM_FLUID_INTENSITY'] = TC_OUT.loc[~mask,'STIM_FLUID']/TC_OUT.loc[~mask,'PerfInterval']
-    TC_OUT.loc[mask,'STIM_FLUID_INTENSITY'] = TC_OUT.loc[mask,'STIM_FLUID'] / abs(TC_OUT.loc[mask,'LatLen'])
-
-    # STIM_PROPPANT
-    keys = ['TotalAmount_PROPPANT','TOTAL_PROPPANT_USED','TREAT_PROPPANT']
-    keys = list(set(keys).intersection(TC_OUT.keys().to_list()))
-    mask = TC_OUT.index
-    TC_OUT['STIM_PROPPANT']=None
-    for k in keys:
-        TC_OUT.loc[mask,'STIM_PROPPANT'] = TC_OUT.loc[mask,k]
-        mask = TC_OUT['STIM_PROPPANT'].isna()
-
-    # PROPPANT_INTENSITY
-    mask = TC_OUT['PerfInterval'].isna()
-    TC_OUT.loc[~mask,'STIM_PROPPANT_INTENSITY'] = TC_OUT.loc[~mask,'STIM_PROPPANT']/TC_OUT.loc[~mask,'PerfInterval']
-    TC_OUT.loc[mask,'STIM_PROPPANT_INTENSITY'] = TC_OUT.loc[mask,'STIM_PROPPANT'] / abs(TC_OUT.loc[mask,'LatLen'])
-
-    # STIM_PROPPANT_LOADING
-    TC_OUT['STIM_PROPPANT_LOADING'] = TC_OUT['STIM_PROPPANT']/TC_OUT['STIM_FLUID']
-
-    # MAX PRESSURE
-    keys = ['MAX_PRESSURE','TREAT_PRESSURE']
-    keys = list(set(keys).intersection(TC_OUT.keys().to_list()))
-    mask = TC_OUT.index
-    TC_OUT['STIM_MAX_PRESSURE']=None
-    for k in keys:
-        TC_OUT.loc[mask,'STIM_MAX_PRESSURE'] = TC_OUT.loc[mask,k]
-        mask = TC_OUT['STIM_MAX_PRESSURE'].isna()
-
-
-    keys = [
-        'API10',
-        'API12',
-        'API14',
-        'WELL_NAME',
-        'WELL_NUMBER',
-        'OPERATOR_',
-        'PerfInterval',
-        'LatLen',
-        'STIM_FLUID',
-        'STIM_FLUID_INTENSITY',
-        'STIM_PROPPANT',
-        'STIM_PROPPANT_INTENSITY',
-        'STIM_PROPPANT_LOADING',
-        'STIM_MAX_PRESSURE',
-        'API_MEAN',
-        'BTU_MEAN',
-        'GOR_PrePeakOil',
-        'WOC_PostPeakGas',
-        'Gel Mass',
-        'Friction Reducer Mass',
-        'Diverter Mass',
-        'Rel_Nearest',
-        'dXY1_Left',
-        'dXY1_Right',
-        'dZ1_Left',
-        'dZ1_RIGHT',
-        'Completion_Date',
-        'FirstProduction_Date',
-        'NUMBER_OF_STAGED_INTERVALS',
-        'TUBING_SIZE',
-        'TUBING_SETTING_DEPTH',
-        'NUMBER_OF_HOLES'
-        ]
-
-    TC_OUT = TC_OUT[keys].dropna(how='all')
-    TC_OUT = TC_OUT.drop_duplicates()
-
-    # manage duplicate wells
-    PROBLEM_KEYS = []
-    if 1==1:
-        cts = TC_OUT.API14.value_counts()
-        dbl = cts.loc[cts>1].index.values
-        TC_OUT.loc[TC_OUT.API14.isin(dbl)]
-        
-    quit()
-
-    outfile = 'Compiled_Well_Data_XYZ_'+datetime.datetime.now().strftime("%d%m%Y")
-    TCoutfile = 'TC_Compiled_Well_Data_XYZ_'+datetime.datetime.now().strftime("%d%m%Y")
-
-    # Show Duplicates
-    if 1==1:
-        cts = TC_OUTR.FACILITYID.value_counts()
-        dbl = cts.loc[cts>1].index.values
-        TC_OUT.loc[TC_OUT.FACILITYID.isin(dbl)]
-
-    #TC_OUT.to_csv(TCoutfile+'.csv',index=False)
-    #OUT.to_csv(outfile+'.csv',index=False)
-    TC_OUT.to_json(TCoutfile+'.JSON')
-    OUT.to_json(outfile+'.JSON')
