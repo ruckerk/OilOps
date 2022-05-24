@@ -17,7 +17,6 @@ setup(
                       'pandas ', 
                       'psutil',
                       'pyproj ',
-                      'pyproj',
                       'pyshp',
                       'requests',
                       'scipy',
@@ -26,7 +25,9 @@ setup(
                       'sklearn',
                       'sqlalchemy', 
                       'tabula-py', 
-                      'urllib3'],
+                      'urllib3',
+                      'xlrd', 
+                      'openpyxl'],
     license='GPL',
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
