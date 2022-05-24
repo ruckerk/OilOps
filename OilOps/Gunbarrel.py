@@ -1,7 +1,7 @@
 # STAIR PLOT
-import pylab
-import matplotlib.ticker as tkr
-from adjustText import adjust_text
+#import pylab
+#import matplotlib.ticker as tkr
+#from adjustText import adjust_text
 
 def STAIR_PLOT(ULIST):
     ProdKey = 'EconOilEUR_MBO'
