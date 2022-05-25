@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='OilOps',
-    version =  __version__,
+    version = __version__,
     url='https://github.com/ruckerk/OilOps',
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
