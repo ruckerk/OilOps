@@ -61,8 +61,11 @@ def Get_LAS(UWIS):
     URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
     #pathname = path.dirname(sys.argv[0])
-    #adir = path.abspath(pathname)
-    #dir_add = path.join(adir,"\\LOGS")
+    adir = path.abspath(pathname)
+    dir_add = path.join(adir,"LOGS")
+    if os.path.isdir(dir_add) == False:
+        os.mkdir(dir_add)
+        
     warnings.simplefilter("ignore")
     
     if isinstance(UWIS,(str,float,int)):
