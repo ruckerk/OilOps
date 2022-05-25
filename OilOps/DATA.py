@@ -191,7 +191,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
         UWIs=[UWIs]
         print(UWIs[0])
     ct = 0
-    t1 = time.perf_counter()
+    t1 = perf_counter()
     for UWI in UWIs:
         if (math.floor(ct/20)*20) == ct:
             print(str(ct)+' of '+str(len(UWIs)))
@@ -228,9 +228,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 #    print(f'No Table for {UWI}.')
                 #    ERROR=1
                 #    continue
-                if time.perf_counter() - t1 < 0.5:
-                    time.sleep(0.5)
-                t1 = time.perf_counter()
+                if perf_counter() - t1 < 0.5:
+                    sleep(0.5)
+                t1 = perf_counter()
                 try:
                     #pdf = pd.read_html(docurl,encoding='utf-8', header=0)[1]
                     content = requests_retry_session().get(docurl).content
@@ -526,8 +526,8 @@ def Get_Scouts(UWIs,db=None):
     adir = path.abspath(pathname)
     
     dir_add = path.join(adir,'SCOUTS')
-    if os.path.isdir(dir_add) == False:
-        os.mkdir(dir_add)
+    if path.isdir(dir_add) == False:
+        mkdir(dir_add)
     
     warnings.simplefilter("ignore")
     if isinstance(UWIs,list) == False:
