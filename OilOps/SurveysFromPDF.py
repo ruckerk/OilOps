@@ -55,7 +55,7 @@ def CondenseSurveyCols(df_in):#if 1==1:
     df_in = df_in.apply(pd.to_numeric,errors='coerce').dropna(thresh=extra_cols,axis=0).dropna(how='any',axis=1)
     return df_in
 
-def SurveysFromPDF.py:    
+def SurveysFromPDF():    
     skeys = ['MD','INC','TVD']
 
     pathname = path.dirname(sys.argv[0])
@@ -104,7 +104,7 @@ def SurveysFromPDF.py:
             SUMMARY.sort_values('MD',ignore_index=True).dropna(how='all',axis=0)
 
             #SUMMARY['API']=API
-
-    SUMMARY.to_excel('Summary.xlsx')
+    #SUMMARY.to_parquet('Summary.parquet')
+    return(SUMMARY)
 
 
