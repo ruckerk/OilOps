@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='OilOps',
-    version = 'dev',
+    version = '0.0.202',
     url='https://github.com/ruckerk/OilOps',
     author='W Kurt Rucker',
     author_email='william.rucker@gmail.com',
@@ -27,7 +27,8 @@ setup(
                       'tabula-py', 
                       'urllib3',
                       'xlrd', 
-                      'openpyxl'        
+                      'openpyxl',
+                      'warnings'
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
