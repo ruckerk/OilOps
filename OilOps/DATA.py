@@ -521,6 +521,11 @@ def Get_Scouts(UWIs,db=None):
     URL_BASE = 'https://cogcc.state.co.us/cogis/FacilityDetail.asp?facid=XNUMBERX&type=WELL'
     pathname = path.dirname(sys.argv[0])
     adir = path.abspath(pathname)
+    
+    dir_add = path.join(adir,'SCOUTS')
+    if os.path.isdir(dir_add) == False:
+        os.mkdir(dir_add)
+    
     warnings.simplefilter("ignore")
     if isinstance(UWIs,list) == False:
         UWIs=[UWIs]
