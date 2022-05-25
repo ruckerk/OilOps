@@ -27,8 +27,7 @@ setup(
                       'tabula-py', 
                       'urllib3',
                       'xlrd', 
-                      'openpyxl',
-                      'warnings'
+                      'openpyxl'
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
