@@ -1,4 +1,5 @@
 from setuptools import setup
+from OilOps import __version__
 
 setup(
     name='OilOps',
