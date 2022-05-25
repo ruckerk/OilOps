@@ -19,11 +19,12 @@ from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup as BS
 from zipfile import ZipFile
 import glob
-import urllib,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.futures
+import urllib,io,csv,requests,selenium,multiprocessing,warnings,concurrent.futures
 import pylab
 import matplotlib.ticker as tkr
 from adjustText import adjust_text
 from time import perf_counter, sleep
+from sys import argv
 
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
@@ -501,7 +502,7 @@ def read_excel(file):
     return outdf
 
 def filelist(SUBDIR = None,EXT = None, BEGIN = None):
-    pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
 
     if SUBDIR != None:
         pathname = path.join(pathname, SUBDIR)
