@@ -1,7 +1,7 @@
 # requires xlrd, openpyxl
 import pandas as pd
 import numpy as np
-import re, datetime, wget
+import re, datetime, wget, warnings
 from requests.packages.urllib3.util.retry import Retry
 from os import path, listdir, remove, makedirs
 from math import floor
