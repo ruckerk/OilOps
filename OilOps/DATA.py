@@ -4,8 +4,8 @@ from ._FUNCS_ import *
 #Define Functions for multiprocessing iteration
 
 def CO_BASEDATA():
-    pathname = os.path.dirname(sys.argv[0])
-    adir = os.path.abspath(pathname)
+    pathname = path.dirname(sys.argv[0])
+    adir = path.abspath(pathname)
 
     #Frac Focus
     #https://www.fracfocus.org/index.php?p=data-download
@@ -25,13 +25,13 @@ def CO_BASEDATA():
        zipObj.extractall('COOGC_SQL')
 
     files = []
-    start_dir = os.path.join(adir,'COOGC_SQL')
+    start_dir = path.join(adir,'COOGC_SQL')
     pattern   = r'CO_3_2.*'
 
-    for dir,_,_ in os.walk(start_dir):
-        files.extend(glob(os.path.join(dir,pattern)))
+    for dir,_,_ in walk(start_dir):
+        files.extend(glob(path.join(dir,pattern)))
 
-    shutil.move(files[0], os.path.join(adir, os.path.basename(files[0])))
+    shutil.move(files[0], path.join(adir, path.basename(files[0])))
     shutil.rmtree(path.join(adir,'COOGC_SQL'))
 
     # COGCC shapefiles
@@ -40,21 +40,21 @@ def CO_BASEDATA():
     with ZipFile(filename, 'r') as zipObj:
        # Extract all the contents of zip file in current directory
        zipObj.extractall()
-    os.remove(filename)
+    remove(filename)
 
     url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP'
     filename = wget.download(url)
     with ZipFile(filename, 'r') as zipObj:
        # Extract all the contents of zip file in current directory
        zipObj.extractall()
-    os.remove(filename)
+    remove(filename)
 
     url = 'https://cogcc.state.co.us/documents/data/downloads/gis/WELLS_SHP.ZIP'
     filename = wget.download(url)
     with ZipFile(filename, 'r') as zipObj:
        # Extract all the contents of zip file in current directory
        zipObj.extractall()
-    os.remove(filename)
+    remove(filename)
 
 def Get_LAS(UWIS):
     #if 1==1:
@@ -63,8 +63,8 @@ def Get_LAS(UWIS):
     #pathname = path.dirname(sys.argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(adir,"LOGS")
-    if os.path.isdir(dir_add) == False:
-        os.mkdir(dir_add)
+    if path.isdir(dir_add) == False:
+        mkdir(dir_add)
         
     warnings.simplefilter("ignore")
     
