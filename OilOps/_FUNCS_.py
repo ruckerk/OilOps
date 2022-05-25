@@ -23,7 +23,7 @@ import urllib,io,csv,sys,requests,selenium,multiprocessing,warnings,concurrent.f
 import pylab
 import matplotlib.ticker as tkr
 from adjustText import adjust_text
-
+from time import perf_counter, sleep
 
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
