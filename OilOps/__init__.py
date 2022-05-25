@@ -1,6 +1,6 @@
 
-import .DATA
-import .PLOT
+#import .DATA
+#import .PLOT
 
 __version__ = '0.0.205'
 
