@@ -4,7 +4,7 @@ from ._FUNCS_ import *
 #Define Functions for multiprocessing iteration
 
 def CO_BASEDATA():
-    pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
 
     #Frac Focus
@@ -60,7 +60,7 @@ def Get_LAS(UWIS):
     #if 1==1:
     URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
-    #pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(adir,"LOGS")
     if path.isdir(dir_add) == False:
@@ -166,7 +166,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     #if 1==1:
     #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
-    pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     warnings.simplefilter("ignore")
     OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
@@ -522,7 +522,7 @@ def Get_Scouts(UWIs,db=None):
     pagedf=[]
     xSummary = None
     URL_BASE = 'https://cogcc.state.co.us/cogis/FacilityDetail.asp?facid=XNUMBERX&type=WELL'
-    pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     
     dir_add = path.join(adir,'SCOUTS')
@@ -608,7 +608,7 @@ def Get_Scouts(UWIs,db=None):
     return(OUTPUT)
 
 def Merge_Frac_Focus():
-    pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     #if 1==1:
     FLIST = filelist(EXT='.csv',BEGIN = 'frac')
