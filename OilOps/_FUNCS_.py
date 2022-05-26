@@ -1,30 +1,53 @@
 # requires xlrd, openpyxl
-import pandas as pd
-import numpy as np
-import re, datetime, wget, warnings
-from requests.packages.urllib3.util.retry import Retry
-from os import path, listdir, remove, makedirs, walk, mkdir
+from adjustText import adjust_text
+from bs4 import BeautifulSoup as BS
 from math import floor
+from os import path, listdir, remove, makedirs, walk, mkdir
+from pyproj import Transformer, CRS
 from requests import Session
 from requests.adapters import HTTPAdapter
-import shapefile as shp #pyshp
-from shapely.geometry import Polygon, Point, LineString
-from pyproj import Transformer, CRS
-import easygui
-from tkinter import filedialog
+from requests.packages.urllib3.util.retry import Retry
 from selenium import webdriver
-from selenium.webdriver import Firefox
-from selenium.webdriver import Chrome
+from selenium.webdriver import Firefox, Chrome
 from selenium.webdriver.firefox.options import Options
-from bs4 import BeautifulSoup as BS
-from zipfile import ZipFile
-import glob
-import urllib,io,csv,requests,selenium,multiprocessing,warnings,concurrent.futures
-import pylab
-import matplotlib.ticker as tkr
-from adjustText import adjust_text
-from time import perf_counter, sleep
+from shapely.geometry import Polygon, Point, LineString
 from sys import argv
+from time import perf_counter, sleep
+from tkinter import filedialog
+from zipfile import ZipFile
+import concurrent.futures
+import csv
+import datetime
+import easygui
+import glob
+import io
+import matplotlib.ticker as tkr
+import multiprocessing
+import numpy as np
+import pandas as pd
+import pylab
+import re
+import requests
+import selenium
+import shapefile as shp #pyshp
+import sklearn as sk
+import sqlalchemy
+import urllib
+import warnings
+import wget
+
+
+from functools import partial
+import urllib,datetime,re,io,csv,sys,requests,selenium,multiprocessing,warnings
+from os import path, listdir, remove, makedirs
+import pandas as pd
+from urllib.request import urlopen 
+import numpy as np
+from bs4 import BeautifulSoup as BS
+
+import concurrent.futures
+
+
 
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
