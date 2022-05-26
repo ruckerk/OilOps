@@ -1,6 +1,8 @@
 # requires xlrd, openpyxl
 from adjustText import adjust_text
 from bs4 import BeautifulSoup as BS
+from functools import partial
+from io import StringIO
 from math import floor
 from os import path, listdir, remove, makedirs, walk, mkdir
 from pyproj import Transformer, CRS
@@ -20,7 +22,6 @@ import csv
 import datetime
 import easygui
 import glob
-import io
 import matplotlib.ticker as tkr
 import multiprocessing
 import numpy as np
@@ -37,9 +38,7 @@ import urllib
 import warnings
 import wget
 
-
-from functools import partial
-import urllib,datetime,re,io,csv,sys,requests,selenium,multiprocessing,warnings
+selenium,multiprocessing,warnings
 from os import path, listdir, remove, makedirs
 import pandas as pd
 from urllib.request import urlopen 
@@ -554,3 +553,4 @@ def filetypematch(fname, filetypes,prefix = None):
         prefix = tupelize(prefix)
         output = output * fname.lower().startswith(prefix)
     return output
+
