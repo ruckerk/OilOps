@@ -32,6 +32,7 @@ import selenium
 import shapefile as shp #pyshp
 import sklearn as sk
 import sqlalchemy
+import sqlite3
 import urllib
 import warnings
 import wget
