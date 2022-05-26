@@ -3,15 +3,7 @@
 # jax
 # modin
 
-import numpy as np
-import pandas as pd
-import sys, re, math, shutil
-from os import path, listdir, remove, makedirs, rename
-from math import ceil,isnan,floor
-import multiprocessing, concurrent.futures
-from functools import partial
-from datetime import datetime
-
+from ._SURVEYFUNCS_ import *
 
 # BUG FIXES
 #v101 as_type(float) errors fixed with pd.to_numeric(errors='coerce')
@@ -19,83 +11,13 @@ from datetime import datetime
 #v107 checks file lists and only appends new files
 #v200 new file name handling, modin, JSON
 
-
-
-# NEED TO HANDLE UNLABELE COLUMNS
-
+# NEED TO HANDLE UNLABELED COLUMNS
 
 # needs to be updated to populate SQL db
 # parallelize
 
 
-def str2num(str_in):
-    try:
-        if (str(str_in).upper() == 'NONE'):
-            return None
-        if isinstance(str_in,(int,float)) == False:
-            str_in = str(str_in)
-            str_in = str_in.strip()
-            str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
-            c = len(re.findall('-',str_in))
-            if c>1:
-                val = re.sub(r'[^0-9\.]','',str(str_in))
-            else:
-                val = re.sub(r'[^0-9\.-]','',str(str_in))
-            if val == '':
-                return None
-            try:
-                val = float(val)
-            except:
-                val = None
-        else:
-            val = str_in
-        return val
-    except:
-        print("CANNOT CONVERT STRING TO NUMBER: " + str(str_in))
-        return None
-
-def str2num_noalpha(str_in):
-    if str_in == None:
-        return None
-    str_in = str(str_in)
-    #regexp = re.compile(r'[a-z]')
-    #if regexp.search(str_in,re.IGNORECASE):
-    if re.search(r'[a-z]',str_in,re.IGNORECASE):
-        return(None)
-    else:
-        return(str2num(str_in))
-    
-
-def API2INT(val_in,length = 10):
-
-    val_in = str2num(val_in)
-
-    try:
-        if math.isnan(val_in):
-            return None
-    except:
-        pass
-    
-
-    if val_in == None or str(val_in).upper() == 'NONE':
-        return None
-
-
-    lim = 10**length-1
-    highlim = 10**length-1 #length digits
-    lowlim =10**(length-2) #length -1 digits
-    while val_in > highlim:
-        val_in = math.floor(val_in/100)
-    while val_in < lowlim:
-        val_in = val_in*100
-
-    val_in = int(val_in)
-    
-    return(val_in)
-
-
 def Find_API_Col(df_inAPI):
-
     # NOT WORKING RIGHT returning datestrings
     
     #if 1==1:
@@ -105,14 +27,13 @@ def Find_API_Col(df_inAPI):
     lowlim = 10**(8)
     highlim = 10**14
     
-    df2 = df2.applymap(str2num_noalpha)
+    df2 = df2.apply(lambda x:WELLAPI(x)._str2num(), axis=1)
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
         return (None,None)
     keys = df2.keys()
     
-    #df_in = df_in.applymap(int)
     keylist=[]
     UWIlist = pd.Series(data=None,dtype = int)
 
@@ -135,16 +56,15 @@ def Find_API_Col(df_inAPI):
             if any(x.upper() in k.upper() for x in APIterms):
                 test=True           
             # confirm numbers are > 10 and less than 14 digits
-            df2[k] = df2[k].apply(str2num)
+            df2[k] = df2[k].apply(lambda x:WELLAPI(x)._str2num())
             if (df2.loc[(df2[k]<highlim) & (df2[k]>lowlim),k].dropna().shape[0] > longest):
                 fav_k = k
                 longest = df2.loc[(df2[k]<highlim) & (df2[k]>lowlim),k].dropna().shape[0]
         knum = df_inAPI.keys().get_loc(fav_k)
 
-    if UWIlist.empty == False:
-        UWIlist = np.array([API2INT(xi,length=14) for xi in UWIlist])
-        #API2INT(i,length=14)
-        #UWIlist = UWIlist.apply(str2num).apply(API2INT,length=14)
+    if UWIlist.empty == False:       
+        UWIlist = np.array([WELLAPI(xi).API2INT(14) for xi in UWIlist])
+
         UWI = np.unique(UWIlist)
         if len(UWI)>1:
             return (None,None)
@@ -160,7 +80,7 @@ def APIfromFilename(ffile,UWIlen=10):
     else:
         lst[0] = re.sub('UWI','',lst[0],re.I)
     if len(lst)>0:        
-        UWI = API2INT(lst[0],length=UWIlen)
+        UWI = WELLAPI(lst[0]).API2INT(UWIlen)
     else:
         UWI = None
     return UWI
@@ -280,7 +200,7 @@ def ExtractSurvey(df_in):
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
                 
-            outdf_in = outdf_in.applymap(str2num)
+            outdf_in = outdf_in.applymap(lambda x:WELLAPI(x)._str2num())
             outdf_in = outdf_in.dropna(how='all',axis = 1)
             outdf_in = outdf_in.dropna(how='all',axis = 0)
             if ('UWI' in outdf_in.keys()) == False:
@@ -327,8 +247,8 @@ def ExtractSurvey(df_in):
                         #    keycols.append(outdf_in.keys().get_loc(c))
                         
                         #outdf_in = outdf_in.copy(deep=True)
-                        outdf_in = outdf_in.applymap(str2num)
-
+                        outdf_in = outdf_in.applymap(lambda x:WELLAPI(x)._str2num())
+                    
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
                         test = outdf_in.loc[:10,cols].dropna(how='any').shape[0]
                         if test<10:
@@ -358,7 +278,7 @@ def ERRORFILES(ERR_FOLDER='ERROR_FILES'):
 def CheckUWI(df_in):
     cols = SurveyCols(df_in)
     
-    outdf.UWI = outdf.UWI.apply(str2num)
+    outdf.UWI = outdf.UWI.apply(lambda x:WELLAPI(x)._str2num())
 
 def survey_from_excel(file, ERRORS = True): #if True:
     ERR_FOLDER = None
@@ -388,8 +308,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
         
     READUWI = APIfromFrame(xl)
     FILENAMEUWI =  APIfromString(file,BlockT2 = True)
-    READUWI2 = API2INT(READUWI)
-    FILENAMEUWI2 = API2INT(FILENAMEUWI)
+    READUWI2 = WELLAPI(READUWI).API2INT()
+    FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
     if FILENAMEUWI2==READUWI2:
         UWI = READUWI
     l = [str(FILENAMEUWI),str(READUWI),str(None)]
@@ -430,7 +350,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             #print(ext_df.keys())
             
         if 'UWI' in outdf.keys():
-            outdf['UWI'] = outdf.UWI.apply(str2num)
+            outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x)._str2num())
         else:
             outdf['UWI'] = UWI
             
@@ -453,8 +373,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
         if outdf.empty:
             return None
         if not(UWI is None):            
-            outdf['UWI'] = API2INT(UWI)
-            outdf = outdf.applymap(str2num)
+            outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).API2INT())
+            outdf = outdf.applymap(lambda x:WELLAPI(x)._str2num())
             outdf = outdf.apply(pd.to_numeric, errors='coerce')
             #outdf = outdf.loc[outdf.T.sum().index,:]
             outdf = outdf.dropna(thresh=3,axis=0)
@@ -557,17 +477,11 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
                     continue
 
                 rdf['FILE']=ffile
+                rdf.UWI = pd.Series([WELLAPI(xi).API2INT(14) for xi in rdf.UWI])
                 
-                rdf.UWI = pd.Series([API2INT(xi,length=14) for xi in rdf.UWI])
-                
-                #rdf.UWI = rdf.UWI.apply(API2INT,length=14)
-
                 if rdf.UWI.dropna().empty:
                     rdf.loc[:,'UWI'] = APIfromFilename(ffile,UWIlen=14)
                     
-                #rdf.UWI = rdf.UWI.astype(str).str.zfill(14)
-
-                #print(rdf)
                 
                 if df.empty:
                     df=rdf
@@ -671,7 +585,6 @@ if __name__ == "__main__":
     df1 = pd.DataFrame()
     JOINEDFILE = 'JOINED_SURVEY_FILE_V2_MERGE'
     
-    
     #for file in listdir(pathname):
     #    if file.lower().endswith(('.json')) and ('surveys' in file.lower()):
     #        if df.empty:
@@ -703,9 +616,9 @@ if __name__ == "__main__":
                 print("ERROR IN FILE: " + str(file))
                 
     #CLEAN UP API/UWI
-    df1['UWI'] = df1.UWI.apply(API2INT,length=14)
+    df1['UWI'] = df1.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
     m1 = df1.UWI.isna()
-    df1.loc[m1,'UWI'] = df1.loc[m1,'API'].apply(API2INT,length=14)
+    df1.loc[m1,'UWI'] = df1.loc[m1,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
     
     
     if not df1.empty:
@@ -771,15 +684,14 @@ if __name__ == "__main__":
     if not(df1.empty):
         RESULT = pd.concat([RESULT,df1],axis=0,join='outer',ignore_index=True)
 
-
     R = RESULT.copy()
 
     RESULT = DF_UNSTRING(RESULT)
-    RESULT.UWI = RESULT.UWI.apply(API2INT,args = (14,))
+    RESULT.UWI = RESULT.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
     RESULT = RESULT.drop_duplicates()
 
     m = RESULT.UWI.isna() * RESULT.API.notnull()
-    RESULT.loc[m,'UWI'] = RESULT.loc[m,'API'].apply(API2INT,args = (14,))
+    RESULT.loc[m,'UWI'] = RESULT.loc[m,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
 
     m = RESULT.UWI.isna()
     RESULT.loc[m,'UWI'] = RESULT.loc[m,'FILE'].apply(APIfromString,args = (True,)).fillna(np.nan)   
@@ -789,52 +701,4 @@ if __name__ == "__main__":
     
     RESULT.to_json(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.JSON')
     RESULT.to_parquet(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.PARQUET')
-    #RESULT.to_csv(JOINEDFILE+'.csv',mode='a',header = False, index=False)
-    #RESULT.to_json(JOINEDFILE+'.JSON')
     
-    quit()
-    
-    m= RESULT[['MD','INC','AZI','TVD','NORTH_Y','EAST_X']].dropna(axis=0,how='any').index
-    RESULT=RESULT.loc[m,:]
-
-    RESULT = DF_UNSTRING(RESULT)    
-
-    m = (RESULT.EAST_X**2+RESULT.NORTH_Y**2)**0.5>(4*5280)
-    RESULT.loc[m,['FILE']].drop_duplicates()
-
-
-
-    
-    
-##    if path.exists(JOINEDFILE+'.JSON'):
-##        RESULT_OLD = pd.read_json(JOINEDFILE+'.json')
-##        mask = ~RESULT_OLD.FILE.isin(RESULT.FILE)
-##        RESULT = pd.concat([RESULT_OLD.loc[mask],RESULT],axis=0,join='outer',ignore_index=True)
-##        RESULT.to_csv(JOINEDFILE+'.csv',mode='a',header = False, index=False)
-##        RESULT.to_json(JOINEDFILE+'.JSON')
-##    elif path.exists(JOINEDFILE+'.CSV'):
-##        RESULT_OLD = pd.read_csv(JOINEDFILE+'.csv',squeeze=True)
-##        mask = ~RESULT_OLD.FILE.isin(RESULT.FILE)
-##        RESULT = pd.concat([RESULT_OLD.loc[mask],RESULT],axis=0,join='outer',ignore_index=True)
-##        #RESULT.to_csv(JOINEDFILE+'.csv',mode='a',header = False, index=False)
-##        RESULT.to_json
-##    else:
-##        #RESULT.to_csv(JOINEDFILE+'.csv',mode='a',header = False, index=False)
-##        RESULT.to_json(JOINEDFILE+'.JSON')
-                      
-
-# validate API and overwrite with filname API if bad
-#df.loc[df.UWI>9*10**12,'UWI']=df.loc[df.UWI>9*10**12,'FILE'].apply(APIfromFilename,UWIlen=14)
-#df.loc[df.UWI<5*10**12,'UWI']=df.loc[df.UWI<5*10**11,'FILE'].apply(APIfromFilename,UWIlen=14)
-#df.loc[df.UWI.isna(),'UWI']=df.loc[df.UWI.isna(),'FILE'].apply(APIfromFilename,UWIlen=14)
-
-
-
-#ERROR IN: SURVEYDATA_2018_05_15_05123437820000.xlsx
-#ERROR IN: SURVEYDATA_2018_09_27_05123435970000.xlsx
-## ff
-## fl
-
-#for i in np.arange(0,len(FLIST),math.ceil(len(FLIST)/100)):
-#    func(FLIST[i])
-
