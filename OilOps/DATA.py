@@ -234,7 +234,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 try:
                     #pdf = pd.read_html(docurl,encoding='utf-8', header=0)[1]
                     content = requests_retry_session().get(docurl).content
-                    rawData = pd.read_html(io.StringIO(content.decode('utf-8')))
+                    rawData = pd.read_html(StringIO(content.decode('utf-8')))
                     pdf = rawData[1]
                 except:
                     print(f'Error connecting to {docurl}.')
