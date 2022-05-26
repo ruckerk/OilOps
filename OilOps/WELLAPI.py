@@ -7,19 +7,19 @@ class WELLAPI:
         self.str = str(str_name)
         if isinstance(str_name,(int,float)) == True:
             self.int = int(np.floor(str_name))
+        
         else:
             self.int = None
 
     def show(self):
         print(self.str)
         print(self.int)
-
-    def str2num(self):
+        
+    def _str2num(self):
         str_in = self.str
-  
         if (str_in.upper() == 'NONE'):
             return None
-        if self.int == None:
+        if str(self.int).upper() == 'NONE':
             str_in = str(str_in)
             str_in = str_in.strip()
             str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
@@ -27,11 +27,11 @@ class WELLAPI:
             if c>1:
                 val = re.sub(r'[^0-9\.]','',str(str_in))
             else:
-                val = re.sub(r'[^0-9\.-]','',str(str_in))
+                val = re.sub(r'[^0-9-\.]','',str(str_in))
             if val == '':
                 return None
             try:
-                val = int(val)
+                val = np.floor(float(val))
             except:
                 val = None
         else:
@@ -41,15 +41,19 @@ class WELLAPI:
 
     def API2INT(self,length = 10):
         val_in = self.str
-        if val_in == None or str(val_in).upper() == 'NONE':
+        
+        if str(val_in).upper() == 'NONE':
             return None
         try:
             if math.isnan(val_in):
                 return None
         except:
             pass
-        val = self.str2num()
-
+        val = self._str2num()
+        
+        if val == None:
+            return None
+        
         lim = 10**length-1
         highlim = 10**length-1 #length digits
         lowlim =10**(length-2) #length -1 digits
@@ -70,3 +74,5 @@ class WELLAPI:
             val2 = val[0:12] + '-' + '-'.join(val[i:i+2] for i in range(10+2, length+2, 2))
             val = val2
         return(val)
+    
+
