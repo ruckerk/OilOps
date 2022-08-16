@@ -29,7 +29,7 @@ def CO_BASEDATA():
     pattern   = r'CO_3_2.*'
 
     for dir,_,_ in walk(start_dir):
-        files.extend(glob(path.join(dir,pattern)))
+        files.extend(glob.glob(path.join(dir,pattern)))
 
     shutil.move(files[0], path.join(adir, path.basename(files[0])))
     shutil.rmtree(path.join(adir,'COOGC_SQL'))
