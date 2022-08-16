@@ -21,7 +21,7 @@ import concurrent.futures
 import csv
 import datetime
 import easygui
-import glob
+from glob import glob
 import matplotlib.ticker as tkr
 import multiprocessing
 import numpy as np
