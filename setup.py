@@ -32,7 +32,9 @@ setup(
                       'selenium',
                       'wget',
                       'sqlalchemy',
-                      'easygui'
+                      'easygui',
+                      'pycrs',
+                      'pyshp'
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
