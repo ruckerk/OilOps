@@ -28,7 +28,11 @@ setup(
                       'tabula-py', 
                       'urllib3',
                       'xlrd', 
-                      'openpyxl'
+                      'openpyxl',
+                      'selenium',
+                      'wget',
+                      'sqlalchemy',
+                      'easygui'
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
