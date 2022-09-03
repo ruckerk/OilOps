@@ -85,8 +85,14 @@ def Get_LAS(UWIS):
                     
                     if pages>1:
                         for p in range(1,pages):
-                            page_link = browser.find_element_by_partial_link_text(str(1+p))
-                            page_link.click()
+                            try:
+                                page_link = browser.find_element_by_partial_link_text(str(1+p))
+                                page_link.click()
+                            except:
+                                browser.get(docurl)
+                                page_link = browser.find_element_by_partial_link_text(str(1+p))
+                                page_link.click()
+
                             browser.page_source
                             soup = BS(browser.page_source, 'lxml')
                             parsed_table = soup.find_all('table')[0]
