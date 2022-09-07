@@ -164,27 +164,26 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     # FAULTS_8000 = FAULTS_MULTIP.buffer(8000)
 
     # make same coordinate system in units/projection of interest
-    
-    project1 = pyproj.Transformer.from_proj(
-        pyproj.Proj(_CRS1.to_proj4()),
-        pyproj.Proj('epsg:'+str(CALCEPSG)),
+    project1 = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_wkt(_CRS1.to_ogc_wkt()),
+        pyproj.CRS.from_epsg(CALCEPSG),
         always_xy=True).transform
-    
-    project2 = pyproj.Transformer.from_proj(
-        pyproj.Proj(_CRS2.to_proj4()),
-        pyproj.Proj('epsg:'+str(CALCEPSG)),
-        always_xy=True).transform
+
+    project2 = pyproj.Transformer.from_crs(
+        pyproj.CRS.from_wkt(_CRS2.to_ogc_wkt()),
+        pyproj.CRS.from_epsg(CALCEPSG),
+        always_xy=False).transform		
 
     _GS1_RPRJ = shapely.ops.transform(project1, _GS1)
     _GS2_RPRJ = shapely.ops.transform(project2, _GS2)
 
     boundary = shapely.ops.unary_union([x.buffer(MAXDIST) for x in _GS2_RPRJ.geoms])
-    boundary0 = shapely.ops.unary_union([x.buffer(0) for x in _GS2_RPRJ.geoms])
+    boundary0 = shapely.ops.unary_union(_GS2_RPRJ.geoms)
     
     # MAINSHAPE  DLINES = shp.Reader('Directional_Lines.prj')
     # MAIN_DF   dfs = read_shapefile(DLINES)
 
-    _MAIN_DF['GEOMETRY'] = _GS1_RPRJ
+    _MAIN_DF['GEOMETRY'] = _GS1_RPRJ.geoms
     _MAIN_DF['CALC_DISTANCE'] = MAXDIST
     _MAIN_DF['MidX'] = np.nan
     _MAIN_DF['MidY'] = np.nan
