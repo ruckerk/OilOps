@@ -178,8 +178,8 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     _GS1_RPRJ = shapely.ops.transform(project1, _GS1)
     _GS2_RPRJ = shapely.ops.transform(project2, _GS2)
 
-    boundary = shapely.ops.unary_union([x.buffer(MAXDIST) for x in _GS2_RPRJ])
-    boundary0 = shapely.ops.unary_union([x.buffer(0) for x in _GS2_RPRJ])
+    boundary = shapely.ops.unary_union([x.buffer(MAXDIST) for x in _GS2_RPRJ.geoms])
+    boundary0 = shapely.ops.unary_union([x.buffer(0) for x in _GS2_RPRJ.geoms])
     
     # MAINSHAPE  DLINES = shp.Reader('Directional_Lines.prj')
     # MAIN_DF   dfs = read_shapefile(DLINES)
