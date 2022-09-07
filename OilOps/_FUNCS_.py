@@ -5,14 +5,13 @@ from functools import partial
 from io import StringIO
 from math import floor
 from os import path, listdir, remove, makedirs, walk, mkdir
-from pyproj import Transformer, CRS
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from selenium import webdriver
 from selenium.webdriver import Firefox, Chrome
 from selenium.webdriver.firefox.options import Options
-from shapely.geometry import Polygon, Point, LineString
+#from shapely.geometry import Polygon, Point, LineString
 from sys import argv
 from time import perf_counter, sleep
 from tkinter import filedialog
@@ -38,16 +37,18 @@ import urllib
 import warnings
 import wget
 
-selenium,multiprocessing,warnings
-from os import path, listdir, remove, makedirs
-import pandas as pd
+import openpyxl
+import shutil
 from urllib.request import urlopen 
-import numpy as np
-from bs4 import BeautifulSoup as BS
+import dateutil.parser
 
-import concurrent.futures
-
-
+#MAPPING
+import shapely
+import shapely.wkt
+from shapely.ops import unary_union
+import pycrs
+import pyproj
+from pyproj import Transformer, CRS
 
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
@@ -181,17 +182,17 @@ def IN_TC_AREA(well2,tc2):
     ln = None
     if len(well2.coords)>=2:
         try:
-            ln = LineString(well2.coords)
+            ln = shapely.geometry.LineString(well2.coords)
         except:
-            ln = LineString(well2.coords.values)
+            ln = shapely.geometry.LineString(well2.coords.values)
     elif len(well2.coords)==1:
-        ln = Point(well2.coords[0])
+        ln = shapely.geometry.Point(well2.coords[0])
     if ln == None:
         return(False)
     test = False
     for j in range(0,tc2.shape[0]):
         if test == False:
-            poly = Polygon(tc2.coords.iloc[j])
+            poly = shapely.geometry.Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(15000)):
                 test = True   
     return(test) 
@@ -553,4 +554,14 @@ def filetypematch(fname, filetypes,prefix = None):
         prefix = tupelize(prefix)
         output = output * fname.lower().startswith(prefix)
     return output
+
+def FirstNumericRow(FILENAME,ROWCOUNT = 100):
+    with open(FILENAME) as f:
+        for pos, l_num in enumerate(f):
+            if pos > ROWCOUNT:
+                break
+            if re.match(r'[\d\.\s]+',l_num.strip()):
+                KEYROW = pos
+                break
+    return KEYROW
 
