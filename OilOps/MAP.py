@@ -156,7 +156,7 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     _GS2 = GEOJSONLIST_to_SHAPELY(_S2)
 
     _MAINSHAPE = shp.Reader(SHP1)
-    _MAIN_DF = OilOps.read_shapefile(_MAINSHAPE)
+    _MAIN_DF = read_shapefile(_MAINSHAPE)
         
     # S2 polygons = [shapely.wkt.loads(p.wkt) for p in PGONS]
 
