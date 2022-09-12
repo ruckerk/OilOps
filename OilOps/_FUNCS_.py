@@ -38,6 +38,7 @@ import warnings
 import wget
 import magic
 import textract
+import lasio
 
 import openpyxl
 import shutil
