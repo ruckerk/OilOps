@@ -38,7 +38,16 @@ setup(
                       'easygui',
                       'pycrs',
                       'pyshp',
-                      'xlrd'
+                      'xlrd',
+                      'magic',
+                      'textract',
+                      'sqlite3',
+                      'zipfile',
+                      'dateutil',
+                      'lasio',
+                      'datetime',
+                      'functools',
+                      'io'                      
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
