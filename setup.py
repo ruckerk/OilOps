@@ -45,8 +45,7 @@ setup(
                       'python-dateutil',
                       'lasio',
                       'datetime',
-                      'functools',
-                      'io'                      
+                      'functools'                                     
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
