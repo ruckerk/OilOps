@@ -43,7 +43,7 @@ setup(
                       'textract',
                       'sqlite3',
                       'zipfile',
-                      'dateutil',
+                      'python-dateutil',
                       'lasio',
                       'datetime',
                       'functools',
