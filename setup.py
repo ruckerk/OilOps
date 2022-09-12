@@ -42,7 +42,6 @@ setup(
                       'python-dateutil',
                       'lasio',
                       'datetime',
-                      'functools',
                       'beautifulsoup4',
                       'python-magic'
                      ],
