@@ -10,7 +10,7 @@ setup(
     packages=['OilOps'],
     install_requires=['adjustText', 
                       'bs4', 
-                      'concurrent',
+                      'futures',
                       'easygui', 
                       'futures3',
                       'matplotlib', 
