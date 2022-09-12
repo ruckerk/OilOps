@@ -39,7 +39,6 @@ setup(
                       'pyshp',
                       'xlrd',
                       'textract',
-                      'sqlite3',
                       'zipfile',
                       'python-dateutil',
                       'lasio',
