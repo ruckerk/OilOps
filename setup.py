@@ -45,7 +45,9 @@ setup(
                       'python-dateutil',
                       'lasio',
                       'datetime',
-                      'functools'                                     
+                      'functools',
+                      'beautifulsoup4',
+                      'python-magic'
                      ],
     license='GPL',
     description='Oilfield Operations Tools',
