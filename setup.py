@@ -39,7 +39,6 @@ setup(
                       'pyshp',
                       'xlrd',
                       'textract',
-                      'zipfile',
                       'python-dateutil',
                       'lasio',
                       'datetime',
