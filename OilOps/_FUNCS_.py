@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO
 from math import floor
-from os import path, listdir, remove, makedirs, walk, mkdir
+from os import path, listdir, remove, makedirs, walk, mkdir, rename
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -36,6 +36,8 @@ import sqlite3
 import urllib
 import warnings
 import wget
+import magic
+import textract
 
 import openpyxl
 import shutil
@@ -565,3 +567,27 @@ def FirstNumericRow(FILENAME,ROWCOUNT = 100):
                 break
     return KEYROW
 
+def COUNTER(n,tot,PCT_STEP=10):
+    if floor(n/tot*PCT_STEP) == n/tot:
+        return n/tot*PCT_STEP
+    else:
+        return
+
+def FTYPE(FILELIST,COUNTER = False):
+    if not isinstance(FILELIST,list):
+        FILELIST = [FILELIST]
+    ENDCNT = len(FILELIST)
+    CNT = 0
+    TYPES = list()
+    for f in FILELIST:
+        CNT+=1
+        if COUNTER:
+            COUNTER(CNT,ENDCNT,10)
+        TYPES.append(magic.from_file(f))
+    return(TYPES)
+
+def FILETYPETEST(file_str,filetype_str):
+    if not filetype_str.upper() in FTYPE(file_str)[0].upper():
+        return False
+    else:
+        return True
