@@ -14,6 +14,7 @@ setup(
                       'easygui',
                       'futures3',
                       'lasio',
+                      'python-libmagic',
                       'matplotlib',
                       'multiprocess',
                       'numpy',
