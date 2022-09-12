@@ -38,7 +38,6 @@ setup(
                       'pycrs',
                       'pyshp',
                       'xlrd',
-                      'magic',
                       'textract',
                       'sqlite3',
                       'zipfile',
