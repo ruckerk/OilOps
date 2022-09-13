@@ -25,7 +25,6 @@ setup(
                       'pyproj',
                       'pyshp',
                       'python-dateutil',
-                      'python-magic',
                       'requests',
                       'scipy',
                       'selenium',
