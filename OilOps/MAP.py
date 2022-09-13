@@ -1,3 +1,4 @@
+
 from ._FUNCS_ import *
 
 def shapely_to_pyshp(geom, GEOJ = False):
@@ -84,7 +85,7 @@ def DXF_to_geojson(DXFFILE):
 
 def GEOJSONLIST_to_SHP(GEOJLIST,OUT_BASEFILENAME, FOLDER = False):
     if FOLDER == False:
-        pathname = path.dirname(sys.argv[0])
+        pathname = path.dirname(argv[0])
         adir = path.abspath(pathname)
     else:
         adir = FOLDER
@@ -150,7 +151,6 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     _CRS2 = CRS_FROM_SHAPE(SHP2)
 
     _S1 = SHP_to_GEOJSONLIST(SHP1)
-    _S2 = SHP_to_GEOJSONLIST(SHP2)
 
     _GS1 = GEOJSONLIST_to_SHAPELY(_S1)
     _GS2 = GEOJSONLIST_to_SHAPELY(_S2)
@@ -197,3 +197,30 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
 
     _MAIN_DF.drop('GEOMETRY',axis=1,inplace=True)
     return(_MAIN_DF)
+
+
+################################################################3
+def IN_TC_AREA(well2,tc2):
+    ln = None
+    if len(well2.coords)>=2:
+        try:
+            ln = LineString(well2.coords)
+        except:
+            ln = LineString(well2.coords.values)
+    elif len(well2.coords)==1:
+        ln = Point(well2.coords[0])
+    if ln == None:
+        return(False)
+    test = False
+    for j in range(0,tc2.shape[0]):
+        if test == False:
+            poly = Polygon(tc2.coords.iloc[j])
+            if ln.intersects(poly.buffer(15000)):
+                test = True   
+    return(test) 
+
+def GROUP_IN_TC_AREA(tc,wells):
+    out = pd.DataFrame()
+    out['API'] = wells.API_Label.str.replace(r'[^0-9]','',regex=True)
+    out['TEST'] = wells.apply(lambda x: IN_TC_AREA(x,tc),axis=1)
+    return(out)
