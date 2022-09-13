@@ -1,3 +1,4 @@
+import sys
 from setuptools import setup
 from OilOps import __version__
 
@@ -25,8 +26,8 @@ setup(
                       'pyproj',
                       'pyshp',
                       'python-dateutil',
-                      'libmagic1; sys_platform == 'linux',
-                      'python-magic-bin; sys_platform == 'win32',
+                      'libmagic1; sys.platform == 'linux',
+                      'python-magic-bin; sys.platform == 'win32',
                       'requests',
                       'scipy',
                       'selenium',
