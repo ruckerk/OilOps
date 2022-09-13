@@ -26,7 +26,7 @@ setup(
                       'pyshp',
                       'python-dateutil',
                       'libmagic1; sys_platform == 'linux'
-                      'python-magic-bin; sys_platform == 'windows'
+                      'python-magic-bin; sys_platform == 'win32'
                       'requests',
                       'scipy',
                       'selenium',
