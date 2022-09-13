@@ -25,7 +25,8 @@ setup(
                       'pyproj',
                       'pyshp',
                       'python-dateutil',
-                      'libmagic1|python-magic-bin'
+                      'libmagic1; sys_platform == 'linux'
+                      'python-magic-bin; sys_platform == 'windows'
                       'requests',
                       'scipy',
                       'selenium',
