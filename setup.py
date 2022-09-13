@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from setuptools import setup
 from OilOps import __version__
 
@@ -42,7 +42,7 @@ setup(
 )
 
 if sys.platform == "linux":
-    print('python magic not installed but required')
-    print('visit https://pypi.org/project/python-magic/ for installation detail')
-    print('sudo apt-get install libmagic1')
+    os.system('echo python magic not installed but required')
+    os.system('visit https://pypi.org/project/python-magic/ for installation detail')
+    os.system('sudo apt-get install libmagic1')
      
