@@ -26,7 +26,6 @@ setup(
                       'pyproj',
                       'pyshp',
                       'python-dateutil',
-                      'libmagic1; sys.platform == "linux"',
                       'python-magic-bin; sys.platform == "win32"',
                       'requests',
                       'scipy',
@@ -42,3 +41,9 @@ setup(
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
 )
+
+if sys.platform == "linux":
+    print('python magic not installed but required')
+    print('visit https://pypi.org/project/python-magic/ for installation detail')
+    print('sudo apt-get install libmagic1')
+     
