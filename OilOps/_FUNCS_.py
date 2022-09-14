@@ -21,7 +21,11 @@ import csv
 import datetime
 import easygui
 from glob import glob
+
 import matplotlib.ticker as tkr
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 import multiprocessing
 import numpy as np
 import pandas as pd
