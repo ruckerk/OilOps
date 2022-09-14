@@ -28,6 +28,7 @@ import pandas as pd
 import pylab
 import re
 import requests
+import scipy
 import selenium
 import shapefile as shp #pyshp
 import sklearn as sk
