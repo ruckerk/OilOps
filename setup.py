@@ -41,8 +41,8 @@ setup(
     long_description=open('README.txt').read()
 )
 
-if "LINUX" in sys.platform.upper():
-    os.system('python magic not installed but required')
-    os.system('visit https://pypi.org/project/python-magic/ for installation detail')
-    os.system('sudo apt-get install libmagic1')
+#if "LINUX" in sys.platform.upper():
+#    os.system('python magic not installed but required')
+#    os.system('visit https://pypi.org/project/python-magic/ for installation detail')
+#    os.system('sudo apt-get install libmagic1')
      
