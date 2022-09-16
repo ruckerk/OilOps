@@ -241,3 +241,7 @@ def Summarize_WaterChem(r1,r2):
     RESULT = RESULT.merge(DATA_LOCS,how='outer',on = 'MonitoringLocationIdentifier')
     return(RESULT)
 
+def COWATER_SUMMARY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
+    r1,r2 = DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles')
+    df_OUT = Summarize_WaterChem(r1,r2)    
+    return(df_OUT)
