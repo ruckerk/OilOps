@@ -191,4 +191,53 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     #response = requests.post('https://www.waterqualitydata.us/data/Result/search?mimeType=csv&zip=yes', headers=headers, json=json_data)
     return r_data,r_station
 
+def Summarize_WaterChem(r1,r2):
+    zf = ZipFile(io.BytesIO(r1.content))
+    f = zf.namelist()[0]
+    df = pd.read_excel(zf.open(f,mode = 'r'))
+
+    zf = ZipFile(io.BytesIO(r2.content))
+    f = zf.namelist()[0]
+    df2 = pd.read_excel(zf.open(f,mode = 'r'))
+
+    LOCATIONS = df2['MonitoringLocationIdentifier'].unique()
+    
+    df = df.loc[(df.CharacteristicName.str.contains('solid',case=False)) & (df.CharacteristicName.str.contains('dissolve',case=False))]
+    df = df.loc[df['ResultMeasure/MeasureUnitCode'].str.contains('mg')==True]
+    df = df.loc[df['ActivityMediaSubdivisionName'].str.contains('Ground',case=False)==True]
+
+    LONG_KEYS = df.keys()[df.keys().str.contains('longitude',case=False)].to_list()
+    LAT_KEYS = df.keys()[df.keys().str.contains('latitude',case=False)].to_list()
+    
+    df2['PTS']=list(df2[['LongitudeMeasure','LatitudeMeasure']].to_records(index=False))
+
+    df2['Distance'] = df2['PTS'].apply(Pt_Distance,pt2=(LONG2,LAT2))
+    df2['Bearing'] = df2['PTS'].apply(Pt_Bearing,pt2=(LONG2,LAT2))
+
+    df3 = df.merge(df2[['MonitoringLocationIdentifier','WellDepthMeasure/MeasureValue','Distance','Bearing']],left_on='MonitoringLocationIdentifier',right_on='MonitoringLocationIdentifier',how='outer')
+    df3 = df3.loc[df3['ResultMeasureValue'].dropna().index]
+
+    df2 = df2.loc[df2['MonitoringLocationIdentifier'].isin(df3['MonitoringLocationIdentifier'])]
+
+    #DATA = df2.loc[(df2[GetKey(df2,'depth.*value')].max(axis=1)<=MAXDEPTH) & (df2[GetKey(df2,'depth.*value')].max(axis=1)>=MINDEPTH)].index
+    DATA = df2.loc[:,'MonitoringLocationIdentifier'].isin(df3['MonitoringLocationIdentifier']).index
+
+    #DATA = df2.loc[DATA,'Distance'].nsmallest(50).index
+    DATA = df2.loc[DATA].groupby(by='MonitoringLocationIdentifier')['Distance'].min().nsmallest(1000).index
+    DATA = list(DATA)
+   
+    #DATA = df2.loc[DATA,'MonitoringLocationIdentifier'].unique()
+    DATA_LOCS = df2.loc[df2['MonitoringLocationIdentifier'].isin(DATA) & df2['Distance']>0,['MonitoringLocationIdentifier','Distance','Bearing']]
+
+    OUTCOLS = ['MonitoringLocationIdentifier'
+               ,'ActivityStartDate'
+               ,'CharacteristicName'
+               ,'ResultMeasureValue'
+               ,'ResultMeasure/MeasureUnitCode']
+    OUTCOLS = OUTCOLS + GetKey(df3,'depth.*value')
+
+    RESULT = df3.loc[(df3['MonitoringLocationIdentifier'].isin(DATA)),OUTCOLS]
+    #RESULT = RESULT.drop(['Distance', 'Bearing'],axis=1)
+    RESULT = RESULT.merge(DATA_LOCS,how='outer',on = 'MonitoringLocationIdentifier')
+    return(RESULT)
 
