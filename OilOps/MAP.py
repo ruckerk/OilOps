@@ -242,3 +242,30 @@ def county_from_LatLon(LAT,LON):
     CNTY = CNTY.replace('COUNTY','')
     CNTY = CNTY.strip()
     return(CNTY)
+
+def Pt_Distance(pt1,pt2):
+    R = 6373*1000*3.28084
+    lon1 = math.radians(pt1[0])
+    lat1 = math.radians(pt1[1])
+    lon2 = math.radians(pt2[0])
+    lat2 = math.radians(pt2[1])
+    dlon = lon2-lon1
+    dlat = lat2-lat1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance = R * c
+    return(distance)
+
+def Pt_Bearing(pt1,pt2):
+    #Bearing from pt1 to pt2
+    R = 6373*1000*3.28084
+    lon1 = math.radians(pt1[0])
+    lat1 = math.radians(pt1[1])
+    lon2 = math.radians(pt2[0])
+    lat2 = math.radians(pt2[1])
+    X = math.cos(lat2)*math.sin(lon2-lon1)
+    Y = math.cos(lat1)*math.sin(lat2)-math.sin(lat1)*math.cos(lat2)*math.cos(lon2-lon1)
+    B = math.atan2(X,Y)
+    B = math.degrees(B)
+    return B
+   
