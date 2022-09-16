@@ -14,6 +14,7 @@ setup(
                       'datetime',
                       'easygui',
                       'futures3',
+                      'geopy'
                       'lasio',
                       'matplotlib',
                       'multiprocess',
