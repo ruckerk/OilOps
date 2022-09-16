@@ -59,6 +59,9 @@ import pycrs
 import pyproj
 from pyproj import Transformer, CRS
 
+import collections
+
+
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
     df_IN=df_IN.replace('',np.nan)
