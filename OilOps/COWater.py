@@ -192,11 +192,11 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     return r_data,r_station
 
 def Summarize_WaterChem(r1,r2):
-    zf = ZipFile(io.BytesIO(r1.content))
+    zf = ZipFile(BytesIO(r1.content))
     f = zf.namelist()[0]
     df = pd.read_excel(zf.open(f,mode = 'r'))
 
-    zf = ZipFile(io.BytesIO(r2.content))
+    zf = ZipFile(BytesIO(r2.content))
     f = zf.namelist()[0]
     df2 = pd.read_excel(zf.open(f,mode = 'r'))
 
