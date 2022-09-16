@@ -4,6 +4,11 @@ from geopy.geocoders import Nominatim
 from pyproj import Geod
 from pyproj import Transformer, CRS, Proj
 
+# COMMON EPSG CODES
+# NAD83 GRS 80: 4269
+# NAD27 CLARK 66: 4267
+# WGS84 WGS84: 4326
+
 def shapely_to_pyshp(geom, GEOJ = False):
     # first convert shapely to geojson
     #try:
@@ -112,6 +117,7 @@ def GEOJSONLIST_to_SHP(GEOJLIST,OUT_BASEFILENAME, FOLDER = False):
                r = requests.get(url, allow_redirects=True)
                writer.write(r.content.decode())
     return()
+
 def DAT_to_GEOJSONLIST(DATFILE):
     SKIPROWS = FirstNumericRow(DATFILE)
     df = pd.read_csv(DATFILE, header = None, skiprows = SKIPROWS)
@@ -268,4 +274,12 @@ def Pt_Bearing(pt1,pt2):
     B = atan2(X,Y)
     B = degrees(B)
     return B
-   
+
+def DistAzi(LAT1,LON1,LAT2,LON2, EPSG):
+    crs = CRS.from_epsg(epsg_code)
+    geod = crs.get_geod()
+    RESULT = geod.fwd(LAT1,LON1,LAT2,LON2)
+    return(RESULT)
+	    
+	    
+	
