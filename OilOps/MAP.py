@@ -1,5 +1,8 @@
 
 from ._FUNCS_ import *
+from geopy.geocoders import Nominatim
+from pyproj import Geod
+from pyproj import Transformer, CRS, Proj
 
 def shapely_to_pyshp(geom, GEOJ = False):
     # first convert shapely to geojson
@@ -224,3 +227,18 @@ def GROUP_IN_TC_AREA(tc,wells):
     out['API'] = wells.API_Label.str.replace(r'[^0-9]','',regex=True)
     out['TEST'] = wells.apply(lambda x: IN_TC_AREA(x,tc),axis=1)
     return(out)
+
+def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
+    CRS0 = CRS.from_epsg(EPSG_OLD)
+    CRS1 = CRS.from_epsg(EPSG_NEW)
+    transformer = Transformer.from_crs(CRS0,CRS1,always_xy =True)
+    X2, Y2 =transformer.transform(X_LON,Y_LAT)
+    return X2,Y2
+
+def county_from_LatLon(LAT,LON):
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
+    CNTY = CNTY.upper()
+    CNTY = CNTY.replace('COUNTY','')
+    CNTY = CNTY.strip()
+    return(CNTY)
