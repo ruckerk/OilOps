@@ -191,7 +191,9 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     #response = requests.post('https://www.waterqualitydata.us/data/Result/search?mimeType=csv&zip=yes', headers=headers, json=json_data)
     return r_data,r_station
 
-def Summarize_WaterChem(r1,r2):
+def Summarize_WaterChem(r1,r2, LAT, LON):
+    # ASSUMES NAD87 EPSG 4269 COORDINATES FOR USGS
+    
     zf = ZipFile(BytesIO(r1.content))
     f = zf.namelist()[0]
     df = pd.read_excel(zf.open(f,mode = 'r'))
@@ -211,8 +213,8 @@ def Summarize_WaterChem(r1,r2):
     
     df2['PTS']=list(df2[['LongitudeMeasure','LatitudeMeasure']].to_records(index=False))
 
-    df2['Distance'] = df2['PTS'].apply(Pt_Distance,pt2=(LONG2,LAT2))
-    df2['Bearing'] = df2['PTS'].apply(Pt_Bearing,pt2=(LONG2,LAT2))
+    df2['Distance'] = df2['PTS'].apply(Pt_Distance,pt2=(LON,LAT))
+    df2['Bearing'] = df2['PTS'].apply(Pt_Bearing,pt2=(LON,LAT))
 
     df3 = df.merge(df2[['MonitoringLocationIdentifier','WellDepthMeasure/MeasureValue','Distance','Bearing']],left_on='MonitoringLocationIdentifier',right_on='MonitoringLocationIdentifier',how='outer')
     df3 = df3.loc[df3['ResultMeasureValue'].dropna().index]
@@ -242,6 +244,9 @@ def Summarize_WaterChem(r1,r2):
     return(RESULT)
 
 def COWATER_SUMMARY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
-    r1,r2 = WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10)
-    df_OUT = Summarize_WaterChem(r1,r2)    
+    T = Transformer.from_crs('EPSG:'+str(EPSG_ENTRY), 'EPSG:'+str(EPSG_USGS),always_xy =True)
+    LLON2,LAT2 = T.transform(LON,LAT)
+    
+    r1,r2 = WaterDataPull(LAT2 ,LLON2 ,RADIUS)
+    df_OUT = Summarize_WaterChem(r1,r2,LAT2,LLON2)    
     return(df_OUT)
