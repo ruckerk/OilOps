@@ -1,4 +1,5 @@
 from _FUNCS_ import *
+from MAP import Pt_Distance, Pt_Bearing
 
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
