@@ -187,3 +187,105 @@ def LASREPAIR(FILES):
             LASACTIONS[k](_df.loc[m,'FILES'].tolist())
     LAS_TEXTABORTED_FIX(FILES)
     return None
+
+
+def List_LAS_Files_In_Folder():
+    pathname = _FUNCS_.path.dirname(argv[0])
+    adir = _FUNCS_.path.abspath(pathname)
+    FILES = [f for f in _FUNCS_.listdir(adir) if '.LAS' in f.upper()]
+    return FILES
+
+def FIND_SP_KEY(LAS):
+    SP_KEYS = [k.mnemonic for k in LAS.curves if 'SP' in k.mnemonic.upper()]
+    SP_KEYS = SP_KEYS + [k.mnemonic for k in LAS.curves if 'SP' in k.descr.upper()]
+    SP_KEYS = list(set(SP_KEYS))
+    
+    if len(SP_KEYS)==1:
+        KEY = SP_KEYS[0]
+    else:
+        KEY = LAS.df()[SP_KEYS].apply(_FUNCS_.pd.Series.nunique, axis= 0).sort_values(ascending=False).keys()[0]
+        print(SP_KEYS+': Assumed '+KEY)
+        
+    return KEY
+
+def LOG_DETREND(LOG,KEY):
+    if isinstance(LOG, _FUNCS_.lasio.las.LASFile):
+        df1 = LOG.df()
+    elif isinstance(LOG, (_FUNCS_.pd.DataFrame,np.ndarray)):
+        df1 = LOG.copy()
+    else:
+        raise Exception('Log is not an array or lasio type')
+
+    IDX_KEY = df1.index.name
+    df1.reset_index(drop=False, inplace = True)
+    df1.sort_values(by ='DEPT',inplace=True)
+    NEWKEY = KEY+'_DETREND'
+    m = df1[KEY].dropna().index 
+    df1[NEWKEY] = np.nan
+    df1.loc[m,NEWKEY]   = _FUNCS_.signal.detrend(df1.loc[m,KEY])
+    df1.set_index(keys = IDX_KEY,drop=True, inplace = True)
+    df1.sort_index(axis=0, inplace= True)
+    return(df1[NEWKEY])
+
+def ARRAY_CHANGEPOINTS(ARRAY, COUNT):
+    if not isinstance(ARRAY, _FUNCS_.np.ndarray):
+        raise Exception('Data is not an array')
+    algo = _FUNCS_.rpt.Dynp(model="l2").fit(ARRAY)
+    RESULT = algo.predict(n_bkps=COUNT)
+    return(RESULT)
+
+def Init_Futures(APPLY_DATA = None, MAX_SIZE = 5000, MIN_SIZE = 10):
+    processors = max(1,_FUNCS_.multiprocessing.cpu_count())
+    chunksize = max(MIN_SIZE,min(MAX_SIZE,max(1,int(len(APPLY_DATA)/(processors*2)))))
+    batch = max(1,int(len(APPLY_DATA)/chunksize))
+    processors = min(processors,batch)
+    SPLIT_DATA = _FUNCS_.np.array_split(APPLY_DATA,batch)
+    return(processors, SPLIT_DATA)
+
+def SP_WORKFLOW(LASFILES,OUTFOLDER = 'SP_OUT'):
+    pathname =_FUNCS_.path.dirname(argv[0])
+    adir = _FUNCS_.path.abspath(pathname)
+    OUTFOLDER = _FUNCS_.path.join(adir,OUTFOLDER)
+    if not _FUNCS_.path.exists(OUTFOLDER):
+        _FUNCS_.mkdir(OUTFOLDER)
+        
+    if isinstance(LASFILES,str):
+        LASFILES = [LASFILES]
+    for F in LASFILES:
+        las = _FUNCS_.lasio.read(F)
+        df = las.df().copy()
+        
+        KKEY = FIND_SP_KEY(las)
+        df['SP_DETREND'] = LOG_DETREND(df,KKEY)
+        
+        # Ruptures changepoint detection
+        breakpoints = ARRAY_CHANGEPOINTS(df[KKEY].to_numpy(),10)
+        
+        breakpoints = [0] + breakpoints
+
+        if not 'DEPT' in df.keys():
+            IDX_KEY = df.index.name
+            df[IDX_KEY] = df.index
+            
+        df['BreakPoints'] = 0
+        for i in np.arange(1,len(breakpoints)):
+            last_break = breakpoints[i-1]
+            this_break = breakpoints[i]
+            
+            #handle break at last point
+            this_break = min(this_break,df.shape[0]-1)
+
+            last_break = df.index[last_break]
+            this_break = df.index[this_break]
+            
+            depth0 = df.loc[last_break, 'DEPT']
+            depth1 = df.loc[this_break,'DEPT']
+
+            df.loc[this_break:,'BreakPoints'] += 1
+
+        las.add_curve('SP_DETREND',df['SP_DETREND'].values, unit='mV', descr='SP log with trend removed')
+        las.add_curve('BKPTS',df['BreakPoints'].values, unit='NA', descr='Grouped between 10 depth series changepoints')
+
+        NEWFILENAME = F.replace('.','_DETREND.')
+        las.write(path.join(OUTFOLDER,NEWFILENAME), version = 2.0)
+    return(None)
