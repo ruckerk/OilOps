@@ -1,4 +1,4 @@
-#import ._FUNCS_
+from . import _FUNCS_
 from .MAP import Pt_Distance, Pt_Bearing,county_from_LatLon
 
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
