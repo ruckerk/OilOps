@@ -4,8 +4,12 @@ from .MAP import Pt_Distance, Pt_Bearing,county_from_LatLon
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
     QTERMS = ['wellId',
+        'ogccId',
+        'wellName',
         'aquiferPicks',
-        'elevation']
+        'elevation',
+        'latitude',
+        'longitude']
         
     COUNTY = county_from_LatLon(LAT,LON)
     
