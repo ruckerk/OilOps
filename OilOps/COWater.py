@@ -36,7 +36,7 @@ def DWR_GEOPHYSTOPS(WELLIDS):
     
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/geophysicallogs/geoplogpicks/'
 
-    if not _FUNCS_.isinstance(WELLIDS, collections.Iterable) or _FUNCS_.isinstance(WELLIDS,str):
+    if not isinstance(WELLIDS, collections.Iterable) or isinstance(WELLIDS,str):
         WELLIDS = [WELLIDS]
 
     df = _FUNCS_.pd.DataFrame(columns = [QTERMS])
