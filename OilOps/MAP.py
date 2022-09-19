@@ -4,10 +4,15 @@ from geopy.geocoders import Nominatim
 from pyproj import Geod
 from pyproj import Transformer, CRS, Proj
 
-# COMMON EPSG CODES
-# NAD83 GRS 80: 4269
-# NAD27 CLARK 66: 4267
-# WGS84 WGS84: 4326
+def EPSG_CODES():
+	
+    print('''COMMON EPSG CODES
+	  NAD83 GRS 80: 4269
+	  NAD27 CLARK 66: 4267
+	  WGS84 WGS84: 4326
+	  UTM CO 13N: 26913
+	  NAD83 STATE PLANE: 2232''')
+
 
 def shapely_to_pyshp(geom, GEOJ = False):
     # first convert shapely to geojson
@@ -276,7 +281,7 @@ def Pt_Bearing(pt1,pt2):
     return B
 
 def DistAzi(LAT1,LON1,LAT2,LON2, EPSG):
-    crs = CRS.from_epsg(epsg_code)
+    crs = CRS.from_epsg(EPSG)
     geod = crs.get_geod()
     RESULT = geod.fwd(LAT1,LON1,LAT2,LON2)
     return(RESULT)
