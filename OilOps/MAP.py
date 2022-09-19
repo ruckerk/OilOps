@@ -283,7 +283,7 @@ def Pt_Bearing(pt1,pt2):
 def DistAzi(LAT1,LON1,LAT2,LON2, EPSG):
     crs = CRS.from_epsg(EPSG)
     geod = crs.get_geod()
-    RESULT = geod.fwd(LAT1,LON1,LAT2,LON2)
+    RESULT = geod.fwd(LON1,LAT1,LON2,LAT2)
     return(RESULT)
 	    
 	    
