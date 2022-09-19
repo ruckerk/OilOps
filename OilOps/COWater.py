@@ -8,7 +8,7 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'permit',
         'ogccId',
         'locnum',
-        'wellDepth'
+        'wellDepth',
         'aquiferPicks',
         'latitude',
         'longitude',
