@@ -1,5 +1,5 @@
 #import ._FUNCS_
-from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon
+from .MAP import Pt_Distance, Pt_Bearing
 
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
@@ -7,7 +7,7 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'aquiferPicks',
         'elevation']
         
-    COUNTY = county_from_LatLon(LAT,LON)
+    COUNTY = .MAP.county_from_LatLon(LAT,LON)
     
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/geophysicallogs/wells/'
     QUERY = {'format':'jsonnforced',
@@ -69,7 +69,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'staticWaterLevelDate',
         'moreInformation']
         
-    COUNTY = county_from_LatLon(LAT,LON)
+    COUNTY = .MAP.county_from_LatLon(LAT,LON)
     
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/wellpermits/wellpermit/'
     QUERY = {'format':'jsonforced',
@@ -102,7 +102,7 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'latitude',
         'longitude']
         
-    COUNTY = county_from_LatLon(LAT,LON)
+    COUNTY = .MAP.county_from_LatLon(LAT,LON)
     
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/waterlevels/wells/'
     QUERY = {'format':'jsonforced',
