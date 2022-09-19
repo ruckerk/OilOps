@@ -4,12 +4,15 @@ from .MAP import Pt_Distance, Pt_Bearing,county_from_LatLon
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
     QTERMS = ['wellId',
-        'ogccId',
         'wellName',
+        'permit',
+        'ogccId',
+        'locnum',
+        'wellDepth'
         'aquiferPicks',
-        'elevation',
         'latitude',
-        'longitude']
+        'longitude',
+        'elevation']
         
     COUNTY = county_from_LatLon(LAT,LON)
     
@@ -32,6 +35,7 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
 
 def DWR_GEOPHYSTOPS(WELLIDS):
     QTERMS = ['wellId',
+        'wellName',
         'aquifer',
         'gLogTopDepth',
         'gLogBaseDepth',
@@ -71,6 +75,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'bottomPerforatedCasing',
         'staticWaterLevel',
         'staticWaterLevelDate',
+        'wdid',
         'moreInformation']
         
     COUNTY = county_from_LatLon(LAT,LON)
@@ -96,14 +101,17 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
     QTERMS = ['wellId',
         'locationNumber',
+        'usgsSiteId',
         'wellName',
         'wellDepth',
         'elevation',
         'aquifers',
+        'measurementDate',
         'waterLevelDepth',
         'waterLevelElevation',
         'latitude',
-        'longitude']
+        'longitude',
+        'moreInformation']
         
     COUNTY = county_from_LatLon(LAT,LON)
     
