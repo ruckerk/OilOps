@@ -30,6 +30,7 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         i = df.shape[0]
         for k in QTERMS:
             df.loc[i,k] = r[k]
+    df.columns = df.keys().get_level_values(0)
     return(df)
 
 
@@ -57,6 +58,7 @@ def DWR_GEOPHYSTOPS(WELLIDS):
             i = df.shape[0]
             for k in QTERMS:
                 df.loc[i,k] = r[k]
+    df.columns = df.keys().get_level_values(0)
     return(df)    
 
 def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
@@ -95,6 +97,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         i = df.shape[0]
         for k in QTERMS:
             df.loc[i,k] = r[k]
+    df.columns = df.keys().get_level_values(0)
     return(df)
 
 def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
@@ -130,6 +133,7 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         i = df.shape[0]
         for k in QTERMS:
             df.loc[i,k] = r[k]
+    df.columns = df.keys().get_level_values(0)
     return(df)
 
 
