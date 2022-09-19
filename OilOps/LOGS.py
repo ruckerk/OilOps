@@ -1,19 +1,18 @@
 # update base files
-from ._FUNCS_ import *
-
+#from ._FUNCS_ import *
 
 def TEMP_SUMMARY_LAS(_LASFILES_):
-    SUMMARY = pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
+    SUMMARY = _FUNCS_.pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
     LASDATA = False
 
     for f in _LASFILES_:
         print(f)
         try:
-            las = lasio.read(f)
+            las = _FUNCS_.lasio.read(f)
             LASDATA = True
         except:
             try:
-                las = lasio.read(f, ignore_data=True)
+                las = _FUNCS_.lasio.read(f, ignore_data=True)
                 LASDATA = False
             except:
                 print('Error reading '+f)
@@ -28,8 +27,8 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                     continue
                 if 'DATE' in j.descr.upper():
                     try:
-                        LOGDATE2 = dateutil.parser.parse(j.value)
-                        if isinstance(LOGDATE,datetime.datetime):
+                        LOGDATE2 = _FUNCS_.dateutil.parser.parse(j.value)
+                        if isinstance(LOGDATE,_FUNCS_.datetime.datetime):
                             LOGDATE = max(LOGDATE,LOGDATE2)
                         else:
                             LOGDATE = LOGDATE2
@@ -45,7 +44,7 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                 UWI = WELLAPI(UWI).API2INT(10)
             except:
                 try:
-                    UWI = re.search(r'[0-9]{10,}',f)[0]
+                    UWI = _FUNCS_.re.search(r'[0-9]{10,}',f)[0]
                     UWI = WELLAPI(UWI).API2INT(10)
                 except:
                     pass
@@ -93,11 +92,11 @@ def HTMLtoTXT(file,TYPECHECK=True):
             print('ERROR: Are you sure ' + str(file)+' is HTML?')
             return
     file2 = file.split('.')[0]+'.html'
-    move(file,file2)
+    _FUNCS_.shutil.move(file,file2)
     with open(file2,'r') as F2:
         Fcontent = F2.read()
-        soup = BS(index, 'lxml')
-        TEXT = S.get_text('\n')
+        soup = _FUNCS_.BS(index, 'lxml')
+        TEXT = soup.get_text('\n')
         TEXT = TEXT.strip()
     with open(file,'w') as F1:
         F1.write(TEXT)
@@ -105,38 +104,38 @@ def HTMLtoTXT(file,TYPECHECK=True):
     
 def ZIPtoTXT(file,TYPECHECK=True):
     if TYPECHECK:
-        if not FILETYPETEST(file,'ZIP'):
-            print('ERROR: Are you sure ' + str(file)+' is ZIP?')
+        if not _FUNCS_.FILETYPETEST(file,'ZIP'):
+            raise NameError('ERROR: Is ' + str(file)+' a ZIP file?')
             return
-    usepath = path.dirname(f)
+    usepath = _FUNCS_.path.dirname(f)
     if usepath == '':
         usepath=None
     file2 = file.split('.')[0]+'.zip'
-    shutil.move(file,file2)
-    with ZipFile(file2) as ZF:
+    _FUNCS_.shutil.move(file,file2)
+    with _FUNCS_.ZipFile(file2) as ZF:
         for z in [z for z in ZF.namelist() if z.upper().endswith('LAS')]:
             if path.exists(file):
                 file = file.split('.')[0]+'_1'+'.las'
             ZF.extract(z,usepath)
             if usepath == None:
-                shutil.move(z,file)
+                _FUNCS_.shutil.move(z,file)
             else:
-                shutil.move(path.join(usepath,z),file)    
+                _FUNCS_.shutil.move(path.join(usepath,z),file)    
     return None
 
 def DOCtoTXT(file,TYPECHECK=True):
     if TYPECHECK:
-        if not FILETYPETEST(file,'Microsoft Word'):
-            print('ERROR: Are you sure ' + str(file)+' is MS DOC?')
+        if not _FUNCS_.FILETYPETEST(file,'Microsoft Word'):
+            raise NameError('ERROR: Are you sure ' + str(file)+' is MS DOC?')
             return
        
     file2 = file.split('.')[0]+'.html'
-    rename(file,file2)
+    _FUNCS_.rename(file,file2)
 
     with open(file2,'r') as F2:
         Fcontent = F2.read()
-        soup = BS(index, 'lxml')
-        TEXT = S.get_text('\n')
+        soup = _FUNCS_.BS(index, 'lxml')
+        TEXT = soup.get_text('\n')
         TEXT = TEXT.strip()
     with open(file,'w') as F1:
         F1.write(TEXT)
@@ -151,9 +150,9 @@ def LAS_TEXTABORTED_FIX(FILESIN):
         with open (FILEIN,'rb+') as FILE:
             lines = FILE.readlines()
             ENDLINE = -1
-            pattern=re.compile(b'Thread was being aborted',re.I)
+            pattern = _FUNCS_.re.compile(b'Thread was being aborted',re.I)
             for i,l in enumerate(lines):
-                for match in re.finditer(pattern,l):
+                for match in _FUNCS_.re.finditer(pattern,l):
                     ENDLINE = max(i,ENDLINE)
             if ENDLINE > -1:
                 a = FILE.seek(0)
@@ -176,7 +175,7 @@ def LASREPAIR(FILES):
     'Zip':ZIPtoTXT,
     'HTML':HTMLtoTXT,
     'Microsoft Word':DOCtoTXT}
-    _df = pd.DataFrame()
+    _df = _FUNCS_.pd.DataFrame()
     _df['FILES'] = FILES
     _df['TYPES'] = FTYPE(FILES)
     print('end type')
