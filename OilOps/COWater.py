@@ -90,8 +90,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
 
 def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
-    QTERMS = ['ResultList',
-        'wellId',
+    QTERMS = ['wellId',
         'locationNumber',
         'wellName',
         'wellDepth',
