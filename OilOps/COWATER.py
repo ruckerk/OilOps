@@ -320,7 +320,8 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
     # convert to feet
     x, y = convert_XY(lon, lat, 4326, 2231)
     dummy = pd.DataFrame(shapely.geometry.Point(x,y).buffer(5280).exterior.xy).T
-    df_1MileRing = pd.DataFrame(dummy.apply(lambda r: convert_XY(r[0],r[1],2232,4269), axis=1).to_list())
+    
+    df_1MileRing = pd.DataFrame(dummy.apply(lambda r: convert_XY(r[0],r[1],2231,4326), axis=1).to_list())
     df_1MileRing.columns = ['LON','LAT']
     
     # get extents in area
@@ -379,7 +380,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
 
         surface = plt.pcolormesh(grid_x, grid_y, base_z, cmap = 'viridis')
         
-        plt.plot(df_1MileRing['LON'],df_1MileRing['LAT'],'white')
+        plt.plot(df_1MileRing['LON'],df_1MileRing['LAT'],'blue')
 
         cntrl1 = plt.scatter(df_permits.loc[m_max_depth.join(m_permit_radius, how='inner'),'longitude'],
                              df_permits.loc[m_max_depth.join(m_permit_radius, how='inner'),'latitude'],
