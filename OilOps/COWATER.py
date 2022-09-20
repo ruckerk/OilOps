@@ -280,7 +280,7 @@ def COWATER_QUALITY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     df_OUT = Summarize_WaterChem(r1,r2,LAT2,LLON2)    
     return(df_OUT)
 
-def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
+def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DATA = False):
 
     lon, lat = convert_XY(LON,LAT,EPSG_IN,4326)
 
@@ -399,7 +399,10 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
         plt.ylim(min(lat0,lat1),max(lat0,lat1))
         cbar = plt.colorbar(surface)
         cbar.set_label(base_label+' ELEVATION')
-        plt.legend()
+        plt.legend(loc = 'lower right)
         plt.title('Nearby Water Wells')
         plt.show()
-    return PROJECTIONS
+    if DATA:
+        return df_permits,df_TOPS,PROJECTIONS
+    else:
+        return PROJECTIONS
