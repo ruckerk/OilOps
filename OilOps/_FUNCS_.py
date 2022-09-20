@@ -46,6 +46,7 @@ import textract
 import lasio
 
 from scipy import signal
+from scipy import interpolate
 
 import openpyxl
 import shutil
