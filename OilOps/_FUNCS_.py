@@ -21,6 +21,7 @@ import csv
 import datetime
 import easygui
 from glob import glob
+from operator import itemgetter
 
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
