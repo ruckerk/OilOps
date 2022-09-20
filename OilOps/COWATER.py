@@ -9,8 +9,8 @@ __all__ = [
     'DWR_WATERWELLLEVELS',
     'WaterDataPull',
     'Summarize_WaterChem',
-    'COWATER_SUMMARY',
-    'Co_WaterWell_Summary'
+    'COWATER_QUALITY',
+    'CO_WATERWELL_SUMMARY'
 ]
 
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
@@ -272,7 +272,7 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
     RESULT = RESULT.merge(DATA_LOCS,how='outer',on = 'MonitoringLocationIdentifier')
     return(RESULT)
 
-def COWATER_SUMMARY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
+def COWATER_QUALITY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     T = Transformer.from_crs('EPSG:4326', 'EPSG:4269',always_xy =True)
     LLON2,LAT2 = T.transform(LON,LAT)
     
@@ -280,7 +280,7 @@ def COWATER_SUMMARY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     df_OUT = Summarize_WaterChem(r1,r2,LAT2,LLON2)    
     return(df_OUT)
 
-def Co_WaterWell_Summary(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
+def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
 
     lon, lat = convert_XY(LON,LAT,EPSG_IN,4326)
 
