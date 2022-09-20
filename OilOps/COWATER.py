@@ -2,6 +2,9 @@ from ._FUNCS_ import *
 from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi
 from shapely.geometry import Point
 
+# Upgrade Ideas:
+# Incorporate a DEM to add elevations to water well depths and convert to subsea
+
 __all__ = [
     'DWR_GEOPHYSWELLSUMMARY',
     'DWR_GEOPHYSTOPS',
