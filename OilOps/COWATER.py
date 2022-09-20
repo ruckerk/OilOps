@@ -347,26 +347,26 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
         vals_base = df_TOPS.loc[mbase, 'gLogBaseElev']
 
         if len(mtop)>=3:
-            z_well = griddata(pts_top,vals_top, (lon, lat), method='linear').mean()
+            z_well = interpolate.griddata(pts_top,vals_top, (lon, lat), method='linear').mean()
             z_well = round(z_well,1)
 
             PROJECTIONS[AQ+'_TOP'] = z_well
 
         if len(mbase)>=3:
-            z_well = griddata(pts_base,vals_base, (lon, lat), method='linear').mean()
+            z_well = interpolate.griddata(pts_base,vals_base, (lon, lat), method='linear').mean()
             z_well = round(z_well,1)
 
             PROJECTIONS[AQ+'_BASE'] = z_well
 
             if (AQ in FXHLLS):
-                #FOX_BASE_Z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
+                #FOX_BASE_Z = interpolate.griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
 
                 try:
                     if z_well >= max(PROJECTIONS[k] for k in PROJECTIONS.keys() if k.removesuffix('_BASE') in FXHLLS):
-                         base_z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
+                         base_z = interpolate.griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
                          base_label = AQ+'_BASE'
                 except:
-                    base_z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
+                    base_z = interpolate.griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
                     base_label = AQ+'_BASE'
                     
 
