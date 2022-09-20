@@ -1,5 +1,16 @@
-from . import _FUNCS_
+from ._FUNCS_ import *
 from .MAP import Pt_Distance, Pt_Bearing,county_from_LatLon
+
+__all__ = [
+    'DWR_GEOPHYSWELLSUMMARY',
+    'DWR_GEOPHYSTOPS',
+    'DWR_WATERPERMITS',
+    'DWR_WATERWELLLEVELS',
+    'WaterDataPull',
+    'Summarize_WaterChem',
+    'COWATER_SUMMARY',
+    'Co_WaterWell_Summary'
+]
 
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     # EXPECTING WGS84 COORDINATES
@@ -23,9 +34,9 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             'longitude':LON,
             'radius':RADIUS,
             'units':RADIUS_UNIT}
-    RESULT = _FUNCS_.requests.get(url = URL_ROUTE, params = QUERY)
+    RESULT = requests.get(url = URL_ROUTE, params = QUERY)
 
-    df = _FUNCS_.pd.DataFrame(columns = QTERMS)
+    df = pd.DataFrame(columns = QTERMS)
     for r in RESULT.json()['ResultList']:
         i = df.shape[0]
         for k in QTERMS:
@@ -45,14 +56,14 @@ def DWR_GEOPHYSTOPS(WELLIDS):
     
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/geophysicallogs/geoplogpicks/'
 
-    if not isinstance(WELLIDS, _FUNCS_.collections.Iterable) or isinstance(WELLIDS,str):
+    if not isinstance(WELLIDS, collections.Iterable) or isinstance(WELLIDS,str):
         WELLIDS = [WELLIDS]
 
-    df = _FUNCS_.pd.DataFrame(columns = [QTERMS])
+    df = pd.DataFrame(columns = [QTERMS])
     for WELLID in WELLIDS:  
         QUERY = {'format':'jsonnforced',
                 'wellID':WELLID}
-        RESULT = _FUNCS_.requests.get(url = URL_ROUTE, params = QUERY)
+        RESULT = requests.get(url = URL_ROUTE, params = QUERY)
 
         for r in RESULT.json()['ResultList']:
             i = df.shape[0]
@@ -90,9 +101,9 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             'radius':RADIUS,
             'units':RADIUS_UNIT}
     
-    RESULT = _FUNCS_.requests.get(url = URL_ROUTE, params = QUERY)
+    RESULT = requests.get(url = URL_ROUTE, params = QUERY)
 
-    df = _FUNCS_.pd.DataFrame(columns = QTERMS)
+    df = pd.DataFrame(columns = QTERMS)
     for r in RESULT.json()['ResultList']:
         i = df.shape[0]
         for k in QTERMS:
@@ -126,9 +137,9 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             'radius':RADIUS,
             'units':RADIUS_UNIT}
     
-    RESULT = _FUNCS_.requests.get(url = URL_ROUTE, params = QUERY)
+    RESULT = requests.get(url = URL_ROUTE, params = QUERY)
 
-    df = _FUNCS_.pd.DataFrame(columns = QTERMS)
+    df = pd.DataFrame(columns = QTERMS)
     for r in RESULT.json()['ResultList']:
         i = df.shape[0]
         for k in QTERMS:
@@ -180,7 +191,7 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
             'Salinity',
         ],
         'startDateLo': '01-01-1900',
-        'startDateHi': _FUNCS_.datetime.datetime.now().strftime("%m-%d-%Y"),
+        'startDateHi': datetime.datetime.now().strftime("%m-%d-%Y"),
         'dataProfile': 'resultPhysChem',
         'providers': [
             'NWIS',
@@ -189,11 +200,11 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
         ],
     }
 
-    #response = _FUNCS_.requests.get('https://www.waterqualitydata.us/data/Result/search', headers=headers, params=params, stream = True)
-    r_data = _FUNCS_.requests.post('https://www.waterqualitydata.us/data/Result/search', headers=headers, params=params, json=json_data)
-    #r_station = _FUNCS_.requests.post('https://www.waterqualitydata.us/data/Station/search', headers=headers, params=params, json=json_data)
+    #response = requests.get('https://www.waterqualitydata.us/data/Result/search', headers=headers, params=params, stream = True)
+    r_data = requests.post('https://www.waterqualitydata.us/data/Result/search', headers=headers, params=params, json=json_data)
+    #r_station = requests.post('https://www.waterqualitydata.us/data/Station/search', headers=headers, params=params, json=json_data)
 
-    r_station = _FUNCS_.requests.get("https://www.waterqualitydata.us/data/Station/search?within=" + str(RADIUS) + "&lat=" +  str(LAT)+'&long=' + str(LON) + "&siteType=Well&siteType=Subsurface&siteType=Facility&siteType=Aggregate%20groundwater%20use&siteType=Not%20Assigned&sampleMedia=Water&sampleMedia=water&sampleMedia=Other&sampleMedia=No%20media&characteristicName=Total%20dissolved%20solids&characteristicName=Dissolved%20solids&characteristicName=Total%20solids&characteristicName=Total%20suspended%20solids&characteristicName=Fixed%20dissolved%20solids&characteristicName=Fixed%20suspended%20solids&characteristicName=Solids&characteristicName=Percent%20Solids&characteristicName=Total%20fixed%20solids&characteristicName=Salinity&startDateLo=01-01-1900&startDateHi=01-01-2030&mimeType=xlsx&zip=yes&providers=NWIS&providers=STEWARDS&providers=STORET")
+    r_station = requests.get("https://www.waterqualitydata.us/data/Station/search?within=" + str(RADIUS) + "&lat=" +  str(LAT)+'&long=' + str(LON) + "&siteType=Well&siteType=Subsurface&siteType=Facility&siteType=Aggregate%20groundwater%20use&siteType=Not%20Assigned&sampleMedia=Water&sampleMedia=water&sampleMedia=Other&sampleMedia=No%20media&characteristicName=Total%20dissolved%20solids&characteristicName=Dissolved%20solids&characteristicName=Total%20solids&characteristicName=Total%20suspended%20solids&characteristicName=Fixed%20dissolved%20solids&characteristicName=Fixed%20suspended%20solids&characteristicName=Solids&characteristicName=Percent%20Solids&characteristicName=Total%20fixed%20solids&characteristicName=Salinity&startDateLo=01-01-1900&startDateHi=01-01-2030&mimeType=xlsx&zip=yes&providers=NWIS&providers=STEWARDS&providers=STORET")
     
     #zipfile = ZipFile(BytesIO(r.content))
     #f = zipfile.namelist()[0]
@@ -209,13 +220,13 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
 def Summarize_WaterChem(r1,r2, LAT, LON):
     # ASSUMES NAD87 EPSG 4269 COORDINATES FOR USGS
     
-    zf = _FUNCS_.ZipFile(BytesIO(r1.content))
+    zf = ZipFile(BytesIO(r1.content))
     f = zf.namelist()[0]
-    df = _FUNCS_.pd.read_excel(zf.open(f,mode = 'r'))
+    df = pd.read_excel(zf.open(f,mode = 'r'))
 
-    zf = _FUNCS_.ZipFile(BytesIO(r2.content))
+    zf = ZipFile(BytesIO(r2.content))
     f = zf.namelist()[0]
-    df2 = _FUNCS_.pd.read_excel(zf.open(f,mode = 'r'))
+    df2 = pd.read_excel(zf.open(f,mode = 'r'))
 
     LOCATIONS = df2['MonitoringLocationIdentifier'].unique()
     
@@ -259,9 +270,31 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
     return(RESULT)
 
 def COWATER_SUMMARY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
-    T = _FUNCS_.Transformer.from_crs('EPSG:4326', 'EPSG:4269',always_xy =True)
+    T = Transformer.from_crs('EPSG:4326', 'EPSG:4269',always_xy =True)
     LLON2,LAT2 = T.transform(LON,LAT)
     
     r1,r2 = WaterDataPull(LAT2 ,LLON2 ,RADIUS)
     df_OUT = Summarize_WaterChem(r1,r2,LAT2,LLON2)    
     return(df_OUT)
+
+def Co_WaterWell_Summary():
+    lon, lat = OilOps.MAP.convert_XY(-104.6665798,40.0283805,4269,4326)
+    df_gwells = OilOps.COWater.DWR_GEOPHYSWELLSUMMARY(lat,lon,5,'miles')
+    df_gtops = OilOps.COWater.DWR_GEOPHYSTOPS(df_gwells.wellId)
+    df_permits = OilOps.COWater.DWR_WATERPERMITS(lat,lon,5,'miles')
+    df_levels = OilOps.COWater.DWR_WATERWELLLEVELS(lat,lon,5,'miles')
+    
+    df_TOPS = df_gtops.merge(df_gwells, on = 'wellId')
+    df_TOPS[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_TOPS.apply(lambda row: OilOps.MAP.DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
+    df_TOPS['DISTANCE'] = df_TOPS['DISTANCE'] / 0.3048
+    
+    m_radius = df_TOPS.index[df_TOPS['DISTANCE']<=5280]
+    
+    x, y = OilOps.MAP.convert_XY(lon, lat, 4326, 2232)
+    
+    lon0, lat0 = OilOps.MAP.convert_XY(x-6000,y-6000,2232,4269)
+    lon1, lat1 = OilOps.MAP.convert_XY(x+6000,y+6000,2232,4269)
+    
+    ext = (min(lon0,lon1),max(lon0,lon1),min(lat0,lat1),max(lat0,lat1))
+    
+    grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
