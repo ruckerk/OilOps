@@ -289,10 +289,10 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
     elif UNITS == 'feet':
         REQUEST_RADIUS = RADIUS + 4*5280
 
-    df_gwells = OilOps.COWater.DWR_GEOPHYSWELLSUMMARY(lat,lon,REQUEST_RADIUS,UNITS)
-    df_gtops = OilOps.COWater.DWR_GEOPHYSTOPS(df_gwells.wellId)
-    df_permits = OilOps.COWater.DWR_WATERPERMITS(lat,lon,REQUEST_RADIUS,UNITS)
-    df_levels = OilOps.COWater.DWR_WATERWELLLEVELS(lat,lon,REQUEST_RADIUS,UNITS)
+    df_gwells = DWR_GEOPHYSWELLSUMMARY(lat,lon,REQUEST_RADIUS,UNITS)
+    df_gtops = DWR_GEOPHYSTOPS(df_gwells.wellId)
+    df_permits = DWR_WATERPERMITS(lat,lon,REQUEST_RADIUS,UNITS)
+    df_levels = DWR_WATERWELLLEVELS(lat,lon,REQUEST_RADIUS,UNITS)
 
     df_permits['DEPTH'] = df_permits[['depthTotal','bottomPerforatedCasing']].max(axis=1)
     df_permits['loc']=df_permits[['latitude','longitude']].astype(str).apply('_'.join, axis = 1)
@@ -325,8 +325,8 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
     
     # get extents in area
     # NEEDS UPDATE TO CALC FROM UNITS AND RADIUS INPUT, USE geom.fwd?
-    lon0, lat0 = OilOps.MAP.convert_XY(x-6000,y-6000,2231,4326)
-    lon1, lat1 = OilOps.MAP.convert_XY(x+6000,y+6000,2231,4326)
+    lon0, lat0 = convert_XY(x-6000,y-6000,2231,4326)
+    lon1, lat1 = convert_XY(x+6000,y+6000,2231,4326)
 
     ext = (min(lon0,lon1),max(lon0,lon1),min(lat0,lat1),max(lat0,lat1))
     grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
