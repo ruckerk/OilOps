@@ -1,5 +1,5 @@
 from ._FUNCS_ import *
-from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY
+from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi
 from shapely.geometry import Point
 
 __all__ = [
@@ -334,7 +334,8 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
     FXHLLS = [a for a in df_TOPS['aquifer'].unique() if 'FOX' in a.upper()]
 
     PROJECTIONS = dict()
-
+    PROJECTIONS['DEEPEST_WELL'] = df_permits.loc[m_permit_radius,'DISTANCE'].max()
+        
     for AQ in df_TOPS['aquifer'].unique():
         m = df_TOPS.index[df_gtops['aquifer']==AQ]
         mtop = df_TOPS.loc[m, 'gLogTopElev'].dropna().index
@@ -367,8 +368,11 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
                 except:
                     base_z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
                     base_label = AQ+'_BASE'
+                    
 
-
+    
+    #if deepest well near 1mile limit, create plot
+    #df_permits.loc[m_permit_radius,'DISTANCE'].max() < df_permits.loc[m_permit_radius_plus,'DISTANCE'].max()
     if True:
         #create meshgrid for radius
         grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
@@ -397,3 +401,4 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
         plt.legend()
         plt.title('Nearby Water Wells')
         plt.show()
+    return PROJECTIONS
