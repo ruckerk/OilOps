@@ -399,7 +399,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
         plt.ylim(min(lat0,lat1),max(lat0,lat1))
         cbar = plt.colorbar(surface)
         cbar.set_label(base_label+' ELEVATION')
-        plt.legend(loc = 'lower right)
+        plt.legend(loc = 'lower right')
         plt.title('Nearby Water Wells')
         plt.show()
     if DATA:
