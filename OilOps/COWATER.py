@@ -1,5 +1,6 @@
 from ._FUNCS_ import *
-from .MAP import Pt_Distance, Pt_Bearing,county_from_LatLon
+from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY
+from shapely.geometry import Point
 
 __all__ = [
     'DWR_GEOPHYSWELLSUMMARY',
@@ -109,6 +110,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         for k in QTERMS:
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
+    df['moreInformation'] = df['moreInformation'].str.strip()
     return(df)
 
 def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
@@ -145,6 +147,7 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         for k in QTERMS:
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
+    df['moreInformation'] = df['moreInformation'].str.strip()
     return(df)
 
 
@@ -277,24 +280,120 @@ def COWATER_SUMMARY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     df_OUT = Summarize_WaterChem(r1,r2,LAT2,LLON2)    
     return(df_OUT)
 
-def Co_WaterWell_Summary():
-    lon, lat = OilOps.MAP.convert_XY(-104.6665798,40.0283805,4269,4326)
-    df_gwells = OilOps.COWater.DWR_GEOPHYSWELLSUMMARY(lat,lon,5,'miles')
+def Co_WaterWell_Summary(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269):
+
+    lon, lat = convert_XY(LON,LAT,EPSG_IN,4326)
+
+    if UNITS=='miles':
+        REQUEST_RADIUS = RADIUS + 4
+    elif UNITS == 'feet':
+        REQUEST_RADIUS = RADIUS + 4*5280
+
+    df_gwells = OilOps.COWater.DWR_GEOPHYSWELLSUMMARY(lat,lon,REQUEST_RADIUS,UNITS)
     df_gtops = OilOps.COWater.DWR_GEOPHYSTOPS(df_gwells.wellId)
-    df_permits = OilOps.COWater.DWR_WATERPERMITS(lat,lon,5,'miles')
-    df_levels = OilOps.COWater.DWR_WATERWELLLEVELS(lat,lon,5,'miles')
-    
+    df_permits = OilOps.COWater.DWR_WATERPERMITS(lat,lon,REQUEST_RADIUS,UNITS)
+    df_levels = OilOps.COWater.DWR_WATERWELLLEVELS(lat,lon,REQUEST_RADIUS,UNITS)
+
+    df_permits['DEPTH'] = df_permits[['depthTotal','bottomPerforatedCasing']].max(axis=1)
+    df_permits['loc']=df_permits[['latitude','longitude']].astype(str).apply('_'.join, axis = 1)
+    df_permits['MAX_DEPTH'] = df_permits['loc'].map(df_permits.groupby('loc')['DEPTH'].max())
+    m_max_depth = df_permits.loc[df_permits['MAX_DEPTH']==df_permits['DEPTH']].index
+    df_permits.drop('loc',axis = 1, inplace = True)
+
     df_TOPS = df_gtops.merge(df_gwells, on = 'wellId')
-    df_TOPS[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_TOPS.apply(lambda row: OilOps.MAP.DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
-    df_TOPS['DISTANCE'] = df_TOPS['DISTANCE'] / 0.3048
+
+    # calculate distance/azimuth from location to each well
+    df_TOPS[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_TOPS.apply(lambda row: DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
+    df_permits[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_permits.apply(lambda row: DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
+
+    # convert meters to feet
+    df_TOPS['DISTANCE'] = df_TOPS['DISTANCE'] * 3.28084
+    df_permits['DISTANCE'] = df_permits['DISTANCE'] * 3.28084
     
+    #tops inside 1 mile
     m_radius = df_TOPS.index[df_TOPS['DISTANCE']<=5280]
+
+    #wells inside 1 mile
+    m_permit_radius = df_permits.index[df_permits['DISTANCE']<=5280]
+    m_permit_radius_plus = df_permits.index[(df_permits['DISTANCE']<=6400) & (df_permits['DISTANCE']>5280)]
+
+    # convert to feet
+    x, y = convert_XY(lon, lat, 4326, 2231)
+    dummy = pd.DataFrame(shapely.geometry.Point(x,y).buffer(5280).exterior.xy).T
+    df_1MileRing = pd.DataFrame(dummy.apply(lambda r: convert_XY(r[0],r[1],2232,4269), axis=1).to_list())
+    df_1MileRing.columns = ['LON','LAT']
     
-    x, y = OilOps.MAP.convert_XY(lon, lat, 4326, 2232)
-    
-    lon0, lat0 = OilOps.MAP.convert_XY(x-6000,y-6000,2232,4269)
-    lon1, lat1 = OilOps.MAP.convert_XY(x+6000,y+6000,2232,4269)
-    
+    # get extents in area
+    # NEEDS UPDATE TO CALC FROM UNITS AND RADIUS INPUT, USE geom.fwd?
+    lon0, lat0 = OilOps.MAP.convert_XY(x-6000,y-6000,2231,4326)
+    lon1, lat1 = OilOps.MAP.convert_XY(x+6000,y+6000,2231,4326)
+
     ext = (min(lon0,lon1),max(lon0,lon1),min(lat0,lat1),max(lat0,lat1))
-    
     grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
+
+    FXHLLS = [a for a in df_TOPS['aquifer'].unique() if 'FOX' in a.upper()]
+
+    PROJECTIONS = dict()
+
+    for AQ in df_TOPS['aquifer'].unique():
+        m = df_TOPS.index[df_gtops['aquifer']==AQ]
+        mtop = df_TOPS.loc[m, 'gLogTopElev'].dropna().index
+        mbase = df_TOPS.loc[m, 'gLogBaseElev'].dropna().index
+
+        pts_top = df_TOPS.loc[mtop, ['longitude','latitude']]
+        pts_base = df_TOPS.loc[mbase, ['longitude','latitude']]
+        vals_top = df_TOPS.loc[mtop, 'gLogTopElev']
+        vals_base = df_TOPS.loc[mbase, 'gLogBaseElev']
+
+        if len(mtop)>=3:
+            z_well = griddata(pts_top,vals_top, (lon, lat), method='linear').mean()
+            z_well = round(z_well,1)
+
+            PROJECTIONS[AQ+'_TOP'] = z_well
+
+        if len(mbase)>=3:
+            z_well = griddata(pts_base,vals_base, (lon, lat), method='linear').mean()
+            z_well = round(z_well,1)
+
+            PROJECTIONS[AQ+'_BASE'] = z_well
+
+            if (AQ in FXHLLS):
+                #FOX_BASE_Z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
+
+                try:
+                    if z_well >= max(PROJECTIONS[k] for k in PROJECTIONS.keys() if k.removesuffix('_BASE') in FXHLLS):
+                         base_z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
+                         base_label = AQ+'_BASE'
+                except:
+                    base_z = griddata(pts_base,vals_base, (grid_x, grid_y), method='linear')
+                    base_label = AQ+'_BASE'
+
+
+    if True:
+        #create meshgrid for radius
+        grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
+
+        surface = plt.pcolormesh(grid_x, grid_y, base_z, cmap = 'viridis')
+        
+        plt.plot(df_1MileRing['LON'],df_1MileRing['LAT'],'white')
+
+        cntrl1 = plt.scatter(df_permits.loc[m_max_depth.join(m_permit_radius, how='inner'),'longitude'],
+                             df_permits.loc[m_max_depth.join(m_permit_radius, how='inner'),'latitude'],
+                             marker = 'o', edgecolor='k', facecolor = 'white', alpha =0.5, label = 'Wells inside 1 mi.')
+        cntrl2 = plt.scatter(df_permits.loc[m_max_depth.join(m_permit_radius_plus, how='inner'),'longitude'],
+                             df_permits.loc[m_max_depth.join(m_permit_radius_plus, how='inner'),'latitude'],
+                             marker = 's', edgecolor='k', facecolor = 'blue', label = 'Wells outside 1 mi.')
+
+        pad = plt.scatter(lon,lat, marker='s', color ='red', label = 'Pad Location')
+
+        for i in m_max_depth.join(m_permit_radius.join(m_permit_radius_plus, how='outer'), how='inner'):
+                plt.annotate(df_permits.loc[i,'DISTANCE'].astype(int), (df_permits.loc[i,'longitude'], df_permits.loc[i,'latitude']))
+
+        plt.annotate(z_well, (lon, lat), c='r')
+        plt.xlim(min(lon0,lon1),max(lon0,lon1))
+        plt.ylim(min(lat0,lat1),max(lat0,lat1))
+        cbar = plt.colorbar(surface)
+        cbar.set_label(base_label+' ELEVATION')
+        plt.legend()
+        plt.title('Nearby Water Wells')
+        plt.show()
