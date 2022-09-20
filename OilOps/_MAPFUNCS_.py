@@ -1,12 +1,13 @@
 #MAPPING
+from ._FUNCS import *
 import shapefile as shp #pyshp
 import shapely
 import shapely.wkt
 from shapely.ops import unary_union
 import pycrs
 import pyproj
-from pyproj import Transformer, CRS
 import collections
+from geopy.geocoders import Nominatim
 
 def read_shapefile(sf):
     # https://towardsdatascience.com/mapping-with-matplotlib-pandas-geopandas-and-basemap-in-python-d11b57ab5dac
@@ -54,7 +55,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     
     crs_old = CRS.from_user_input(EPSG_OLD)
     crs_new = CRS.from_user_input(EPSG_NEW)
-    TFORMER =  Transformer.from_crs(crs_old, crs_new, always_xy= True)
+    TFORMER =  pyproj.Transformer.from_crs(crs_old, crs_new, always_xy= True)
 
     #read shapefile
     r = shp.Reader(SHP_File)   # THIS IS IN X Y COORDINATES!!!
@@ -173,7 +174,7 @@ def check_EPSG(epsg1):
 def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     #2876
     df_in=df_in.copy()
-    transformer = Transformer.from_crs(epsg1, epsg2,always_xy =True)
+    transformer = pyproj.Transformer.from_crs(epsg1, epsg2,always_xy =True)
     df_in[['X','Y']]=df_in.apply(lambda x: transformer.transform(x.iloc[2],x.iloc[1]), axis=1).apply(_FUNCS_.pd.Series)
     #df_in[['X','Y']]=df_in.apply(lambda x: transform(epsg1,epsg2,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(_FUNCS_.pd.Series)
     return df_in
