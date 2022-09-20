@@ -1,8 +1,6 @@
 
 from ._FUNCS_ import *
-from geopy.geocoders import Nominatim
-from pyproj import Geod
-from pyproj import Transformer, CRS, Proj
+from ._MAPFUNCS_ import *
 
 __all__ = ['EPSG_CODES',
 	'shapely_to_pyshp',
@@ -13,7 +11,7 @@ __all__ = ['EPSG_CODES',
 	'DAT_to_GEOJSONLIST',
 	'SHP_to_GEOJSONLIST',
 	'GEOJSONLIST_to_SHAPELY',
-	'CRS_FROM_SHAPE',
+	'pyproj.CRS_FROM_SHAPE',
 	'SHP_DISTANCES',
 	'IN_TC_AREA',
 	'GROUP_IN_TC_AREA',
@@ -164,24 +162,24 @@ def GEOJSONLIST_to_SHAPELY(GEOJSON_IN):
     GEOCOLLECTION = shapely.geometry.GeometryCollection([shapely.geometry.shape(x) for x in GEOJSON_IN])
     return(GEOCOLLECTION)
 
-def CRS_FROM_SHAPE(SHAPEFILE):
+def pyproj.CRS_FROM_SHAPE(SHAPEFILE):
     FPRJ = SHAPEFILE.split('.')[0]+'.prj'
     try:
-        _CRS = pycrs.load.from_file(FPRJ)
+        _pyproj.CRS = pycrs.load.from_file(FPRJ)
     except:
         try:
             FPRJ = SHAPEFILE.split('.')[0]+'.PRJ'
-            _CRS = pycrs.load.from_file(FPRJ)
+            _pyproj.CRS = pycrs.load.from_file(FPRJ)
         except:    
-            warnings.showwarning('No CRS read from '+SHAPEFILE)
-    return(_CRS)
+            warnings.showwarning('No pyproj.CRS read from '+SHAPEFILE)
+    return(_pyproj.CRS)
 
 def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     # delivers nearest distance for each item in SHP1 to any item in SHP2
     # optional MAXDIST for maximum distance of interest
 
-    _CRS1 = CRS_FROM_SHAPE(SHP1)
-    _CRS2 = CRS_FROM_SHAPE(SHP2)
+    _pyproj.CRS1 = pyproj.CRS_FROM_SHAPE(SHP1)
+    _pyproj.CRS2 = pyproj.CRS_FROM_SHAPE(SHP2)
 
     _S1 = SHP_to_GEOJSONLIST(SHP1)
 
@@ -198,12 +196,12 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
 
     # make same coordinate system in units/projection of interest
     project1 = pyproj.Transformer.from_crs(
-        pyproj.CRS.from_wkt(_CRS1.to_ogc_wkt()),
+        pyproj.CRS.from_wkt(_pyproj.CRS1.to_ogc_wkt()),
         pyproj.CRS.from_epsg(CALCEPSG),
         always_xy=True).transform
 
     project2 = pyproj.Transformer.from_crs(
-        pyproj.CRS.from_wkt(_CRS2.to_ogc_wkt()),
+        pyproj.CRS.from_wkt(_pyproj.CRS2.to_ogc_wkt()),
         pyproj.CRS.from_epsg(CALCEPSG),
         always_xy=False).transform		
 
@@ -259,9 +257,9 @@ def GROUP_IN_TC_AREA(tc,wells):
     return(out)
 
 def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
-    CRS0 = CRS.from_epsg(EPSG_OLD)
-    CRS1 = CRS.from_epsg(EPSG_NEW)
-    transformer = Transformer.from_crs(CRS0,CRS1,always_xy =True)
+    pyproj.CRS0 = pyproj.CRS.from_epsg(EPSG_OLD)
+    pyproj.CRS1 = pyproj.CRS.from_epsg(EPSG_NEW)
+    transformer = pyproj.Transformer.from_crs(pyproj.CRS0,pyproj.CRS1,always_xy =True)
     X2, Y2 =transformer.transform(X_LON,Y_LAT)
     return X2,Y2
 
@@ -300,10 +298,21 @@ def Pt_Bearing(pt1,pt2):
     return B
 
 def DistAzi(LAT1,LON1,LAT2,LON2, EPSG):
-    crs = CRS.from_epsg(EPSG)
+    crs = pyproj.CRS.from_epsg(EPSG)
     geod = crs.get_geod()
     RESULT = geod.inv(LON1,LAT1,LON2,LAT2)
     return(RESULT[2],RESULT[0])
 	    
-	    
+def read_shapefile(sf):
+    # https://towardsdatascience.com/mapping-with-matplotlib-pandas-geopandas-and-basemap-in-python-d11b57ab5dac
+    #fetching the headings from the shape file
+    fields = [x[0] for x in sf.fields][1:]
+    #fetching the records from the shape file
+    records = [list(i) for i in sf.records()]
+    shps = [s.points for s in sf.shapes()]
+    #converting shapefile data into pandas dataframe
+    df = pd.DataFrame(columns=fields, data=records)
+    #assigning the coordinates
+    df = df.assign(coords=shps)
+    return df	    
 	
