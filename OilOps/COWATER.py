@@ -339,7 +339,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
 
     PROJECTIONS = dict()
     PROJECTIONS['DEEPEST_WELL'] = df_permits.loc[m_permit_radius,'DISTANCE'].max()
-    base_z = None   
+  
     for AQ in df_TOPS['aquifer'].unique():
         m = df_TOPS.index[df_gtops['aquifer']==AQ]
         mtop = df_TOPS.loc[m, 'gLogTopElev'].dropna().index
