@@ -1,5 +1,5 @@
 #MAPPING
-from ._FUNCS import *
+from ._FUNCS_ import *
 import shapefile as shp #pyshp
 import shapely
 import shapely.wkt
