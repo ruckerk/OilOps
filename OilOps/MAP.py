@@ -11,7 +11,7 @@ __all__ = ['EPSG_CODES',
 	'DAT_to_GEOJSONLIST',
 	'SHP_to_GEOJSONLIST',
 	'GEOJSONLIST_to_SHAPELY',
-	'pyproj.CRS_FROM_SHAPE',
+	'CRS_FROM_SHAPE',
 	'SHP_DISTANCES',
 	'IN_TC_AREA',
 	'GROUP_IN_TC_AREA',
@@ -162,24 +162,24 @@ def GEOJSONLIST_to_SHAPELY(GEOJSON_IN):
     GEOCOLLECTION = shapely.geometry.GeometryCollection([shapely.geometry.shape(x) for x in GEOJSON_IN])
     return(GEOCOLLECTION)
 
-def pyproj.CRS_FROM_SHAPE(SHAPEFILE):
+def CRS_FROM_SHAPE(SHAPEFILE):
     FPRJ = SHAPEFILE.split('.')[0]+'.prj'
     try:
-        _pyproj.CRS = pycrs.load.from_file(FPRJ)
+        pyprojCRS = pycrs.load.from_file(FPRJ)
     except:
         try:
             FPRJ = SHAPEFILE.split('.')[0]+'.PRJ'
-            _pyproj.CRS = pycrs.load.from_file(FPRJ)
+            pyprojCRS = pycrs.load.from_file(FPRJ)
         except:    
-            warnings.showwarning('No pyproj.CRS read from '+SHAPEFILE)
-    return(_pyproj.CRS)
+            warnings.showwarning('No pyprojCRS read from '+SHAPEFILE)
+    return(pyprojCRS)
 
 def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     # delivers nearest distance for each item in SHP1 to any item in SHP2
     # optional MAXDIST for maximum distance of interest
 
-    _pyproj.CRS1 = pyproj.CRS_FROM_SHAPE(SHP1)
-    _pyproj.CRS2 = pyproj.CRS_FROM_SHAPE(SHP2)
+    pyprojCRS1 = CRS_FROM_SHAPE(SHP1)
+    pyprojCRS2 = CRS_FROM_SHAPE(SHP2)
 
     _S1 = SHP_to_GEOJSONLIST(SHP1)
 
@@ -196,12 +196,12 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
 
     # make same coordinate system in units/projection of interest
     project1 = pyproj.Transformer.from_crs(
-        pyproj.CRS.from_wkt(_pyproj.CRS1.to_ogc_wkt()),
+        pyproj.CRS.from_wkt(pyprojCRS1.to_ogc_wkt()),
         pyproj.CRS.from_epsg(CALCEPSG),
         always_xy=True).transform
 
     project2 = pyproj.Transformer.from_crs(
-        pyproj.CRS.from_wkt(_pyproj.CRS2.to_ogc_wkt()),
+        pyproj.CRS.from_wkt(pyprojCRS2.to_ogc_wkt()),
         pyproj.CRS.from_epsg(CALCEPSG),
         always_xy=False).transform		
 
