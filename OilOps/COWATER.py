@@ -382,8 +382,9 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
         
         #create meshgrid for radius
         grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
-
-        surface = plt.pcolormesh(grid_x, grid_y, base_z, cmap = 'viridis')
+        
+        if base_z:
+            surface = plt.pcolormesh(grid_x, grid_y, base_z, cmap = 'viridis')
         
         plt.plot(df_1MileRing['LON'],df_1MileRing['LAT'],'blue')
 
