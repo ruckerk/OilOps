@@ -297,10 +297,25 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     df_permits = DWR_WATERPERMITS(lat,lon,REQUEST_RADIUS,UNITS)
     df_levels = DWR_WATERWELLLEVELS(lat,lon,REQUEST_RADIUS,UNITS)
 
-    df_permits['DEPTH'] = df_permits[['depthTotal','bottomPerforatedCasing']].max(axis=1)
+    #df_permits['DEPTH'] = df_permits['bottomPerforatedCasing']
+
+    m = df_permits['bottomPerforatedCasing'].dropna().index
+    #df_permits.loc[df.index.drop(m),'DEPTH']= df_permits.loc[df.index.drop(m),'depthTotal']
+    
+    #df_permits['DEPTH'] = df_permits[['depthTotal','bottomPerforatedCasing']].max(axis=1)
+    
     df_permits['loc']=df_permits[['latitude','longitude']].astype(str).apply('_'.join, axis = 1)
-    df_permits['MAX_DEPTH'] = df_permits['loc'].map(df_permits.groupby('loc')['DEPTH'].max())
-    m_max_depth = df_permits.loc[df_permits['MAX_DEPTH']==df_permits['DEPTH']].index
+    
+    m1 = df_permits['bottomPerforatedCasing'].dropna().index
+    m2 = df_permits['depthTotal'].dropna().index
+    df_permits['MAX_DEPTH'] = df_permits.loc[m1,'loc'].map(df_permits.loc[m1,:].groupby(by='loc')['bottomPerforatedCasing'].max().dropna())
+    m3 = df_permits['MAX_DEPTH'].dropna().index
+    m = m2.drop(m1.join(m2))
+    df_permits.loc[df_permits.index.drop(m3),'MAX_DEPTH'] = df_permits.loc[m,'loc'].map(df_permits.loc[m,:].groupby(by='loc')['bottomPerforatedCasing'].max().dropna())
+    
+    #df_permits['MAX_DEPTH'] = df_permits['loc'].map(df_permits.groupby('loc')[['bottomPerforatedCasing, depthTotal'].max())
+    #m_max_depth = df_permits.loc[df_perdfmits['MAX_DEPTH']==df_permits['DEPTH']].index
+    m_max_depth = df_permits['MAX_DEPTH'].dropna().index
     df_permits.drop('loc',axis = 1, inplace = True)
 
     df_TOPS = df_gtops.merge(df_gwells, on = 'wellId')
