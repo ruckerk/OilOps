@@ -1,6 +1,13 @@
 # update base files
 from ._FUNCS_ import *
 
+__all__ = ['CO_BASEDATA',
+           'Get_LAS',
+           'Get_ProdData',
+           'Get_Scouts',
+           'Merge_Frac_Focus',
+           'SUMMARIZE_COGCC']
+
 #Define Functions for multiprocessing iteration
 
 def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
@@ -1280,7 +1287,7 @@ def SUMMARIZE_COGCC():
     STIM_df.loc[STIM_df.LastStimDate == STIM_df.StimDate0,'StimDate0']=datetime.date(1900, 1, 1)
     STIM_df.loc[STIM_df.StimDate1 == STIM_df.StimDate1,'StimDate1']=datetime.datetime.now()
 
-# 3,6,9,12,15,18,21,24 month cum
+    # 3,6,9,12,15,18,21,24 month cum
     cumdf = pd.read_sql_query(Q4,conn)
     cumdf = cumdf.set_index('StateProducingUnitKey',drop=False)
     #cumdf['StateProducingUnitKey'] = cumdf.index
