@@ -1,6 +1,19 @@
 # update base files
 #from ._FUNCS_ import *
 
+__all__ = ['TEMP_SUMMARY_LAS',
+           'HTMLtoTXT',
+           'ZIPtoTXT',
+           'DOCtoTXT',
+           'LAS_TEXTABORTED_FIX',
+           'LASREPAIR',
+           'List_LAS_Files_In_Folder',
+           'FIND_SP_KEY',
+           'LOG_DETREND',
+           'ARRAY_CHANGEPOINTS',
+           'Init_Futures',
+           'SP_WORKFLOW']
+
 def TEMP_SUMMARY_LAS(_LASFILES_):
     SUMMARY = _FUNCS_.pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
     LASDATA = False
