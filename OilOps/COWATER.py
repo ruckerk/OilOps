@@ -338,7 +338,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     FXHLLS = [a for a in df_TOPS['aquifer'].unique() if 'FOX' in a.upper()]
 
     PROJECTIONS = dict()
-    PROJECTIONS['DEEPEST_WELL'] = df_permits.loc[m_permit_radius,'DISTANCE'].max()
+    PROJECTIONS['DEEPEST_WELL'] = df_permits.loc[m_permit_radius,'MAX_DEPTH'].max()
   
     for AQ in df_TOPS['aquifer'].unique():
         m = df_TOPS.index[df_gtops['aquifer']==AQ]
