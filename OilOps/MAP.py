@@ -3,32 +3,32 @@ from ._FUNCS_ import *
 from ._MAPFUNCS_ import *
 
 __all__ = ['EPSG_CODES',
-	'shapely_to_pyshp',
-	'reverse_geom',
-	'CenterOfGeom',
-	'DXF_to_geojson',
-	'GEOJSONLIST_to_SHP',
-	'DAT_to_GEOJSONLIST',
-	'SHP_to_GEOJSONLIST',
-	'GEOJSONLIST_to_SHAPELY',
-	'CRS_FROM_SHAPE',
-	'SHP_DISTANCES',
-	'IN_TC_AREA',
-	'GROUP_IN_TC_AREA',
-	'convert_XY',
-	'county_from_LatLon',
-	'Pt_Distance',
-	'Pt_Bearing',
-	'DistAzi']
+    'shapely_to_pyshp',
+    'reverse_geom',
+    'CenterOfGeom',
+    'DXF_to_geojson',
+    'GEOJSONLIST_to_SHP',
+    'DAT_to_GEOJSONLIST',
+    'SHP_to_GEOJSONLIST',
+    'GEOJSONLIST_to_SHAPELY',
+    'CRS_FROM_SHAPE',
+    'SHP_DISTANCES',
+    'IN_TC_AREA',
+    'GROUP_IN_TC_AREA',
+    'convert_XY',
+    'county_from_LatLon',
+    'Pt_Distance',
+    'Pt_Bearing',
+    'DistAzi']
 
 def EPSG_CODES():
-	
+    
     print('''COMMON EPSG CODES
-	  NAD83 GRS 80: 4269
-	  NAD27 CLARK 66: 4267
-	  WGS84 WGS84: 4326
-	  UTM CO 13N: 26913
-	  NAD83 STATE PLANE: 2232''')
+      NAD83 GRS 80: 4269
+      NAD27 CLARK 66: 4267
+      WGS84 WGS84: 4326
+      UTM CO 13N: 26913
+      NAD83 STATE PLANE: 2232''')
 
 
 def shapely_to_pyshp(geom, GEOJ = False):
@@ -104,7 +104,7 @@ def DXF_to_geojson(DXFFILE):
     for el in MSP:
         #if "LINE" in el.dxftype():
         #    geo.proxy(el).__geo_interface__
-	#    for point in el.vertices:
+    #    for point in el.vertices:
         #        point.dxf.location
         try:
             g=geo.proxy(el).__geo_interface__
@@ -203,11 +203,11 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     project2 = pyproj.Transformer.from_crs(
         pyproj.CRS.from_wkt(pyprojCRS2.to_ogc_wkt()),
         pyproj.CRS.from_epsg(CALCEPSG),
-        always_xy=False).transform		
+        always_xy=False).transform        
 
     _GS1_RPRJ = shapely.ops.transform(project1, _GS1)
     _GS2_RPRJ = shapely.ops.transform(project2, _GS2)
-	
+    
     WORKLIST = [geom if geom.is_valid else geom.buffer(0) for geom in _GS2_RPRJ.geoms]
 
     boundary = shapely.ops.unary_union([x.buffer(MAXDIST) for x in WORKLIST])
@@ -302,7 +302,7 @@ def DistAzi(LAT1,LON1,LAT2,LON2, EPSG):
     geod = crs.get_geod()
     RESULT = geod.inv(LON1,LAT1,LON2,LAT2)
     return(RESULT[2],RESULT[0])
-	    
+        
 def read_shapefile(sf):
     # https://towardsdatascience.com/mapping-with-matplotlib-pandas-geopandas-and-basemap-in-python-d11b57ab5dac
     #fetching the headings from the shape file
@@ -314,5 +314,17 @@ def read_shapefile(sf):
     df = pd.DataFrame(columns=fields, data=records)
     #assigning the coordinates
     df = df.assign(coords=shps)
-    return df	    
-	
+    return df        
+    
+def elevation_function(LAT83, LON83):
+    """Query service using lat, lon. add the elevation values as a new column."""
+    params = {
+            'output': 'json',
+            'x': LON83,
+            'y': LAT83,
+            'units': 'Feet'
+        }
+        # format query string and return query value
+    result = requests.get((url + urllib.parse.urlencode(params)))
+    ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
+    return ELEVATION
