@@ -383,7 +383,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
         #create meshgrid for radius
         grid_x, grid_y = np.meshgrid(np.arange(min(lon1,lon0),max(lon1,lon0),3e-5), np.arange(min(lat0,lat1),max(lat0,lat1),3e-5))
         
-        if base_z:
+        if 'base_z' in locals():
             surface = plt.pcolormesh(grid_x, grid_y, base_z, cmap = 'viridis')
         
         plt.plot(df_1MileRing['LON'],df_1MileRing['LAT'],'blue')
@@ -399,11 +399,14 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
 
         for i in m_max_depth.join(m_permit_radius.join(m_permit_radius_plus, how='outer'), how='inner'):
                 plt.annotate(df_permits.loc[i,'DISTANCE'].astype(int), (df_permits.loc[i,'longitude'], df_permits.loc[i,'latitude']))
+                
         if 'z_well' in locals():
             plt.annotate(z_well, (lon, lat), c='r')
+            
         plt.xlim(min(lon0,lon1),max(lon0,lon1))
         plt.ylim(min(lat0,lat1),max(lat0,lat1))
-        if base_z:
+        
+        if 'base_z' in locals():
             cbar = plt.colorbar(surface)
             cbar.set_label(base_label+' ELEVATION')
         plt.legend(loc = 'lower right')
