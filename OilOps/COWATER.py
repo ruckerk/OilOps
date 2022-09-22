@@ -116,7 +116,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
     
-    df_permits['elevation'] = df.apply(lambda r:OilOps.MAP.elevation_function(r.latitude,r.longitude), axis=1)
+    df_permits['elevation'] = df.apply(lambda r:elevation_function(r.latitude,r.longitude), axis=1)
     
     df['moreInformation'] = df['moreInformation'].str.strip()
     
