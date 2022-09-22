@@ -116,7 +116,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
     
-    df_permits['elevation'] = df_permits.apply(lambda r:OilOps.MAP.elevation_function(r.latitude,r.longitude), axis=1)
+    df_permits['elevation'] = df.apply(lambda r:OilOps.MAP.elevation_function(r.latitude,r.longitude), axis=1)
     
     df['moreInformation'] = df['moreInformation'].str.strip()
     
@@ -442,6 +442,6 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     PROJECTIONS = pd.DataFrame(list(PROJECTIONS.items()),columns = ['TOP','ELEVATION'])
     
     if DATA:
-        return (df_permits,df_TOPS,PROJECTIONS, fig)
+        return (df_permits,df_TOPS,PROJECTIONS,df_levels, fig)
     else:
         return (PROJECTIONS, fig)
