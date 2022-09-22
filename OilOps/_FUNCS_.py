@@ -49,6 +49,7 @@ from scipy import signal
 from scipy import interpolate
 
 import openpyxl
+import xlsxwriter
 import shutil
 from urllib.request import urlopen 
 import dateutil.parser
