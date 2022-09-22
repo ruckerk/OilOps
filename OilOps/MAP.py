@@ -19,7 +19,8 @@ __all__ = ['EPSG_CODES',
     'county_from_LatLon',
     'Pt_Distance',
     'Pt_Bearing',
-    'DistAzi']
+    'DistAzi',
+    'elevation_function']
 
 def EPSG_CODES():
     
