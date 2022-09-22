@@ -318,6 +318,7 @@ def read_shapefile(sf):
     return df        
     
 def elevation_function(LAT83, LON83):
+    url = r'https://nationalmap.gov/epqs/pqs.php?'
     """Query service using lat, lon. add the elevation values as a new column."""
     params = {
             'output': 'json',
