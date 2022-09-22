@@ -1,5 +1,5 @@
 from ._FUNCS_ import *
-from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi
+from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi, elevation_function
 from shapely.geometry import Point
 
 # Upgrade Ideas:
@@ -46,6 +46,8 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         for k in QTERMS:
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
+    
+    
     return(df)
 
 
@@ -113,7 +115,12 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         for k in QTERMS:
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
+    
+    df_permits['elevation'] = df_permits.apply(lambda r:OilOps.MAP.elevation_function(r.latitude,r.longitude), axis=1)
+    
     df['moreInformation'] = df['moreInformation'].str.strip()
+    
+    
     return(df)
 
 def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
@@ -312,6 +319,10 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     m3 = df_permits['MAX_DEPTH'].dropna().index
     m = m2.drop(m1.join(m2))
     df_permits.loc[df_permits.index.drop(m3),'MAX_DEPTH'] = df_permits.loc[m,'loc'].map(df_permits.loc[m,:].groupby(by='loc')['bottomPerforatedCasing'].max().dropna())
+    
+    m = df_permits['MAX_DEPTH'].dropna().index
+    # Convert max depths to elevations
+    df_permits.loc[m,'MAX_DEPTH'] = df_permits.loc[m,'elevation'] - df_permits.loc[m,'MAX_DEPTH']
     
     #df_permits['MAX_DEPTH'] = df_permits['loc'].map(df_permits.groupby('loc')[['bottomPerforatedCasing, depthTotal'].max())
     #m_max_depth = df_permits.loc[df_perdfmits['MAX_DEPTH']==df_permits['DEPTH']].index
