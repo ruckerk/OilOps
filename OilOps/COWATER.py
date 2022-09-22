@@ -437,7 +437,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
             cbar.set_label(base_label+' ELEVATION')
         plt.legend(loc = 'lower right')
         plt.title('Nearby Water Wells')
-        
+    
         
     PROJECTIONS = pd.DataFrame(list(PROJECTIONS.items()),columns = ['TOP','ELEVATION'])
     
@@ -445,3 +445,5 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
         return (df_permits,df_TOPS,PROJECTIONS,df_levels, fig)
     else:
         return (PROJECTIONS, fig)
+
+ 
