@@ -108,7 +108,7 @@ def HTMLtoTXT(file,TYPECHECK=True):
     shutil.move(file,file2)
     with open(file2,'r') as F2:
         Fcontent = F2.read()
-        soup = BS(index, 'lxml')
+        soup = BS(Fcontent, 'lxml')
         TEXT = soup.get_text('\n')
         TEXT = TEXT.strip()
     with open(file,'w') as F1:
