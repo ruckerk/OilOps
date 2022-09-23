@@ -282,8 +282,8 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
     RESULT = RESULT.merge(DATA_LOCS,how='outer',on = 'MonitoringLocationIdentifier')
     return(RESULT)
 
-def COWATER_QUALITY(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
-    T = Transformer.from_crs('EPSG:4326', 'EPSG:4269',always_xy =True)
+def COWATER_QUALITY(LAT=40.5832238,LON=-104.0990673,RADIUS=10, EPSG_IN = 4269):
+    T = Transformer.from_crs('EPSG:'+str(EPSG_IN), 'EPSG:4269',always_xy =True)
     LLON2,LAT2 = T.transform(LON,LAT)
     
     r1,r2 = WaterDataPull(LAT2 ,LLON2 ,RADIUS)
