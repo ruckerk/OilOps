@@ -318,7 +318,7 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     df_permits['MAX_DEPTH'] = df_permits.loc[m1,'loc'].map(df_permits.loc[m1,:].groupby(by='loc')['bottomPerforatedCasing'].max().dropna())
     m3 = df_permits['MAX_DEPTH'].dropna().index
     
-    m = df_permits.loc[m1.join(m2),'depthTotal'].dropna().index
+    m = df_permits.loc[df_permits.index.drop(m1.join(m2)),'depthTotal'].dropna().index 
     
     df_permits.loc[df_permits.index.drop(m3),'MAX_DEPTH'] = df_permits.loc[m,'loc'].map(df_permits.loc[m,:].groupby(by='loc')['bottomPerforatedCasing'].max().dropna())
     
