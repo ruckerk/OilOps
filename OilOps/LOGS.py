@@ -1,5 +1,5 @@
 # update base files
-#from ._FUNCS_ import *
+from ._FUNCS_ import *
 
 __all__ = ['TEMP_SUMMARY_LAS',
            'HTMLtoTXT',
