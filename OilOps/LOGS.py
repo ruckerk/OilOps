@@ -15,17 +15,17 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'SP_WORKFLOW']
 
 def TEMP_SUMMARY_LAS(_LASFILES_):
-    SUMMARY = _FUNCS_.pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
+    SUMMARY = pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
     LASDATA = False
 
     for f in _LASFILES_:
         print(f)
         try:
-            las = _FUNCS_.lasio.read(f)
+            las = lasio.read(f)
             LASDATA = True
         except:
             try:
-                las = _FUNCS_.lasio.read(f, ignore_data=True)
+                las = lasio.read(f, ignore_data=True)
                 LASDATA = False
             except:
                 print('Error reading '+f)
@@ -40,8 +40,8 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                     continue
                 if 'DATE' in j.descr.upper():
                     try:
-                        LOGDATE2 = _FUNCS_.dateutil.parser.parse(j.value)
-                        if isinstance(LOGDATE,_FUNCS_.datetime.datetime):
+                        LOGDATE2 = dateutil.parser.parse(j.value)
+                        if isinstance(LOGDATE,datetime.datetime):
                             LOGDATE = max(LOGDATE,LOGDATE2)
                         else:
                             LOGDATE = LOGDATE2
@@ -57,7 +57,7 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                 UWI = WELLAPI(UWI).API2INT(10)
             except:
                 try:
-                    UWI = _FUNCS_.re.search(r'[0-9]{10,}',f)[0]
+                    UWI = re.search(r'[0-9]{10,}',f)[0]
                     UWI = WELLAPI(UWI).API2INT(10)
                 except:
                     pass
@@ -105,10 +105,10 @@ def HTMLtoTXT(file,TYPECHECK=True):
             print('ERROR: Are you sure ' + str(file)+' is HTML?')
             return
     file2 = file.split('.')[0]+'.html'
-    _FUNCS_.shutil.move(file,file2)
+    shutil.move(file,file2)
     with open(file2,'r') as F2:
         Fcontent = F2.read()
-        soup = _FUNCS_.BS(index, 'lxml')
+        soup = BS(index, 'lxml')
         TEXT = soup.get_text('\n')
         TEXT = TEXT.strip()
     with open(file,'w') as F1:
@@ -117,37 +117,37 @@ def HTMLtoTXT(file,TYPECHECK=True):
     
 def ZIPtoTXT(file,TYPECHECK=True):
     if TYPECHECK:
-        if not _FUNCS_.FILETYPETEST(file,'ZIP'):
+        if not FILETYPETEST(file,'ZIP'):
             raise NameError('ERROR: Is ' + str(file)+' a ZIP file?')
             return
-    usepath = _FUNCS_.path.dirname(f)
+    usepath = path.dirname(f)
     if usepath == '':
         usepath=None
     file2 = file.split('.')[0]+'.zip'
-    _FUNCS_.shutil.move(file,file2)
-    with _FUNCS_.ZipFile(file2) as ZF:
+    shutil.move(file,file2)
+    with ZipFile(file2) as ZF:
         for z in [z for z in ZF.namelist() if z.upper().endswith('LAS')]:
             if path.exists(file):
                 file = file.split('.')[0]+'_1'+'.las'
             ZF.extract(z,usepath)
             if usepath == None:
-                _FUNCS_.shutil.move(z,file)
+                shutil.move(z,file)
             else:
-                _FUNCS_.shutil.move(path.join(usepath,z),file)    
+                shutil.move(path.join(usepath,z),file)    
     return None
 
 def DOCtoTXT(file,TYPECHECK=True):
     if TYPECHECK:
-        if not _FUNCS_.FILETYPETEST(file,'Microsoft Word'):
+        if not FILETYPETEST(file,'Microsoft Word'):
             raise NameError('ERROR: Are you sure ' + str(file)+' is MS DOC?')
             return
        
     file2 = file.split('.')[0]+'.html'
-    _FUNCS_.rename(file,file2)
+    rename(file,file2)
 
     with open(file2,'r') as F2:
         Fcontent = F2.read()
-        soup = _FUNCS_.BS(index, 'lxml')
+        soup = BS(index, 'lxml')
         TEXT = soup.get_text('\n')
         TEXT = TEXT.strip()
     with open(file,'w') as F1:
@@ -163,9 +163,9 @@ def LAS_TEXTABORTED_FIX(FILESIN):
         with open (FILEIN,'rb+') as FILE:
             lines = FILE.readlines()
             ENDLINE = -1
-            pattern = _FUNCS_.re.compile(b'Thread was being aborted',re.I)
+            pattern = re.compile(b'Thread was being aborted',re.I)
             for i,l in enumerate(lines):
-                for match in _FUNCS_.re.finditer(pattern,l):
+                for match in re.finditer(pattern,l):
                     ENDLINE = max(i,ENDLINE)
             if ENDLINE > -1:
                 a = FILE.seek(0)
@@ -188,7 +188,7 @@ def LASREPAIR(FILES):
     'Zip':ZIPtoTXT,
     'HTML':HTMLtoTXT,
     'Microsoft Word':DOCtoTXT}
-    _df = _FUNCS_.pd.DataFrame()
+    _df = pd.DataFrame()
     _df['FILES'] = FILES
     _df['TYPES'] = FTYPE(FILES)
     print('end type')
@@ -203,9 +203,9 @@ def LASREPAIR(FILES):
 
 
 def List_LAS_Files_In_Folder():
-    pathname = _FUNCS_.path.dirname(argv[0])
-    adir = _FUNCS_.path.abspath(pathname)
-    FILES = [f for f in _FUNCS_.listdir(adir) if '.LAS' in f.upper()]
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+    FILES = [f for f in listdir(adir) if '.LAS' in f.upper()]
     return FILES
 
 def FIND_SP_KEY(LAS):
@@ -216,15 +216,15 @@ def FIND_SP_KEY(LAS):
     if len(SP_KEYS)==1:
         KEY = SP_KEYS[0]
     else:
-        KEY = LAS.df()[SP_KEYS].apply(_FUNCS_.pd.Series.nunique, axis= 0).sort_values(ascending=False).keys()[0]
+        KEY = LAS.df()[SP_KEYS].apply(pd.Series.nunique, axis= 0).sort_values(ascending=False).keys()[0]
         print(SP_KEYS+': Assumed '+KEY)
         
     return KEY
 
 def LOG_DETREND(LOG,KEY):
-    if isinstance(LOG, _FUNCS_.lasio.las.LASFile):
+    if isinstance(LOG, lasio.las.LASFile):
         df1 = LOG.df()
-    elif isinstance(LOG, (_FUNCS_.pd.DataFrame,np.ndarray)):
+    elif isinstance(LOG, (pd.DataFrame,np.ndarray)):
         df1 = LOG.copy()
     else:
         raise Exception('Log is not an array or lasio type')
@@ -235,37 +235,37 @@ def LOG_DETREND(LOG,KEY):
     NEWKEY = KEY+'_DETREND'
     m = df1[KEY].dropna().index 
     df1[NEWKEY] = np.nan
-    df1.loc[m,NEWKEY]   = _FUNCS_.signal.detrend(df1.loc[m,KEY])
+    df1.loc[m,NEWKEY]   = signal.detrend(df1.loc[m,KEY])
     df1.set_index(keys = IDX_KEY,drop=True, inplace = True)
     df1.sort_index(axis=0, inplace= True)
     return(df1[NEWKEY])
 
 def ARRAY_CHANGEPOINTS(ARRAY, COUNT):
-    if not isinstance(ARRAY, _FUNCS_.np.ndarray):
+    if not isinstance(ARRAY, np.ndarray):
         raise Exception('Data is not an array')
-    algo = _FUNCS_.rpt.Dynp(model="l2").fit(ARRAY)
+    algo = rpt.Dynp(model="l2").fit(ARRAY)
     RESULT = algo.predict(n_bkps=COUNT)
     return(RESULT)
 
 def Init_Futures(APPLY_DATA = None, MAX_SIZE = 5000, MIN_SIZE = 10):
-    processors = max(1,_FUNCS_.multiprocessing.cpu_count())
+    processors = max(1,multiprocessing.cpu_count())
     chunksize = max(MIN_SIZE,min(MAX_SIZE,max(1,int(len(APPLY_DATA)/(processors*2)))))
     batch = max(1,int(len(APPLY_DATA)/chunksize))
     processors = min(processors,batch)
-    SPLIT_DATA = _FUNCS_.np.array_split(APPLY_DATA,batch)
+    SPLIT_DATA = np.array_split(APPLY_DATA,batch)
     return(processors, SPLIT_DATA)
 
 def SP_WORKFLOW(LASFILES,OUTFOLDER = 'SP_OUT'):
-    pathname =_FUNCS_.path.dirname(argv[0])
-    adir = _FUNCS_.path.abspath(pathname)
-    OUTFOLDER = _FUNCS_.path.join(adir,OUTFOLDER)
-    if not _FUNCS_.path.exists(OUTFOLDER):
-        _FUNCS_.mkdir(OUTFOLDER)
+    pathname =path.dirname(argv[0])
+    adir = path.abspath(pathname)
+    OUTFOLDER = path.join(adir,OUTFOLDER)
+    if not path.exists(OUTFOLDER):
+        mkdir(OUTFOLDER)
         
     if isinstance(LASFILES,str):
         LASFILES = [LASFILES]
     for F in LASFILES:
-        las = _FUNCS_.lasio.read(F)
+        las = lasio.read(F)
         df = las.df().copy()
         
         KKEY = FIND_SP_KEY(las)
