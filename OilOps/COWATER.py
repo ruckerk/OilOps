@@ -323,8 +323,9 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     df_permits.loc[df_permits.index.drop(m3),'MAX_DEPTH'] = df_permits.loc[m,'loc'].map(df_permits.loc[m,:].groupby(by='loc')['bottomPerforatedCasing'].max().dropna())
     
     m = df_permits['MAX_DEPTH'].dropna().index
+    
     # Convert max depths to elevations
-    df_permits.loc[m,'MAX_DEPTH'] = df_permits.loc[m,'elevation'] - df_permits.loc[m,'MAX_DEPTH']
+    df_permits.loc[m,'DEEPEST_ELEVATION'] = df_permits.loc[m,'elevation'] - df_permits.loc[m,'MAX_DEPTH']
     
     #df_permits['MAX_DEPTH'] = df_permits['loc'].map(df_permits.groupby('loc')[['bottomPerforatedCasing, depthTotal'].max())
     #m_max_depth = df_permits.loc[df_perdfmits['MAX_DEPTH']==df_permits['DEPTH']].index
@@ -367,7 +368,8 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
 
     PROJECTIONS = dict()
     PROJECTIONS['DEEPEST_WELL'] = df_permits.loc[m_permit_radius,'MAX_DEPTH'].max()
-  
+    PROJECTIONS['DEEPEST_ELEVATION'] = df_permits.loc[m_permit_radius,'DEEPEST_ELEVATION'].min()
+   
     for AQ in df_TOPS['aquifer'].unique():
         m = df_TOPS.index[df_gtops['aquifer']==AQ]
         mtop = df_TOPS.loc[m, 'gLogTopElev'].dropna().index
