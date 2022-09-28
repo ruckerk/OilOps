@@ -328,5 +328,8 @@ def elevation_function(LAT83, LON83):
         }
         # format query string and return query value
     result = requests.get((url + urllib.parse.urlencode(params)))
-    ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
+    if '<error>' in result.text:
+        ELEVATION = np.nan
+    else:
+        ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
     return ELEVATION
