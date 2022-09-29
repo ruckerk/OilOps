@@ -336,7 +336,7 @@ def elevation_function(LAT83, LON83):
 
 def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
     T = Transformer.from_crs('EPSG:'+str(epsg_in), 'EPSG:4326',always_xy =True)
-    LLON2,LAT2 = T.transform(LON,LAT)
+    long,lat = T.transform(long,lat)
     
     query = ('https://api.open-elevation.com/api/v1/lookup'
              f'?locations={lat},{long}')
