@@ -254,7 +254,7 @@ def IN_TC_AREA(well2,tc2):
 
 def GROUP_IN_TC_AREA(tc,wells):
     out = pd.DataFrame()
-    out['API'] = wells.API_Label.apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+    out['API'] = wells.API_Label.apply(lambda x: WELLAPI(x).API2INT(10))
     #out['API'] = wells.API_Label.str.replace(r'[^0-9]','',regex=True)
     out['TEST'] = wells.apply(lambda x: IN_TC_AREA(x,tc),axis=1)
     return(out)
