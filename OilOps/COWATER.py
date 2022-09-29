@@ -339,10 +339,12 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
     # calculate distance/azimuth from location to each well
     df_TOPS[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_TOPS.apply(lambda row: DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
     df_permits[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_permits.apply(lambda row: DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
-
+    df_levels[['DISTANCE','AZIMUTH']] = pd.DataFrame(df_levels.apply(lambda row: DistAzi(lat,lon,row['latitude'],row['longitude'],4326),axis=1).tolist())
+    
     # convert meters to feet
     df_TOPS['DISTANCE'] = df_TOPS['DISTANCE'] * 3.28084
     df_permits['DISTANCE'] = df_permits['DISTANCE'] * 3.28084
+    df_levels['DISTANCE'] = df_permits['DISTANCE'] * 3.28084
     
     #tops inside 1 mile
     m_radius = df_TOPS.index[df_TOPS['DISTANCE']<=5280]
