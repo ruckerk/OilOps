@@ -1,5 +1,5 @@
 from ._FUNCS_ import *
-from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi, elevation_function
+from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi, elevation_function, get_openelevation
 from shapely.geometry import Point
 
 # Upgrade Ideas:
@@ -118,9 +118,11 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     
     df['elevation'] = df.apply(lambda r:elevation_function(r.latitude,r.longitude), axis=1)
     
+    m = df.index[df['elevation'].isna()]
+    df.loc[m,'elevation'] = df.loc[m,:].apply(lambda r:get_openelevation(r.latitude,r.longitude,epsg_in = 4326), axis=1)
+       
     df['moreInformation'] = df['moreInformation'].str.strip()
-    
-    
+       
     return(df)
 
 def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
