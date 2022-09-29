@@ -333,3 +333,18 @@ def elevation_function(LAT83, LON83):
     else:
         ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
     return ELEVATION
+
+def get_openelevation(lat, long, epsg_in=4269):
+    T = Transformer.from_crs('EPSG:'+str(EPSG_IN), 'EPSG:4326',always_xy =True)
+    LLON2,LAT2 = T.transform(LON,LAT)
+    
+    query = ('https://api.open-elevation.com/api/v1/lookup'
+             f'?locations={lat},{long}')
+    r = requests.get(query).json()  # json object, various ways you can extract value
+    # one approach is to use pandas json functionality:
+    elevation = pd.io.json.json_normalize(r, 'results')['elevation'].values[0]
+    
+    # meters to feet
+    elevation = elevation * 3.28084
+    
+    return elevation
