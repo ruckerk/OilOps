@@ -334,7 +334,7 @@ def elevation_function(LAT83, LON83):
         ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
     return ELEVATION
 
-def get_openelevation(lat, long, epsg_in=4269):
+def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
     T = Transformer.from_crs('EPSG:'+str(EPSG_IN), 'EPSG:4326',always_xy =True)
     LLON2,LAT2 = T.transform(LON,LAT)
     
@@ -346,7 +346,8 @@ def get_openelevation(lat, long, epsg_in=4269):
     
     elevation = pd.io.json.json_normalize(r, 'results')['elevation'].values[0]
     
-    # meters to feet
-    elevation = elevation * 3.28084
+    if units.upper()=='FEET':
+        # meters to feet
+        elevation = elevation * 3.28084
    
     return elevation
