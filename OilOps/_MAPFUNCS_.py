@@ -3,7 +3,7 @@ from ._FUNCS_ import *
 import shapefile as shp #pyshp
 import shapely
 import shapely.wkt
-from shapely.ops import unary_union
+from shapely.ops import unary_union, cascaded_union
 import pycrs
 import pyproj
 import collections
