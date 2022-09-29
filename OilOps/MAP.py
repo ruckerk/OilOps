@@ -1,6 +1,7 @@
 
 from ._FUNCS_ import *
 from ._MAPFUNCS_ import *
+from .WELLAPI import *
 
 __all__ = ['EPSG_CODES',
     'shapely_to_pyshp',
@@ -236,24 +237,25 @@ def IN_TC_AREA(well2,tc2):
     ln = None
     if len(well2.coords)>=2:
         try:
-            ln = LineString(well2.coords)
+            ln =  shapely.geometry.LineString(well2.coords)
         except:
-            ln = LineString(well2.coords.values)
+            ln =  shapely.geometry.LineString(well2.coords.values)
     elif len(well2.coords)==1:
-        ln = Point(well2.coords[0])
+        ln =  shapely.geometry.Point(well2.coords[0])
     if ln == None:
         return(False)
     test = False
     for j in range(0,tc2.shape[0]):
         if test == False:
-            poly = Polygon(tc2.coords.iloc[j])
+            poly =  shapely.geometry.Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(15000)):
                 test = True   
     return(test) 
 
 def GROUP_IN_TC_AREA(tc,wells):
     out = pd.DataFrame()
-    out['API'] = wells.API_Label.str.replace(r'[^0-9]','',regex=True)
+    out['API'] = wells.API_Label.apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+    #out['API'] = wells.API_Label.str.replace(r'[^0-9]','',regex=True)
     out['TEST'] = wells.apply(lambda x: IN_TC_AREA(x,tc),axis=1)
     return(out)
 
