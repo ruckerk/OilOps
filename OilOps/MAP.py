@@ -21,7 +21,8 @@ __all__ = ['EPSG_CODES',
     'Pt_Distance',
     'Pt_Bearing',
     'DistAzi',
-    'elevation_function']
+    'elevation_function',
+    'Items_in_Polygons']
 
 def EPSG_CODES():
     
