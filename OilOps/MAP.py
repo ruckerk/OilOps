@@ -183,7 +183,8 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
     pyprojCRS1 = CRS_FROM_SHAPE(SHP1)
     pyprojCRS2 = CRS_FROM_SHAPE(SHP2)
 
-    _S1 = SHP_to_GEOJSONLIST(SHP1)
+    _S1 = SHP_to_GEOJSONLIST(SHP1)kcrw.com
+    
 
     _GS1 = GEOJSONLIST_to_SHAPELY(_S1)
     _GS2 = GEOJSONLIST_to_SHAPELY(_S2)
@@ -234,6 +235,9 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
 
 ################################################################3
 def IN_TC_AREA(well2,tc2):
+    # wells is read_shapefile dataframe
+    # tc2 is read_shapefile dataframe
+    
     ln = None
     if len(well2.coords)>=2:
         try:
@@ -242,15 +246,18 @@ def IN_TC_AREA(well2,tc2):
             ln =  shapely.geometry.LineString(well2.coords.values)
     elif len(well2.coords)==1:
         ln =  shapely.geometry.Point(well2.coords[0])
+        
     if ln == None:
         return(False)
     test = False
+    
     for j in range(0,tc2.shape[0]):
         if test == False:
             poly =  shapely.geometry.Polygon(tc2.coords.iloc[j])
-            if ln.intersects(poly.buffer(15000)):
+            if ln.intersects(poly.buffer(5000)):
                 test = True   
     return(test) 
+
 
 def GROUP_IN_TC_AREA(tc,wells):
     out = pd.DataFrame()
@@ -353,3 +360,24 @@ def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
         elevation = elevation * 3.28084
    
     return elevation
+
+def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE):
+    ITEMS = shp.Reader(ITEM_SHAPEFILE)
+    ITEMS = read_shapefile(ITEMS)
+    CRS_ITEMS = CRS_FROM_SHAPE(ITEM_SHAPEFILE)
+
+    POLYS = shp.Reader(POLYGON_SHAPEFILE)
+    POLYS = read_shapefile(POLYS)
+    CRS_POLYS = CRS_FROM_SHAPE(POLYGON_SHAPEFILE)
+    
+    TFORMER = pyproj.Transformer.from_crs(pyproj.CRS.from_wkt(CRS_POLYS.to_ogc_wkt()),
+                                          pyproj.CRS.from_wkt(CRS_ITEMS.to_ogc_wkt()),
+                                          always_xy = True)
+    POLYS['coords2'] = None
+    
+    for i in POLYS.index:
+        converted = TFORMER.transform(pd.DataFrame(POLYS.coords[0])[0],
+                          pd.DataFrame(POLYS.coords[0])[1])
+        POLYS.at[i,'coords2'] = list(map(tuple, np.array(converted).T))
+                         
+                                                              
