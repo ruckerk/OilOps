@@ -388,7 +388,7 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE):
         POLYS.at[i,'coords'] = list(map(tuple, np.array(converted).T))
         POLY_SHAPE = shapely.geometry.Polygon(POLYS.loc[i,'coords'] )
         
-        ITEMS['IN_'+NAME] = GROUP_IN_TC_AREA(POLYS.loc[i,:],ITEMS)
+        ITEMS['IN_'+NAME] = GROUP_IN_TC_AREA(POLYS.loc[[i],:],ITEMS)
       
     return ITEMS    
     
