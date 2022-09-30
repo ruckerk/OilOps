@@ -373,11 +373,22 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE):
     TFORMER = pyproj.Transformer.from_crs(pyproj.CRS.from_wkt(CRS_POLYS.to_ogc_wkt()),
                                           pyproj.CRS.from_wkt(CRS_ITEMS.to_ogc_wkt()),
                                           always_xy = True)
-    POLYS['coords2'] = None
+    ITEMS['coords_old'] = ITEMS['coords']
+    POLYS['coords_old'] = POLYS['coords']
     
-    for i in POLYS.index:
-        converted = TFORMER.transform(pd.DataFrame(POLYS.coords[0])[0],
-                          pd.DataFrame(POLYS.coords[0])[1])
-        POLYS.at[i,'coords2'] = list(map(tuple, np.array(converted).T))
-                         
+    NAMES = POLYS.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+    NAMES = POLYS[list(NAMEOPTS.index)].nunique(axis=0).sort_values(ascending=False).index[0]
+        
+    for i in POLYS.index:   
+        NAME = POLYS.loc[i,NAMES]
+        
+        converted = TFORMER.transform(pd.DataFrame(POLYS.coords_old[0])[0],
+                          pd.DataFrame(POLYS.coords_old[0])[1])
+        POLYS.at[i,'coords'] = list(map(tuple, np.array(converted).T))
+        POLY_SHAPE = shapely.geometry.Polygon(POLYS.loc[i,'coords'] )
+        
+        ITEMS['IN_'+NAME] = GROUP_IN_TC_AREA(POLYS.loc[i,:],ITEMS)
+      
+    return ITEMS    
+    
                                                               
