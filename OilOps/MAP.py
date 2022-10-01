@@ -443,7 +443,7 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
     
     #OLY_USE = transform(project, POLY)
     
-    for j in np.arange(0,len(POLY_LIST):
+    for j in np.arange(0,len(POLY_LIST)):
         p = POLY_LIST[j]
         p = transform(project, p          
                       
