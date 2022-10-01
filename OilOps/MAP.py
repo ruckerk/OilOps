@@ -411,15 +411,17 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
     ITEMS_GJ = SHP_to_GEOJSONLIST(ITEM_SHAPEFILE)
     ITEMS =  GEOJSONLIST_to_SHAPELY(ITEMS_GJ)
     ITEMS_C =  CRS_FROM_SHAPE(ITEM_SHAPEFILE)
+    ITEMS_C = pyproj.CRS.from_wkt(ITEMS_C.to_ogc_wkt())
     
     POLY_GJ = SHP_to_GEOJSONLIST(POLYGON_SHAPEFILE)
     POLY =  GEOJSONLIST_to_SHAPELY(POLY_GJ) 
     POLY_C =  CRS_FROM_SHAPE(POLYGON_SHAPEFILE)
+    POLY_C = pyproj.CRS.from_wkt(POLY_C.to_ogc_wkt())
            
     if EPSG4POLY != None:
         POLY_OLD = POLY
         project2 = pyproj.Transformer.from_crs(
-                             pyproj.CRS.from_wkt(POLY_C.to_ogc_wkt()),
+                             POLY_C,
                              pyproj.CRS.from_epsg(EPSG4POLY),
                              always_xy=True).transform
         POLY = transform(project2, POLY_OLD)
@@ -429,8 +431,8 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
         POLY = POLY.buffer(BUFFER)       
     
     project = pyproj.Transformer.from_crs(
-                         pyproj.CRS.from_wkt(POLY_C.to_ogc_wkt()),
-                         pyproj.CRS.from_wkt(ITEMS_C.to_ogc_wkt()),
+                         POLY_C,
+                         ITEMS_C,
                          always_xy=True).transform
     
     POLY_USE = transform(project, POLY)
