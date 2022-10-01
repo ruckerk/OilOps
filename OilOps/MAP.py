@@ -445,7 +445,7 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
     
     for j in np.arange(0,len(POLY_LIST)):
         p = POLY_LIST[j]
-        p = transform(project, p          
+        p = transform(project, p)
                       
         NAME = '__'.join(NAMES_DF.iloc[j,:].astype(str))
         NAME = NAME.replace(' ','_')
