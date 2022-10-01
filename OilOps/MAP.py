@@ -419,7 +419,7 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
     if EPSG4POLY != None:
         POLY_OLD = POLY
         project2 = pyproj.Transformer.from_crs(
-                             pyproj.CRS.from_wkt(C.to_ogc_wkt()),
+                             pyproj.CRS.from_wkt(POLY_C.to_ogc_wkt()),
                              pyproj.CRS.from_epsg(EPSG4POLY),
                              always_xy=True).transform
         POLY = transform(project2, POLY_OLD)
