@@ -239,7 +239,6 @@ def IN_TC_AREA(well2,tc2):
     # wells is read_shapefile dataframe
     # tc2 is read_shapefile dataframe
     
-    ln = None
     if len(well2.coords)>=2:
         try:
             ln =  shapely.geometry.LineString(well2.coords)
@@ -362,7 +361,7 @@ def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
    
     return elevation
 
-def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE):
+def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY = None):
     ITEMS = shp.Reader(ITEM_SHAPEFILE)
     ITEMS = read_shapefile(ITEMS)
     CRS_ITEMS = CRS_FROM_SHAPE(ITEM_SHAPEFILE)
@@ -374,6 +373,7 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE):
     TFORMER = pyproj.Transformer.from_crs(pyproj.CRS.from_wkt(CRS_POLYS.to_ogc_wkt()),
                                           pyproj.CRS.from_wkt(CRS_ITEMS.to_ogc_wkt()),
                                           always_xy = True)
+    
     ITEMS['coords_old'] = ITEMS['coords']
     POLYS['coords_old'] = POLYS['coords']
     
@@ -390,7 +390,54 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE):
         
         RESULT = GROUP_IN_TC_AREA(POLYS.loc[[i],:],ITEMS)
         ITEMS['IN_'+NAME] = RESULT.TEST.values
-      
+        
     return ITEMS    
     
                                                               
+def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY = None):
+    OUT_ITEMS = shp.Reader(ITEM_SHAPEFILE)
+    OUT_ITEMS = read_shapefile(OUT_ITEMS)
+    
+    POLY = shp.Reader(POLYGON_SHAPEFILE)
+    POLY = read_shapefile(POLYS)
+    
+    NAMES = POLY.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+    NAMES = POLY[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False)
+    MAXITEMS = NAMES.max()
+    
+    NAMES = NAMES.index[NAMES == MAXITEMS].to_list()
+    NAMES_DF POLY[NAMES].copy()
+    
+	ITEMS_GJ = SHP_to_GEOJSONLIST(ITEM_SHAPEFILE)
+	ITEMS =  GEOJSONLIST_to_SHAPELY(ITEMS_GJ)
+	ITEMS_C =  CRS_FROM_SHAPE(ITEM_SHAPEFILE)
+    
+	POLY_GJ = SHP_to_GEOJSONLIST(POLY_SHAPEFILE)
+	POLY =  GEOJSONLIST_to_SHAPELY(POLY_GJ) 
+	POLY_C =  CRS_FROM_SHAPE(POLY_SHAPEFILE)
+           
+    if EPSG4POLY != None:
+        POLY_OLD = POLY
+        project2 = pyproj.Transformer.from_crs(
+                             pyproj.CRS.from_wkt(C.to_ogc_wkt()),
+                             pyproj.CRS.from_epsg(EPSG4POLY),
+                             always_xy=True).transform
+        POLY = transform(project2, POLY_OLD)
+        POLY_C = pyproj.CRS.from_epsg(EPSG4POLY)
+    
+    if BUFFER != None:
+        POLY = POLY.buffer(BUFFER)       
+    
+	project = pyproj.Transformer.from_crs(
+                         pyproj.CRS.from_wkt(POLY_C.to_ogc_wkt()),
+                         pyproj.CRS.from_wkt(ITEMS_C.to_ogc_wkt()),
+                         always_xy=True).transform
+    
+	POLY_USE = transform(project, POLY)
+    
+    for j in np.arange(0,len(POLY_USE.geoms)):
+        p = POLY_USE.geoms[j]
+        NAME = '__'.join(NAMES_DF.iloc[j,:].astype(str))
+        NAME = NAME.replace(' ','_')
+        OUT_ITEMS[NAME] = [l.intersects(p) for l in ITEMS.geoms]
+    return OUT_ITEMS
