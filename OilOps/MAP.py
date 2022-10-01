@@ -255,7 +255,7 @@ def IN_TC_AREA(well2,tc2):
     for j in range(0,tc2.shape[0]):
         if test == False:
             poly =  shapely.geometry.Polygon(tc2.coords.iloc[j])
-            if ln.intersects(poly.buffer(5000)):
+            if ln.intersects(poly.buffer(0)):
                 test = True   
     return(test) 
 
