@@ -343,7 +343,13 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
             shaperec=r.shapeRecord(i)
             Xshaperec=shaperec.shape            
             points = np.array(shaperec.shape.points).T
-            points_t= transform(crs_old, crs_new, points[0],points[1],always_xy=True)
+            
+            TFORM = Transformer.from_crs(
+                         pyproj.CRS.from_wkt(crs_old.to_ogc_wkt()),
+                         pyproj.CRS.from_wkt(crs_old.to_ogc_wkt()),
+                         always_xy=True).transform
+            
+            points_t= TFORM(crs_old, crs_new, points[0],points[1],always_xy=True)
             points[0:2]=points_t[0:2]
             #Xshaperec.points = list(map(tuple, points.T))
             json_shape = shaperec.shape.__geo_interface__
