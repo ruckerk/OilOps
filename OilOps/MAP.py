@@ -427,18 +427,26 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
         POLY = transform(project2, POLY_OLD)
         POLY_C = pyproj.CRS.from_epsg(EPSG4POLY)
     
+    POLY_LIST = list()
     if BUFFER != None:
-        POLY = POLY.buffer(BUFFER)       
+        for p in POLY.geoms:
+            POLY_LIST.append(p.buffer(BUFFER))
+    else:
+        for p in POLY.geoms:
+            POLY_LIST.append(p)                          
+             
     
     project = pyproj.Transformer.from_crs(
                          POLY_C,
                          ITEMS_C,
                          always_xy=True).transform
     
-    POLY_USE = transform(project, POLY)
+    #OLY_USE = transform(project, POLY)
     
-    for j in np.arange(0,len(POLY_USE.geoms)):
-        p = POLY_USE.geoms[j]
+    for j in np.arange(0,len(POLY_LIST):
+        p = POLY_LIST[j]
+        p = transform(project, p          
+                      
         NAME = '__'.join(NAMES_DF.iloc[j,:].astype(str))
         NAME = NAME.replace(' ','_')
         OUT_ITEMS[NAME] = [l.intersects(p) for l in ITEMS.geoms]
