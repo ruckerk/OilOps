@@ -152,7 +152,7 @@ def Get_LAS(UWIS):
                         ERROR = 1
                         continue
                     userows.loc[:,'DateString']=None
-                    userows.loc[:,'DateString']=userows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')
+                               userows.loc[:,'DateString']=userows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')
                         
                     for i in range(0,userows.shape[0]):
                         dl_url = re.sub('XLINKX', str(userows.iloc[i,LINKCOL]),DL_BASE)
@@ -198,6 +198,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     if len(UWIs[0])<=1:
         UWIs=[UWIs]
         print(UWIs[0])
+    
+    PRODDATA = pd.DataFrame()
     ct = 0
     t1 = perf_counter()
     for UWI in UWIs:
@@ -205,8 +207,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
             print(str(ct)+' of '+str(len(UWIs)))
         ct+=1
         html = soup = pdf = None 
-        #print(UWI)
-        #if 1==1:
+       
         ERROR=0
         while ERROR == 0: #if 1==1:
             connection_attempts = 4 
@@ -348,29 +349,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
 
                         if not isinstance(MONTH1,float):
                             pdf['EM_PRODMONTH'] = (pd.to_datetime(pdf[DATE]).dt.year - MONTH1.year)*12+(pd.to_datetime(pdf[DATE]).dt.month - MONTH1.month)+1
-
-##                            OUTPUT.at[UWI,'GOR_MO2-4']  = pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),OIL].sum()
-##                            OUTPUT.at[UWI,'GOR_MO5-7']  = pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),OIL].sum()
-##                            OUTPUT.at[UWI,'GOR_MO11-13']  = pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),OIL].sum()
-##                            OUTPUT.at[UWI,'GOR_MO23-25']  = pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),OIL].sum()
-##                            OUTPUT.at[UWI,'GOR_MO35-37']  = pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),OIL].sum()
-##                            OUTPUT.at[UWI,'GOR_MO47-49']  = pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),OIL].sum()
-
-##                            if pdf[[WTR,OIL,GAS]].dropna(how='any').shape[0]>3:
-##                                OUTPUT.at[UWI,'OWR_MO2-4']  = pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=2) & (pdf['EM_PRODMONTH']<=4),WTR].sum()
-##                                OUTPUT.at[UWI,'OWR_MO5-7']  = pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=5) & (pdf['EM_PRODMONTH']<=7),WTR].sum()
-##                                OUTPUT.at[UWI,'OWR_MO11-13']  = pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=11) & (pdf['EM_PRODMONTH']<=13),WTR].sum()
-##                                OUTPUT.at[UWI,'OWR_MO23-25']  = pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=23) & (pdf['EM_PRODMONTH']<=25),WTR].sum()
-##                                OUTPUT.at[UWI,'OWR_MO35-37']  = pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=35) & (pdf['EM_PRODMONTH']<=37),WTR].sum()
-##                                OUTPUT.at[UWI,'OWR_MO47-49']  = pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=47) & (pdf['EM_PRODMONTH']<=49),WTR].sum()
-##                                                            
-##                                OUTPUT.at[UWI,'OWC_MO3']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<3),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=3),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=3),WTR].sum())
-##                                OUTPUT.at[UWI,'OWC_MO6']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<6),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=6),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=6),WTR].sum())
-##                                OUTPUT.at[UWI,'OWC_MO12']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<12),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=12),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=12),WTR].sum())
-##                                OUTPUT.at[UWI,'OWC_MO24']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<24),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=24),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=24),WTR].sum())
-##                                OUTPUT.at[UWI,'OWC_MO36']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<36),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=36),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=36),WTR].sum())
-##                                OUTPUT.at[UWI,'OWC_MO48']  = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<48),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<48),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=48),WTR].sum())
-
+                      
                             for i in MonthArray:
                                 if max(pdf['EM_PRODMONTH']) >= i:
                                     i_dwn = i-1
@@ -483,7 +462,13 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                  '''
 
             TABLE_NAME = "PROD_SUMMARY"
-            
+         pdf['UWI'] = UWI
+         PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True)
+
+    PRODDATA = DF_UNSTRING(PRODDATA)
+    PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
+    PRODDATA.to_parquet(PROD_FNAME+'.parquet') 
+           
     if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
         conn = sqlite3.connect(file)
         c = conn.cursor()      
