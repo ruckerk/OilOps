@@ -64,15 +64,16 @@ class WELLAPI:
         val = int(val)
         return(val)
 
-    def dashed(self,length = 10):
+    def STRING(self,length = 10, dashed = False):
         #val_in = self.str
         val_in = self.API2INT(length)
         val = str(val_in)
         val = val.zfill(length)
-        val = val[0:2]+'-'+val[2:5]+'-'+val[5:length]
-        if length > 10:
-            val2 = val[0:12] + '-' + '-'.join(val[i:i+2] for i in range(10+2, length+2, 2))
-            val = val2
+        if dashed:
+            val = val[0:2]+'-'+val[2:5]+'-'+val[5:length]
+            if length > 10:
+                val2 = val[0:12] + '-' + '-'.join(val[i:i+2] for i in range(10+2, length+2, 2))
+                val = val2
         return(val)
     
 
