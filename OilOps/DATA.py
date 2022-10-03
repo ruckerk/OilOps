@@ -485,33 +485,47 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
             TABLE_NAME = "PROD_SUMMARY"
             
     if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
-##                if path.exists(file):
-##                    #OUTPUT.to_csv(file, mode='a', header=False)
-##                    SQL_CMD = 'CREATE TABLE IF NOT EXISTS PROD_SUMMARY'+SQL_CREATETABLE
-##                else:
-##                    #OUTPUT.to_csv(file, mode='w', header=True)
-##                    SQL_CMD = 'CREATE TABLE PROD_SUMMARY'+SQL_CREATETABLE
-        #try:
         conn = sqlite3.connect(file)
-        c = conn.cursor()
-        c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ' + SQL_COLS)
-        tmp = str(OUTPUT.index.max())
-        OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
-        SQL_CMD='DELETE FROM '+TABLE_NAME+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
-        c.execute(SQL_CMD)
-        SQL_CMD ='INSERT INTO '+TABLE_NAME+' SELECT * FROM \''+tmp+'\';'
-        c.execute(SQL_CMD)
-        conn.commit()
+        c = conn.cursor()      
+               for x in range(0, 30000):
+                   try:
+                       with connection:
+                           c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ' + SQL_COLS)
+                           tmp = str(OUTPUT.index.max())
+                           OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+                           SQL_CMD='DELETE FROM '+TABLE_NAME+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
+                           c.execute(SQL_CMD)
+                           SQL_CMD ='INSERT INTO '+TABLE_NAME+' SELECT * FROM \''+tmp+'\';'
+                           c.execute(SQL_CMD)
+                           conn.commit()
+
+                           SQL_CMD = 'DROP TABLE \''+tmp+'\';'
+                           c.execute(SQL_CMD)
+                           conn.commit()
+                       except:
+                           time.sleep(10)
+                           pass
+                        finally:
+                           break
+                   else:
+                        with connection:
+                           c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ' + SQL_COLS)
+                           tmp = str(OUTPUT.index.max())
+                           OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+                           SQL_CMD='DELETE FROM '+TABLE_NAME+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
+                           c.execute(SQL_CMD)
+                           SQL_CMD ='INSERT INTO '+TABLE_NAME+' SELECT * FROM \''+tmp+'\';'
+                           c.execute(SQL_CMD)
+                           conn.commit()
+
+                           SQL_CMD = 'DROP TABLE \''+tmp+'\';'
+                           c.execute(SQL_CMD)
+                           conn.commit()        
         
-        SQL_CMD = 'DROP TABLE \''+tmp+'\';'
-        c.execute(SQL_CMD)
-        conn.commit()
-        conn.close()
-               # except: conn.close()
-    try:
-        conn.close()
-    except:
-        pass
+        try:
+            conn.close()
+        except:
+            pass
     return(OUTPUT)
  
 def Get_Scouts(UWIs,db=None):
@@ -1339,7 +1353,6 @@ def SUMMARIZE_COGCC():
 
     ULT.to_json('SQL_WELL_SUMMARY.JSON')
     ULT.to_parquet('SQL_WELL_SUMMARY.PARQUET')
-
 
     # dtypes for SQLITE3
     pd_sql_types={'object':'TEXT',
