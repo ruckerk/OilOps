@@ -365,7 +365,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                                            
                 OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
                     
-                
+                pdf['UWI'] = UWI
+                PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True) 
+           
             ERROR = 1
             OUTPUT=OUTPUT.dropna(how='all')
             OUTPUT.index.name = 'UWI'   
@@ -462,9 +464,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                  '''
 
             TABLE_NAME = "PROD_SUMMARY"
-            
-        pdf['UWI'] = UWI
-        PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True)
+        
+        
+
 
     PRODDATA = DF_UNSTRING(PRODDATA)
     PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
