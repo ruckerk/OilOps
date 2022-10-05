@@ -579,7 +579,7 @@ def DF_UNSTRING(df_IN):
     return(df_IN)
 
 def JoinSurveysInFolder():
-    pathname = path.dirname(sys.argv[0])
+    pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
 
     df=pd.DataFrame()
