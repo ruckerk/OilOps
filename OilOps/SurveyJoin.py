@@ -4,6 +4,7 @@
 # modin
 
 from ._SURVEYFUNCS_ import *
+from ._FUNCS_ import *
 
 # BUG FIXES
 #v101 as_type(float) errors fixed with pd.to_numeric(errors='coerce')
