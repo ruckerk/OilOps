@@ -47,6 +47,7 @@ import lasio
 
 from scipy import signal
 from scipy import interpolate
+from scipy.optimize import curve_fit
 
 import openpyxl
 import xlsxwriter
