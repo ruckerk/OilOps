@@ -171,7 +171,7 @@ def Get_LAS(UWIS):
                                 
                 ERROR = 1
  
-    def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
+def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
         #if 1==1:
         #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
         URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
