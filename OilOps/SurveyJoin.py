@@ -598,7 +598,7 @@ def JoinSurveysInFolder():
 
     OUTFILE = None #'JOINED_SURVEYS_XXXX.csv'    
     FLIST=list()
-    for file in listdir(pathname):
+    for file in listdir(adir):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
             FLIST.append(file)
 
