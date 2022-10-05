@@ -604,7 +604,7 @@ def JoinSurveysInFolder():
 
     print(str(len(FLIST))+' FILES CONSIDERED')
 
-    for file in listdir(pathname):
+    for file in listdir(adir):
         if file.lower().endswith(('.parquet')) and PAT.search(file) and ('abs' not in file.lower()) and ('xyz' not in file.lower())and ('3d' not in file.lower()):
             try:
                 print(file)
