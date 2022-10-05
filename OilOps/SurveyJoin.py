@@ -577,7 +577,7 @@ def DF_UNSTRING(df_IN):
 
     return(df_IN)
 
-if __name__ == "__main__":
+def JoinSurveysInFolder():
     pathname = path.dirname(sys.argv[0])
     adir = path.abspath(pathname)
 
@@ -699,6 +699,8 @@ if __name__ == "__main__":
     RESULT = DF_UNSTRING(RESULT)
     RESULT['API'] = RESULT['API'].fillna('')
     
+    RESULT.to_csv(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.CSV')
     RESULT.to_json(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.JSON')
     RESULT.to_parquet(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.PARQUET')
     
+    return(RESULT)
