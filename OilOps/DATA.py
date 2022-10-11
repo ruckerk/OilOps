@@ -204,6 +204,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     ct = 0
     t1 = perf_counter()
     for UWI in UWIs:
+        print(UWI)              
         if (floor(ct/20)*20) == ct:
             print(str(ct)+' of '+str(len(UWIs)))
         ct+=1
