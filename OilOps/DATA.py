@@ -204,7 +204,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     ct = 0
     t1 = perf_counter()
     for UWI in UWIs:
-        print(UWI)              
+        #print(UWI)              
         if (floor(ct/20)*20) == ct:
             print(str(ct)+' of '+str(len(UWIs)))
         ct+=1
@@ -359,9 +359,11 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     PEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(-50,50),:].index
                     LATEWATER = pdf.index[pdf['TMB_WTR']>500]
                     LATEGAS = pdf.index[pdf['TMB_GAS']>30]
-                      
-                    OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
-                    OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
+                    
+                    if pdf.loc[PREPEAKOIL,OIL].sum()>0:
+                        OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
+                    if pdf.loc[PEAKGAS,OIL].sum()>0:
+                        OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
                                        
                     if len(PRODOIL.intersection(PRODGAS).intersection(PRODWTR)) >3 : 
                         if pdf.loc[PREPEAKOIL,WTR].sum()>0:
