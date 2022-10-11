@@ -298,6 +298,10 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     ERROR = 1
                     continue                    
 
+                PRODOIL = pdf[OIL].dropna().index
+                PRODGAS = pdf[GAS].dropna().index
+                PRODWTR = pdf[WTR].dropna().index
+                    
                 # Date is date formatted                
                 pdf[DATE]=pd.to_datetime(pdf[DATE]).dt.date
                 # Sort on earliest date first
@@ -312,16 +316,23 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 pdf['CUMOIL'] = pdf[OIL].cumsum()
                 pdf['CUMGAS'] = pdf[GAS].cumsum()
                 pdf['CUMWTR'] = pdf[WTR].cumsum()
+                
+                pdf[['TMB_OIL','TMB_GAS','TMB_WTR']] = np.nan
            
-                pdf['TMB_OIL'] = pdf['CUMOIL'] / pdf[OIL]
-                pdf['TMB_GAS'] = pdf['CUMGAS'] / pdf[GAS]
-                pdf['TMB_WTR'] = pdf['CUMWTR'] / pdf[WTR]      
+                pdf.loc[PRODOIL,'TMB_OIL'] = pdf.loc[PRODOIL,'CUMOIL'] / pdf.loc[PRODOIL,OIL]
+                pdf.loc[PRODGAS,'TMB_GAS'] = pdf.loc[PRODGAS,'CUMGAS'] / pdf.loc[PRODGAS,GAS]
+                pdf.loc[PRODWTR,'TMB_WTR'] = pdf.loc[PRODWTR,'CUMWTR'] / pdf.loc[PRODWTR,WTR]      
 
-                pdf['GOR'] = pdf[GAS]*1000/pdf[OIL]
-                pdf['OWR'] = pdf[OIL]/pdf[WTR]
-                pdf['WOR'] = pdf[WTR]/pdf[OIL]
-                pdf['OWC'] = pdf[OIL]/(pdf[WTR]+pdf[OIL])
-                pdf['WOC'] = pdf[WTR]/(pdf[WTR]+pdf[OIL])
+                
+                pdf['GOR','OWR','WOR','OWC','WOC'] = np.nan
+                               
+                pdf.loc[PRODOIL,'GOR'] = pdf[GAS]*1000/pdf[OIL]
+                pdf.loc[PRODWTR,'OWR'] = pdf[OIL]/pdf[WTR]
+                pdf.loc[PRODOIL,'WOR'] = pdf[WTR]/pdf[OIL]
+                
+                m = PRODOIL.join(PRODWTR,how='outer')
+                pdf.loc[m,'OWC'] = pdf.loc[m,OIL]/(pdf.loc[m,WTR]+pdf.loc[m,OIL])
+                pdf.loc[m,'WOC'] = pdf.loc[m,WTR]/(pdf[WTR]+pdf.loc[m,OIL])
 
                 if pdf[[API]].dropna(how='any').shape[0]>3:
                     OUTPUT.at[UWI,'API_MEAN']         = pdf[API].astype('float').describe()[1]
@@ -348,6 +359,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     PEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(-50,50),:].index
                     LATEWATER = pdf.index[pdf['TMB_WTR']>500]
                     LATEGAS = pdf.index[pdf['TMB_GAS']>30]
+
                       
                     OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
                     OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
