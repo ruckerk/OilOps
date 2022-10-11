@@ -571,6 +571,14 @@ def Get_Scouts(UWIs,db=None):
             #Reduce well to county and well numbers
             docurl=re.sub('XNUMBERX',UWI[2:10],URL_BASE)
             RETRY=0
+            
+            html_page = urlopen(docurl)
+            soup = BeautifulSoup(html_page, "html.parser")
+            html_text = soup.get_text()  
+            if bool(re.search('.*no records found.*',html_text,re.I)):
+                print('No production data at ' + docurl)
+                continue
+            
             while RETRY<8:
                 try:
                     pagedf=pd.read_html(docurl)[0]
