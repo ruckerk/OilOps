@@ -184,7 +184,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                                  ,'Peak_Gas_Date','Peak_Gas_Days','Peak_Gas_CumOil','Peak_Gas_CumGas','Peak_Gas_CumWtr'
                                  ,'OWR_PrePeakOil','OWR_PostPeakGas'
                                  ,'GOR_PrePeakOil','GOR_PeakGas','GOR_PostPeakGOR'
-                                 ,'WOC_PostPeakOil','WOC_PostPeakGas'
+                                 ,'WOC_PostPeakOil','WOC_PostPeakGas',
+                                 ,'GOR_Final','OWC_Final',
                                  ,'Month1'
                                  ,'GOR_MO2-4','GOR_MO5-7','GOR_MO11-13','GOR_MO23-25','GOR_MO35-37','GOR_MO47-49'
                                  ,'OWR_MO2-4','OWR_MO5-7','OWR_MO11-13','OWR_MO23-25','OWR_MO35-37','OWR_MO47-49'
@@ -300,6 +301,14 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 pdf['GAS_RATE'] = pdf[GAS]/pdf[DAYSON]
                 pdf['WTR_RATE'] = pdf[WTR]/pdf[DAYSON]
                 pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
+                      
+                pdf['CUMOIL'] = pdf[OIL].cumsum()
+                pdf['CUMGAS'] = pdf[GAS].cumsum()
+                pdf['CUMWTR'] = pdf[WTR].cumsum()
+           
+                pdf['TMB_OIL'] = pdf['CUMOIL'] / pdf[OIL]
+                pdf['TMB_GAS'] = pdf['CUMGAS'] / pdf[GAS]
+                pdf['TMB_WTR'] = pdf['CUMWTR'] / pdf[WTR]      
 
                 pdf['GOR'] = pdf[GAS]*1000/pdf[OIL]
                 pdf['OWR'] = pdf[OIL]/pdf[WTR]
@@ -330,10 +339,12 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     POSTPEAKOIL = pdf.loc[(pdf['PROD_DAYS'][pdf[OIL].idxmax()]-pdf['PROD_DAYS']).between(0,100),:].index
                     POSTPEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(0,100),:].index
                     PEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(-50,50),:].index
-
+                    LATEWATER = pdf.index[pdf['TMB_WTR']>500]
+                    LATEGAS = pdf.index[pdf['TMB_GAS']>30]
+                      
                     OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
                     OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
-
+                                       
                     if pdf[[WTR,OIL,GAS]].dropna(how='any').shape[0]>3:
                         OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
                         OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()                    
@@ -341,6 +352,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                         OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
                         OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf[WTR][0:pdf[OIL].idxmax()].sum()
                         OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf[WTR][0:pdf[GAS].idxmax()].sum()
+                        
+                        OUTPUT.at[UWI,'GOR_Final'] = pdf.loc[LATEGAS, GAS].sum() / pdf.loc[LATEGAS, OIL].sum() * 1000
+                        OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
 
                     # Emily uses Month 1 begins at 1st month w/ +14days oil prod
                     if len(pdf[DATE].dropna())>10:
