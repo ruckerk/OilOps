@@ -364,16 +364,22 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
                     OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
                                        
-                    if pdf[[WTR,OIL,GAS]].dropna(how='any').shape[0]>3:
-                        OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
-                        OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()                    
+                    if len(PRODOIL.intersection(PRODGAS).intersection(PRODWTR)) >3 : 
+                        if pdf.loc[PREPEAKOIL,WTR].sum()>0:
+                            OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
+                        if pdf.loc[POSTPEAKGAS,WTR].sum() >0:
+                            OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()     
+                        
                         OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
                         OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
                         OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf[WTR][0:pdf[OIL].idxmax()].sum()
                         OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf[WTR][0:pdf[GAS].idxmax()].sum()
-                        
-                        OUTPUT.at[UWI,'GOR_Final'] = pdf.loc[LATEGAS, GAS].sum() / pdf.loc[LATEGAS, OIL].sum() * 1000
-                        OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
+                      
+                      
+                        if len(LATEGAS)>3:
+                            OUTPUT.at[UWI,'GOR_Final'] = pdf.loc[LATEGAS, GAS].sum() / pdf.loc[LATEGAS, OIL].sum() * 1000
+                        if len(LATEWATER)>3:
+                            OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
 
                     # Emily uses Month 1 begins at 1st month w/ +14days oil prod
                     if len(pdf[DATE].dropna())>10:
