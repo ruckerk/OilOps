@@ -211,7 +211,6 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
 
         ERROR=0
 
-
         while ERROR == 0: #if 1==1:
             connection_attempts = 4 
             #Screen for Colorado wells
@@ -390,103 +389,102 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True) 
 
             ERROR = 1
-            OUTPUT=OUTPUT.dropna(how='all')
-            OUTPUT.index.name = 'UWI'   
+            
+    OUTPUT=OUTPUT.dropna(how='all')
+    OUTPUT.index.name = 'UWI'   
 
-            SQL_COLS = '''([UWI] INTEGER PRIMARY KEY
-                 ,[BTU_MEAN] REAL
-                 ,[BTU_STD] REAL
-                 ,[API_MEAN] REAL
-                 ,[API_STD] REAL
-                 ,[Peak_Oil_Date] DATE
-                 ,[Peak_Oil_Days] INTEGER
-                 ,[Peak_Oil_CumOil] REAL
-                 ,[Peak_Oil_CumGas] REAL
-                 ,[Peak_Gas_Date] DATE
-                 ,[Peak_Gas_Days] INTEGER
-                 ,[Peak_Gas_CumOil] REAL
-                 ,[Peak_Gas_CumGas] REAL
-                 ,[OWR_PrePeakOil] REAL
-                 ,[OWR_PostPeakGas] REAL
-                 ,[WOC_PrePeakOil] REAL
-                 ,[WOC_PostPeakOil] REAL
-                 ,[WOC_PostPeakGas] REAL
-                 ,[Peak_Oil_CumWtr] REAL
-                 ,[Peak_Gas_CumWtr] REAL
-                 ,[Month1] DATE
-                 ,[GOR_MO2-4] REAL
-                 ,[GOR_MO5-7] REAL
-                 ,[GOR_MO11-13] REAL
-                 ,[GOR_MO23-25] REAL
-                 ,[GOR_MO35-37] REAL
-                 ,[GOR_MO47-49] REAL
-                 ,[OWR_MO2-4] REAL
-                 ,[OWR_MO5-7] REAL
-                 ,[OWR_MO11-13] REAL
-                 ,[OWR_MO23-25] REAL
-                 ,[OWR_MO35-37] REAL
-                 ,[OWR_MO47-49] REAL
-                 ,[OWC_MO3] REAL
-                 ,[OWC_MO6] REAL
-                 ,[OWC_MO12] REAL
-                 ,[OWC_MO24] REAL
-                 ,[OWC_MO36] REAL
-                 ,[OWC_MO48] REAL
-                 ,[Production_Formation] TEXT
-                 ,[3Mo_CumOil] REAL
-                 ,[6Mo_CumOil] REAL
-                 ,[9Mo_CumOil] REAL
-                 ,[12Mo_CumOil] REAL
-                 ,[15Mo_CumOil] REAL
-                 ,[18Mo_CumOil] REAL
-                 ,[21Mo_CumOil] REAL
-                 ,[24Mo_CumOil] REAL
-                 ,[27Mo_CumOil] REAL
-                 ,[30Mo_CumOil] REAL
-                 ,[33Mo_CumOil] REAL
-                 ,[36Mo_CumOil] REAL
-                 ,[39Mo_CumOil] REAL
-                 ,[42Mo_CumOil] REAL
-                 ,[45Mo_CumOil] REAL
-                 ,[48Mo_CumOil] REAL
-                 ,[3Mo_CumGas] REAL
-                 ,[6Mo_CumGas] REAL
-                 ,[9Mo_CumGas] REAL
-                 ,[12Mo_CumGas] REAL
-                 ,[15Mo_CumGas] REAL
-                 ,[18Mo_CumGas] REAL
-                 ,[21Mo_CumGas] REAL
-                 ,[24Mo_CumGas] REAL
-                 ,[27Mo_CumGas] REAL
-                 ,[30Mo_CumGas] REAL
-                 ,[33Mo_CumGas] REAL
-                 ,[36Mo_CumGas] REAL
-                 ,[39Mo_CumGas] REAL
-                 ,[42Mo_CumGas] REAL
-                 ,[45Mo_CumGas] REAL
-                 ,[48Mo_CumGas] REAL
-                 ,[3Mo_CumWtr] REAL
-                 ,[6Mo_CumWtr] REAL
-                 ,[9Mo_CumWtr] REAL
-                 ,[12Mo_CumWtr] REAL
-                 ,[15Mo_CumWtr] REAL
-                 ,[18Mo_CumWtr] REAL
-                 ,[21Mo_CumWtr] REAL
-                 ,[24Mo_CumWtr] REAL
-                 ,[27Mo_CumWtr] REAL
-                 ,[30Mo_CumWtr] REAL
-                 ,[33Mo_CumWtr] REAL
-                 ,[36Mo_CumWtr] REAL
-                 ,[39Mo_CumWtr] REAL
-                 ,[42Mo_CumWtr] REAL
-                 ,[45Mo_CumWtr] REAL
-                 ,[48Mo_CumWtr] REAL
-                 )
-                 '''
+    SQL_COLS = '''([UWI] INTEGER PRIMARY KEY
+         ,[BTU_MEAN] REAL
+         ,[BTU_STD] REAL
+         ,[API_MEAN] REAL
+         ,[API_STD] REAL
+         ,[Peak_Oil_Date] DATE
+         ,[Peak_Oil_Days] INTEGER
+         ,[Peak_Oil_CumOil] REAL
+         ,[Peak_Oil_CumGas] REAL
+         ,[Peak_Gas_Date] DATE
+         ,[Peak_Gas_Days] INTEGER
+         ,[Peak_Gas_CumOil] REAL
+         ,[Peak_Gas_CumGas] REAL
+         ,[OWR_PrePeakOil] REAL
+         ,[OWR_PostPeakGas] REAL
+         ,[WOC_PrePeakOil] REAL
+         ,[WOC_PostPeakOil] REAL
+         ,[WOC_PostPeakGas] REAL
+         ,[Peak_Oil_CumWtr] REAL
+         ,[Peak_Gas_CumWtr] REAL
+         ,[Month1] DATE
+         ,[GOR_MO2-4] REAL
+         ,[GOR_MO5-7] REAL
+         ,[GOR_MO11-13] REAL
+         ,[GOR_MO23-25] REAL
+         ,[GOR_MO35-37] REAL
+         ,[GOR_MO47-49] REAL
+         ,[OWR_MO2-4] REAL
+         ,[OWR_MO5-7] REAL
+         ,[OWR_MO11-13] REAL
+         ,[OWR_MO23-25] REAL
+         ,[OWR_MO35-37] REAL
+         ,[OWR_MO47-49] REAL
+         ,[OWC_MO3] REAL
+         ,[OWC_MO6] REAL
+         ,[OWC_MO12] REAL
+         ,[OWC_MO24] REAL
+         ,[OWC_MO36] REAL
+         ,[OWC_MO48] REAL
+         ,[Production_Formation] TEXT
+         ,[3Mo_CumOil] REAL
+         ,[6Mo_CumOil] REAL
+         ,[9Mo_CumOil] REAL
+         ,[12Mo_CumOil] REAL
+         ,[15Mo_CumOil] REAL
+         ,[18Mo_CumOil] REAL
+         ,[21Mo_CumOil] REAL
+         ,[24Mo_CumOil] REAL
+         ,[27Mo_CumOil] REAL
+         ,[30Mo_CumOil] REAL
+         ,[33Mo_CumOil] REAL
+         ,[36Mo_CumOil] REAL
+         ,[39Mo_CumOil] REAL
+         ,[42Mo_CumOil] REAL
+         ,[45Mo_CumOil] REAL
+         ,[48Mo_CumOil] REAL
+         ,[3Mo_CumGas] REAL
+         ,[6Mo_CumGas] REAL
+         ,[9Mo_CumGas] REAL
+         ,[12Mo_CumGas] REAL
+         ,[15Mo_CumGas] REAL
+         ,[18Mo_CumGas] REAL
+         ,[21Mo_CumGas] REAL
+         ,[24Mo_CumGas] REAL
+         ,[27Mo_CumGas] REAL
+         ,[30Mo_CumGas] REAL
+         ,[33Mo_CumGas] REAL
+         ,[36Mo_CumGas] REAL
+         ,[39Mo_CumGas] REAL
+         ,[42Mo_CumGas] REAL
+         ,[45Mo_CumGas] REAL
+         ,[48Mo_CumGas] REAL
+         ,[3Mo_CumWtr] REAL
+         ,[6Mo_CumWtr] REAL
+         ,[9Mo_CumWtr] REAL
+         ,[12Mo_CumWtr] REAL
+         ,[15Mo_CumWtr] REAL
+         ,[18Mo_CumWtr] REAL
+         ,[21Mo_CumWtr] REAL
+         ,[24Mo_CumWtr] REAL
+         ,[27Mo_CumWtr] REAL
+         ,[30Mo_CumWtr] REAL
+         ,[33Mo_CumWtr] REAL
+         ,[36Mo_CumWtr] REAL
+         ,[39Mo_CumWtr] REAL
+         ,[42Mo_CumWtr] REAL
+         ,[45Mo_CumWtr] REAL
+         ,[48Mo_CumWtr] REAL
+         )
+         '''
 
-            TABLE_NAME = "PROD_SUMMARY"
-
-
+    TABLE_NAME = "PROD_SUMMARY"
 
     print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
