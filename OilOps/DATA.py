@@ -247,7 +247,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 try:
                     #pdf = pd.read_html(docurl,encoding='utf-8', header=0)[1]
                     content = requests_retry_session().get(docurl).content
-                    if bool(re.search('.*no records found.*',str(content),re.I)):
+                    s_cont = str(content)
+                    if bool(re.search('no records found',s_cont,re.I)):
                         print('No production data at ' + docurl)
                         ERROR = 1
                         continue  
