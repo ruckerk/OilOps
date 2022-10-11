@@ -297,17 +297,17 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     print(f'Cannot parse tabels 2 at: {docurl}.')
                     ERROR = 1
                     continue                    
-
-                PRODOIL = pdf[OIL].dropna().index
-                PRODGAS = pdf[GAS].dropna().index
-                PRODWTR = pdf[WTR].dropna().index
                     
                 # Date is date formatted                
                 pdf[DATE]=pd.to_datetime(pdf[DATE]).dt.date
                 # Sort on earliest date first
                 pdf.sort_values(by = [DATE],inplace = True)
                 pdf.index = range(1, len(pdf) + 1)
-
+               
+                PRODOIL = pdf[OIL].dropna().index
+                PRODGAS = pdf[GAS].dropna().index
+                PRODWTR = pdf[WTR].dropna().index
+           
                 pdf['OIL_RATE'] = pdf[OIL]/pdf[DAYSON]
                 pdf['GAS_RATE'] = pdf[GAS]/pdf[DAYSON]
                 pdf['WTR_RATE'] = pdf[WTR]/pdf[DAYSON]
