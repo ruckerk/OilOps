@@ -324,7 +324,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 pdf.loc[PRODGAS,'TMB_GAS'] = pdf.loc[PRODGAS,'CUMGAS'] / pdf.loc[PRODGAS,GAS]
                 pdf.loc[PRODWTR,'TMB_WTR'] = pdf.loc[PRODWTR,'CUMWTR'] / pdf.loc[PRODWTR,WTR]      
 
-                pdf['GOR','OWR','WOR','OWC','WOC'] = np.nan
+                pdf[['GOR','OWR','WOR','OWC','WOC']] = np.nan
                                
                 pdf.loc[PRODOIL,'GOR'] = pdf[GAS]*1000/pdf[OIL]
                 pdf.loc[PRODWTR,'OWR'] = pdf[OIL]/pdf[WTR]
