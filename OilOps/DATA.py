@@ -249,6 +249,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                     content = requests_retry_session().get(docurl).content
                     if bool(re.search('.*no records found.*',str(content),re.I)):
                         print('No production data at ' + docurl)
+                        ERROR = 1
                         continue  
                     rawData = pd.read_html(StringIO(content.decode('utf-8')))
                     pdf = rawData[1]
