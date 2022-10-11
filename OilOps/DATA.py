@@ -488,7 +488,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
 
 
 
-
+    print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
     PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
     PRODDATA.to_parquet(PROD_FNAME+'.parquet') 
