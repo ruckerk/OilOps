@@ -185,7 +185,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                                  ,'OWR_PrePeakOil','OWR_PostPeakGas'
                                  ,'GOR_PrePeakOil','GOR_PeakGas','GOR_PostPeakGOR'
                                  ,'WOC_PostPeakOil','WOC_PostPeakGas'
-                                 ,'GOR_Final','OWC_Final',
+                                 ,'GOR_Final','OWC_Final'
                                  ,'Month1'
                                  ,'GOR_MO2-4','GOR_MO5-7','GOR_MO11-13','GOR_MO23-25','GOR_MO35-37','GOR_MO47-49'
                                  ,'OWR_MO2-4','OWR_MO5-7','OWR_MO11-13','OWR_MO23-25','OWR_MO35-37','OWR_MO47-49'
