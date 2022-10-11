@@ -403,12 +403,12 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                                     if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
                                         OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
 
-                OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
+            OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
 
-                pdf['UWI'] = UWI
-                PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True) 
+            pdf['UWI'] = UWI
+            PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True) 
 
-                ERROR = 1
+            ERROR = 1
             
     OUTPUT=OUTPUT.dropna(how='all')
     OUTPUT.index.name = 'UWI'   
