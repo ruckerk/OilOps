@@ -177,7 +177,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
-    warnings.simplefilter("ignore")
+    #warnings.simplefilter("ignore")
     OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
                                  ,'API_MEAN','API_STD'
                                  ,'Peak_Oil_Date','Peak_Oil_Days','Peak_Oil_CumOil','Peak_Oil_CumGas','Peak_Oil_CumWtr'
