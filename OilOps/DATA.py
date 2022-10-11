@@ -210,6 +210,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
         html = soup = pdf = None 
 
         ERROR=0
+
+
         while ERROR == 0: #if 1==1:
             connection_attempts = 4 
             #Screen for Colorado wells
@@ -241,9 +243,13 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 if perf_counter() - t1 < 0.5:
                     sleep(0.5)
                 t1 = perf_counter()
+                
                 try:
                     #pdf = pd.read_html(docurl,encoding='utf-8', header=0)[1]
                     content = requests_retry_session().get(docurl).content
+                    if bool(re.search('.*no records found.*',str(content),re.I)):
+                        print('No production data at ' + docurl)
+                        continue  
                     rawData = pd.read_html(StringIO(content.decode('utf-8')))
                     pdf = rawData[1]
                 except:
@@ -572,13 +578,7 @@ def Get_Scouts(UWIs,db=None):
             docurl=re.sub('XNUMBERX',UWI[2:10],URL_BASE)
             RETRY=0
             
-            html_page = urlopen(docurl)
-            soup = BeautifulSoup(html_page, "html.parser")
-            html_text = soup.get_text()  
-            if bool(re.search('.*no records found.*',html_text,re.I)):
-                print('No production data at ' + docurl)
-                continue
-            
+           
             while RETRY<8:
                 try:
                     pagedf=pd.read_html(docurl)[0]
