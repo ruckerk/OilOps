@@ -408,7 +408,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                 pdf['UWI'] = UWI
                 PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True) 
 
-            ERROR = 1
+                ERROR = 1
             
     OUTPUT=OUTPUT.dropna(how='all')
     OUTPUT.index.name = 'UWI'   
