@@ -132,7 +132,7 @@ def DF_UNSTRING(df_IN):
 
 def GetKey(df,key):
     # returns list of matches to <key> in <df>.keys() as regex search
-    return df.iloc[0,df.keys().str.contains('.*'+key+'.*', regex=True, case=False,na=False)].keys().to_list()
+    return df.iloc[0,df.keys().str.contains(key, regex=True, case=False,na=False)].keys().to_list()
 
 def GetKeyRow(df_in,keys,regexparam = False):
     df_in = df_in.astype(str).apply(' '.join,axis=1)
