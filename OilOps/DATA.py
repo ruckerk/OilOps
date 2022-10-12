@@ -557,7 +557,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     return(OUTPUT)
 
 def Get_Scouts(UWIs,db=None):
-    #if 1==1:
+
     Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
                'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
                'TOTAL FLUID USED','MAX PRESSURE','TOTAL GAS USED','FLUID DENSITY','TYPE OF GAS',
@@ -580,8 +580,12 @@ def Get_Scouts(UWIs,db=None):
         mkdir(dir_add)
 
     warnings.simplefilter("ignore")
-    if isinstance(UWIs,list) == False:
+           
+    if isinstance(UWIs,(int,str,float)):
         UWIs=[UWIs]
+    elif isinstance(UWIs,list) == False:
+        UWIs = list(UWIs)
+
     for UWI in UWIs:
         #if 1==1:
         UWI = str(UWI)
@@ -609,7 +613,7 @@ def Get_Scouts(UWIs,db=None):
                     sleep(10)
 
         if len(pagedf)>0:
-            xSummary = Summarize_Page(pagedf,Strings)
+            xSummary = Summarize_Page(pagedf,Strings) 
             xSummary['UWI']=UWI
 
             # Status code
