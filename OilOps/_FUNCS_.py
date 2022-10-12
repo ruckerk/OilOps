@@ -268,7 +268,8 @@ def Summarize_Page(df_in,string):
         try:
             itemlist=itemlist.remove('')
         except: None
-        itemlist=pd.Series(itemlist).dropna().sort_values().tolist()
+        itemlist = pd.Series(itemlist).dropna().sort_values().tolist()
+        itemlist = list(set(itemlist))
         Summary.loc[:len(itemlist)-1,item]=itemlist
 
     Summary=Summary.dropna(axis=0,how='all')
@@ -293,6 +294,8 @@ def Summarize_Page(df_in,string):
             Summary.loc[0,item]=pd.to_datetime(Summary[item],infer_datetime_format=True,errors='coerce').max()
         elif (len(Summary[item].dropna())>1) & ('TOP' in item.upper()):
             Summary.loc[0,item]=pd.to_numeric(Summary[item],errors='coerce').min()
+        elif ('TREAT' in item.upper()) & ('SUMMARY' in item.upper()):
+            Summary.loc[0,item]=Summary[item].str.cat(sep=' ')
         elif len(Summary[item].dropna())>1:
             Summary.loc[0,item]=pd.to_numeric(Summary[item],errors='coerce').max()
     return(Summary.loc[0,:])
