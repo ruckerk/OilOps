@@ -43,17 +43,17 @@ class WELLAPI:
         val_in = self.str
         
         if str(val_in).upper() == 'NONE':
-            return None
+            return 0
         
         try:
             if math.isnan(val_in):
-                return None
+                return 0
         except:
             pass
         val = self._str2num()
         
         if (val == None) or (val == 0):
-            return None
+            return 0
         
         lim = 10**length-1
         highlim = 10**length-1 #length digits
