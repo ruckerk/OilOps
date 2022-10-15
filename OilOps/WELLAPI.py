@@ -44,6 +44,7 @@ class WELLAPI:
         
         if str(val_in).upper() == 'NONE':
             return None
+        
         try:
             if math.isnan(val_in):
                 return None
@@ -51,7 +52,7 @@ class WELLAPI:
             pass
         val = self._str2num()
         
-        if val == None:
+        if (val == None) or (val == 0):
             return None
         
         lim = 10**length-1
@@ -67,6 +68,8 @@ class WELLAPI:
     def STRING(self,length = 10, dashed = False):
         #val_in = self.str
         val_in = self.API2INT(length)
+        if val_in == None:
+            return None
         val = str(val_in)
         val = val.zfill(length)
         if dashed:
