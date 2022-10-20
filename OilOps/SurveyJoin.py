@@ -432,6 +432,29 @@ def SurveyCols_row(r_in):
     return OUTPUT
 
 #def Survey_Join(FLIST:[list,str,int,pd.Series,pd.DataFrame,np.array], SAVEFILE:str):
+def str2num(IN):
+        str_in = str(IN)
+        if (str_in.upper() == 'NONE'):
+            return None
+        if str(int(IN)).upper() == 'NONE':
+            str_in = str(str_in)
+            str_in = str_in.strip()
+            str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
+            c = len(re.findall('-',str_in))
+            if c>1:
+                val = re.sub(r'[^0-9\.]','',str(str_in))
+            else:
+                val = re.sub(r'[^0-9-\.]','',str(str_in))
+            if val == '':
+                return None
+            try:
+                val = np.floor(float(val))
+            except:
+                val = None
+        else:
+            val = int(IN)
+        return val
+    
 def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
     if SAVEFILE != None:
         SAVEFILE = re.sub(re.compile(r'\.[^.]+$'),'',SAVEFILE)
@@ -468,9 +491,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
           
                 #standardize column names
                 rdf=rdf.rename(columns=SurveyCols(rdf))
-                
-                
-
+            
                 # all columns to numeric while catching decimals in strings
                 rdf = rdf.applymap(str2num)
 
