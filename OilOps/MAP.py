@@ -353,7 +353,7 @@ def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
     r = requests.get(query).json()  # json object, various ways you can extract value
     # one approach is to use pandas json functionality:
     
-    elevation = pandas.json_normalize(r, 'results')['elevation'].values[0]
+    elevation = pd.json_normalize(r, 'results')['elevation'].values[0]
     
     if units.upper()=='FEET':
         # meters to feet
