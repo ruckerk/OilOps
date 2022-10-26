@@ -5,11 +5,15 @@ import re
 class WELLAPI:
     def __init__(self, str_name):
         self.str = str(str_name)
-        if isinstance(str_name,(int,float)) == True:
-            self.int = int(np.floor(str_name))
         
+        if self.str.upper() == 'NAN':
+            self.str = 'None'
+            self.int = None  
+        elif isinstance(str_name,(int,float)) == True:
+            self.int = int(np.floor(str_name))
         else:
             self.int = None
+            self.str = str(self.int)
 
     def show(self):
         print(self.str)
