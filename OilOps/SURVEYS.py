@@ -495,13 +495,18 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
     return df
 
 
-def JoinSurveysInFolder():
+def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
+          
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
 
     df=pd.DataFrame()
     df1 = pd.DataFrame()
-    JOINEDFILE = 'JOINED_SURVEY_FILE_V2_MERGE'
+          
+    if FILESTRING = None:
+        JOINEDFILE = 'JOINED_SURVEY_FILE_V2_MERGE'
+    else:
+        JOINEDFILE = FILESTRING
     
     #for file in listdir(pathname):
     #    if file.lower().endswith(('.json')) and ('surveys' in file.lower()):
@@ -513,7 +518,6 @@ def JoinSurveysInFolder():
 
     PAT = re.compile(r'joined(?:[ -_]*)survey',re.I)
 
-    OUTFILE = None #'JOINED_SURVEYS_XXXX.csv'    
     FLIST=list()
     for file in listdir(adir):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
@@ -534,11 +538,11 @@ def JoinSurveysInFolder():
                 print("ERROR IN FILE: " + str(file))
                 
     #CLEAN UP API/UWI
-    df1['UWI'] = df1.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
-    m1 = df1.UWI.isna()
-    df1.loc[m1,'UWI'] = df1.loc[m1,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
-    
-    
+    if not df1.empty:
+        df1['UWI'] = df1.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
+        m1 = df1.UWI.isna()
+        df1.loc[m1,'UWI'] = df1.loc[m1,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
+   
     if not df1.empty:
         df1 = df1.drop_duplicates()
         FLIST = pd.Series(FLIST)
@@ -617,8 +621,9 @@ def JoinSurveysInFolder():
     RESULT = DF_UNSTRING(RESULT)
     RESULT['API'] = RESULT['API'].fillna('')
     
-    RESULT.to_csv(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.CSV')
-    RESULT.to_json(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.JSON')
-    RESULT.to_parquet(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.PARQUET')
+    if SAVE == True:
+        RESULT.to_csv(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.CSV')
+        RESULT.to_json(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.JSON')
+        RESULT.to_parquet(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.PARQUET')
     
     return(RESULT)
