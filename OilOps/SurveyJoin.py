@@ -3,13 +3,14 @@
 # jax
 # modin
 
-from ._SURVEYFUNCS_ import *
+
+
 from ._FUNCS_ import *
 
 # BUG FIXES
 #v101 as_type(float) errors fixed with pd.to_numeric(errors='coerce')
 #v106 looks for API col
-#v107 checks file lists and only appends new files
+#v107 checks file lists and only appends new filess
 #v200 new file name handling, modin, JSON
 
 # NEED TO HANDLE UNLABELED COLUMNS
@@ -654,7 +655,7 @@ def JoinSurveysInFolder():
     #if path.exists(JOINEDFILE+'.PARQUET'):
     #    #df1 = pd.read_json('JOINED_SURVEY_FILE_V2'+'.JSON')
     #    df1 = pd.read_parquet('JOINED_SURVEY_FILE_V2'+'.PARQUET')
-    #    df1.to_parquet(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.PARQUET')
+    #    df1.to_parquet(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.PARQUET')
     #    df1 = pd.concat([df1,df],axis=0,join='outer',ignore_index=True)
     #    df1 = df1.drop_duplicates()
     #    #df1.to_json(JOINEDFILE+'.JSON')
@@ -721,8 +722,8 @@ def JoinSurveysInFolder():
     RESULT = DF_UNSTRING(RESULT)
     RESULT['API'] = RESULT['API'].fillna('')
     
-    RESULT.to_csv(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.CSV')
-    RESULT.to_json(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.JSON')
-    RESULT.to_parquet(JOINEDFILE+'_'+datetime.now().strftime('%Y%M%d')+'.PARQUET')
+    RESULT.to_csv(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.CSV')
+    RESULT.to_json(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.JSON')
+    RESULT.to_parquet(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.PARQUET')
     
     return(RESULT)
