@@ -1,6 +1,5 @@
 
 from .DATA import *
-from .PLOT import *
 from .MAP import *
 from .WELLAPI import WELLAPI
 from .LOGS import *
