@@ -1,10 +1,3 @@
-#import ray
-#ray.init(num_cpus=12)
-# jax
-# modin
-
-
-
 from ._FUNCS_ import *
 
 # BUG FIXES
@@ -17,7 +10,12 @@ from ._FUNCS_ import *
 
 # needs to be updated to populate SQL db
 # parallelize
-
+__all__ = ['Find_API_Col',
+          'ExtractSurvey',
+          'survey_from_excel',
+          'SurveyCols',
+          'JoinSurveysInFolder',
+          'Survey_Join']
 
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
@@ -75,17 +73,6 @@ def Find_API_Col(df_inAPI):
         
     return(UWI,knum)
 
-def APIfromFilename(ffile,UWIlen=10):
-    lst = re.findall(r'UWI[0-9]{9,}',ffile, re.I)
-    if len(lst)==0:
-        lst = re.findall(r'[0-9]{9,}',ffile)
-    else:
-        lst[0] = re.sub('UWI','',lst[0],re.I)
-    if len(lst)>0:        
-        UWI = WELLAPI(lst[0]).API2INT(UWIlen)
-    else:
-        UWI = None
-    return UWI
 
 def APIfromFrame(df_in):
     terms = list()
@@ -97,32 +84,7 @@ def APIfromFrame(df_in):
         term = APIfromString(df_in.to_string())
     return term
 
-def APIfromString(STRING,ListResult=False,BlockT2=False):
-    STRING = re.sub(r'[-−﹣−–—−]','-',STRING)
-    t1 = re.compile(r'(?:UWI|API)\s*(?:[#:])*\s*([0-9\-\s]*)',re.I)
-    t2 = re.compile(r'[0-9]{1,2}(?:\-)[0-9]{3}(?:\-)[0-9]{5,9}\-{0,1}[0-9]{0,4}')
-    term = None
-    try:
-        terms = re.findall(t1,STRING)
-        terms = list(map(str.strip, terms))
-        term = max(set(terms), key = terms.count)
-        if term == '':
-            term = None
-    except:
-        pass
-    
-    if BlockT2 == False and term == None:
-        try:
-            terms = re.findall(t2,STRING)
-            terms = list(map(str.strip, terms))
-        except:
-            pass
-    if ListResult==False:
-        try:
-            term = max(set(terms), key = terms.count)
-        except:
-            pass
-    return(term)
+
     
 def COGCC_SURVEY_CLEANUP(df_in):#if True:
     skeys = df_in.keys().str.upper().str.strip().str.replace(' ','')
@@ -272,14 +234,10 @@ def ExtractSurvey(df_in):
                             return outdf_in
                     except: pass
 
-def ERRORFILES(ERR_FOLDER='ERROR_FILES'):
-    if not path.isdir(ERR_FOLDER):
-        makedirs(ERR_FOLDER)
-    return(ERR_FOLDER)
+
 
 def CheckUWI(df_in):
-    cols = SurveyCols(df_in)
-    
+    cols = SurveyCols(df_in)    
     outdf.UWI = outdf.UWI.apply(lambda x:WELLAPI(x)._str2num())
 
 def survey_from_excel(file, ERRORS = True): #if True:
@@ -536,69 +494,6 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
         df.to_json(SAVEFILE+'.JSON')
     return df
 
-def DF_UNSTRING(df_IN):
-    df_IN=df_IN.copy()
-    df_IN=df_IN.replace('',np.nan)
-    #df_IN=df_IN.loc[:,~df_IN.columns.duplicated()]
-
-    #DATES
-    DATECOLS = [col for col in df_IN.columns if 'DATE' in col.upper()]
-
-    #for k in df_IN.keys():
-    #print(k+" :: "+str(df_IN[k].dropna().iloc[0]))
-
-    pattern = re.compile(r'[0-9]{4}[-_:/\\ ][0-9]{2}[-_:/\\ ][0-9]{2}[-_:/\\ ]*[0-9]{0,2}[-_:/\\ ]*[0-9]{0,2}[-_:/\\ ]*[0-9]{0,2}[-_:/\\ ]*')
-
-    for k in df_IN.keys():
-        #check if just strings
-        if df_IN[k].astype(str).str.replace(r'[0-9\._\-\/\\]','',regex=True).str.len().mean() > 5:
-            continue
-
-        mask = df_IN[k].astype(str).str.count(pattern)>0
-        mask = ~df_IN[k].isna() & mask
-
-        if df_IN.loc[mask,k].count() == df_IN.loc[mask,k].count() & mask.sum()>0:
-            DATECOLS.append(k)
-    DATECOLS = list(set(DATECOLS))
-
-
-    for k in DATECOLS:
-        # common date problems
-        # "REPORTED: "
-        #  Prior to rule 205A.b.(2)(A)
-        #pattern = re.compile(r'.*Prior to rule.*|reported:',re.I)
-
-        #if pd.to_datetime(df_IN[k].str.replace(pattern,'').fillna(np.nan),errors='coerce').count() != df_IN[k].str.replace(pattern,'').count():
-        #    df_IN.loc[pd.to_datetime(df_IN[k].str.replace(pattern,'').fillna(np.nan),errors='coerce').isna() != df_IN[k].str.replace(pattern,'').isna()][k].str.replace(pattern,'')
-        #    DATECOLS.remove(k)
-        #else:
-        #    df_IN[k]=pd.to_datetime(df_IN[k].fillna(np.nan),errors='coerce')
-        df_IN[k] = pd.to_datetime(df_IN[k],errors='coerce')
-
-    #FLOATS
-    FLOAT_MASK = (df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce').count() - df_IN.count())==0
-    FLOAT_KEYS = df_IN.keys()[FLOAT_MASK]
-
-    #INTEGERS
-    INT_MASK = (df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce').fillna(0.0).apply(np.floor)-df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce')==0).fillna(0.0).max()
-    #INT_MASK = (df_IN.apply(pd.to_numeric, downcast = 'integer', errors = 'coerce') - df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce') == 0).max()
-    INT_KEYS = df_IN[FLOAT_KEYS].keys()[INT_MASK]
-
-    #xx=(df_IN.apply(pd.to_numeric, downcast = 'integer', errors = 'coerce') - df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce') == 0)
-    #for k in  df_IN.keys():
-    #    df_IN.loc[xx[k]==False,k]
-
-    #Force Unique Key Lists
-    FLOAT_KEYS = list(set(FLOAT_KEYS)-set(INT_KEYS) - set(DATECOLS))
-    INT_KEYS = list(set(INT_KEYS) - set(DATECOLS))
-
-    df_IN[FLOAT_KEYS] = df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce')
-    df_IN[INT_KEYS] = df_IN[INT_KEYS].apply(pd.to_numeric, downcast = 'integer', errors = 'coerce')
-
-    #Clean Up Strings?
-    #df_IN.keys()[df_IN.dtypes=='O']
-
-    return(df_IN)
 
 def JoinSurveysInFolder():
     pathname = path.dirname(argv[0])
