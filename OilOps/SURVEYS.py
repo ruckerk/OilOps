@@ -503,7 +503,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     df=pd.DataFrame()
     df1 = pd.DataFrame()
           
-    if FILESTRING = None:
+    if FILESTRING == None:
         JOINEDFILE = 'JOINED_SURVEY_FILE_V2_MERGE'
     else:
         JOINEDFILE = FILESTRING
