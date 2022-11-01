@@ -618,3 +618,47 @@ def FILETYPETEST(file_str,filetype_str):
         return False
     else:
         return True
+
+def APIfromFilename(ffile,UWIlen=10):
+    lst = re.findall(r'UWI[0-9]{9,}',ffile, re.I)
+    if len(lst)==0:
+        lst = re.findall(r'[0-9]{9,}',ffile)
+    else:
+        lst[0] = re.sub('UWI','',lst[0],re.I)
+    if len(lst)>0:        
+        UWI = WELLAPI(lst[0]).API2INT(UWIlen)
+    else:
+        UWI = None
+    return UWI
+
+def APIfromString(STRING,ListResult=False,BlockT2=False):
+    STRING = re.sub(r'[-−﹣−–—−]','-',STRING)
+    t1 = re.compile(r'(?:UWI|API)\s*(?:[#:])*\s*([0-9\-\s]*)',re.I)
+    t2 = re.compile(r'[0-9]{1,2}(?:\-)[0-9]{3}(?:\-)[0-9]{5,9}\-{0,1}[0-9]{0,4}')
+    term = None
+    try:
+        terms = re.findall(t1,STRING)
+        terms = list(map(str.strip, terms))
+        term = max(set(terms), key = terms.count)
+        if term == '':
+            term = None
+    except:
+        pass
+    
+    if BlockT2 == False and term == None:
+        try:
+            terms = re.findall(t2,STRING)
+            terms = list(map(str.strip, terms))
+        except:
+            pass
+    if ListResult==False:
+        try:
+            term = max(set(terms), key = terms.count)
+        except:
+            pass
+    return(term)
+
+def ERRORFILES(ERR_FOLDER='ERROR_FILES'):
+    if not path.isdir(ERR_FOLDER):
+        makedirs(ERR_FOLDER)
+    return(ERR_FOLDER)
