@@ -3,7 +3,7 @@ from adjustText import adjust_text
 from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
-from math import floor, cos, sin, radians, atan2, degrees,atan2 , sqrt
+from math import floor, cos, sin, radians, atan2, degrees,atan2 , sqrt, ceil, isnan
 from os import path, listdir, remove, makedirs, walk, mkdir, rename
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -28,6 +28,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import multiprocessing
+import concurrent.futures
+
 import numpy as np
 import pandas as pd
 import pylab
@@ -64,6 +66,8 @@ import pyproj
 from pyproj import Transformer, CRS
 
 import collections
+
+from .WELLAPI import WELLAPI as WELLAPI
 
 
 def DF_UNSTRING(df_IN):
