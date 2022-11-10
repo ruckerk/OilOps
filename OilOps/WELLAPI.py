@@ -82,7 +82,7 @@ class WELLAPI:
             self.int = int(np.floor(str_name))
         else:
             self.int = int(self.str2num())
-        if self.int>1000:
+        if self.int>1:
             self.str = str(self.int)
         else:
             self.int = None
