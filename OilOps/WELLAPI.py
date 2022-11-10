@@ -3,16 +3,7 @@ import math
 import re
 
 class WELLAPI:
-    def __init__(self, str_name):
-        self.str = str(str_name)
-        
-        if self.str.upper() == 'NAN':
-            self.str = 'None'
-            self.int = None  
-        elif isinstance(self,(int,float)) == True:
-            self.int = int(np.floor(str_name))
-        else:
-            self.int = None
+
 
     def show(self):
         print(self.str)
@@ -82,4 +73,13 @@ class WELLAPI:
                 val = val2
         return(val)
     
-
+    def __init__(self, str_name):
+        self.str = str(str_name)
+        
+        if self.str.upper() == 'NAN':
+            self.str = 'None'
+            self.int = None  
+        elif isinstance(self,(int,float)) == True:
+            self.int = int(np.floor(str_name))
+        else:
+            self.int = None
