@@ -15,7 +15,9 @@ __all__ = ['Find_API_Col',
           'survey_from_excel',
           'SurveyCols',
           'JoinSurveysInFolder',
-          'Survey_Join']
+          'Survey_Join',
+          'COGCC_SURVEY_CLEANUP',
+          'APIfromFrame']
 
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
@@ -144,6 +146,7 @@ def ExtractSurveyWrapper(df_in):
 def ExtractSurvey(df_in):
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
+    OilOps.WELLAPI
 
     adf_in=df_in.copy(deep=True)
 
