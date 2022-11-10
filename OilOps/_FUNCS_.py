@@ -22,6 +22,8 @@ import datetime
 import easygui
 from glob import glob
 from operator import itemgetter
+import base64
+import itertools
 
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
@@ -662,3 +664,35 @@ def ERRORFILES(ERR_FOLDER='ERROR_FILES'):
     if not path.isdir(ERR_FOLDER):
         makedirs(ERR_FOLDER)
     return(ERR_FOLDER)
+
+def create_connection(db_file):
+    """ create a database connection to a SQLite database """
+    conn = None
+    try:
+        conn = sqlite3.connect(db_file)
+        print(sqlite3.version)
+    except Error as e:
+        print(e)
+    finally:
+        if conn:
+            conn.close()
+            
+def convertToBinaryData(filename):
+    # Convert digital data to binary format
+    with open(filename, 'rb') as file:
+        blobData = file.read()
+    return blobData
+
+def load_surveyfile(conn, row):
+    """
+    Create a new survey as filename and blob 
+    :param conn:
+    :param row:
+    :return:
+    """
+    sql = ''' INSERT INTO SURVEYFILES(FILENAME, FILE) VALUES (?,?)'''
+    cur = conn.cursor()
+    cur.execute(sql, row)
+    conn.commit()
+    return cur.lastrowid
+
