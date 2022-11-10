@@ -74,7 +74,7 @@ class WELLAPI:
     def __init__(self, str_name):
         self.str = str(str_name)
         self.int = 0  
-        
+    
         if self.str.upper() == 'NAN':
             self.str = 'None'
             self.int = 0  
@@ -84,6 +84,6 @@ class WELLAPI:
             self.int = int(self.str2num())
         if self.int>1000:
             self.str = str(self.int)
-        else
+        else:
             self.int = None
 
