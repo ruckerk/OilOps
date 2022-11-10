@@ -82,5 +82,7 @@ class WELLAPI:
             self.int = int(np.floor(str_name))
         else:
             self.int = int(self.str2num())
+        if self.int != None:
+            self.str = str(self.int)
 
 
