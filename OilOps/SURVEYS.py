@@ -1,4 +1,5 @@
 from ._FUNCS_ import *
+from .WELLAPI import WELLAPI as WELLAPI
 
 # BUG FIXES
 #v101 as_type(float) errors fixed with pd.to_numeric(errors='coerce')
@@ -146,7 +147,7 @@ def ExtractSurveyWrapper(df_in):
 def ExtractSurvey(df_in):
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
-    OilOps.WELLAPI
+    ReadUWI = WELLAPI(ReadUWI).API2INT(10)
 
     adf_in=df_in.copy(deep=True)
 
@@ -401,7 +402,6 @@ def SurveyCols_row(r_in):
     except: OUTPUT = None
     return OUTPUT
 
-#def Survey_Join(FLIST:[list,str,int,pd.Series,pd.DataFrame,np.array], SAVEFILE:str):
 def str2num(IN):
         str_in = str(IN)
         if (str_in.upper() == 'NONE'):
