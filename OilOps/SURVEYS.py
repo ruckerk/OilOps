@@ -241,6 +241,11 @@ def CheckUWI(df_in):
     outdf.UWI = outdf.UWI.apply(lambda x:WELLAPI(x)._str2num())
 
 def survey_from_excel(file, ERRORS = True): #if True:
+    TUPLE_TEST = isinstance(file, tuple)
+    if TUPLE_TEST:
+          FNAME = file[0]
+          file = file[1]
+          
     ERR_FOLDER = None
     RUNERROR = False
     if ERRORS == True:
@@ -267,7 +272,10 @@ def survey_from_excel(file, ERRORS = True): #if True:
         return None   
         
     READUWI = APIfromFrame(xl)
-    FILENAMEUWI =  APIfromString(file,BlockT2 = True)
+    if TUPLE_TEST:
+        FILENAMEUWI =  APIfromString(FNAME,BlockT2 = True)
+    else:
+        FILENAMEUWI =  APIfromString(file,BlockT2 = True)
     READUWI2 = WELLAPI(READUWI).API2INT()
     FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
     if FILENAMEUWI2==READUWI2:
