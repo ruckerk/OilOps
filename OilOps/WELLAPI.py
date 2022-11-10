@@ -82,5 +82,5 @@ class WELLAPI:
         elif isinstance(self,(int,float)) == True:
             self.int = int(np.floor(str_name))
         else:
-            self.int = str2num(self.str)
+            self.int = self.str2num()
             self.str = str(self.int)
