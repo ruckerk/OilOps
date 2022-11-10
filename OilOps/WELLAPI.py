@@ -75,7 +75,7 @@ class WELLAPI:
         self.str = str(str_name)
         self.int = None  
     
-        if self.str.upper() == 'NAN' or self.str.upper() == 'NONE':
+        if (self.str.upper() == 'NAN') or (self.str.upper() == 'NONE'):
             self.str = 'None'
             self.int = None  
         elif isinstance(self,(int,float)) == True:
