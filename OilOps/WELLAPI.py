@@ -9,17 +9,16 @@ class WELLAPI:
         if self.str.upper() == 'NAN':
             self.str = 'None'
             self.int = None  
-        elif isinstance(str_name,(int,float)) == True:
+        elif isinstance(self,(int,float)) == True:
             self.int = int(np.floor(str_name))
         else:
-            self.int = None
-            self.str = str(self.int)
+            self.int = int(str2num(self))
 
     def show(self):
         print(self.str)
         print(self.int)
         
-    def _str2num(self):
+    def str2num(self):
         str_in = self.str
         if (str_in.upper() == 'NONE'):
             return None
@@ -54,7 +53,7 @@ class WELLAPI:
                 return 0
         except:
             pass
-        val = self._str2num()
+        val = self.str2num()
         
         if (val == None) or (val == 0):
             return 0
