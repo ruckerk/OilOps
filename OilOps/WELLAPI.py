@@ -73,6 +73,7 @@ class WELLAPI:
     
     def __init__(self, str_name):
         self.str = str(str_name)
+        self.int = None  
         
         if self.str.upper() == 'NAN':
             self.str = 'None'
