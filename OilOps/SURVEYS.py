@@ -30,7 +30,7 @@ def Find_API_Col(df_inAPI):
     lowlim = 10**(8)
     highlim = 10**14
     
-    df2 = df2.apply(lambda x:WELLAPI(x)._str2num(), axis=1)
+    df2 = df2.apply(lambda x:WELLAPI(x).str2num(), axis=1)
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
@@ -147,8 +147,7 @@ def ExtractSurveyWrapper(df_in):
 def ExtractSurvey(df_in):
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
-    ReadUWI = WELLAPI(ReadUWI).API2INT(10)
-
+    
     adf_in=df_in.copy(deep=True)
 
     try: 
