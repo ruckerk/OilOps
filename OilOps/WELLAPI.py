@@ -12,7 +12,7 @@ class WELLAPI:
         elif isinstance(self,(int,float)) == True:
             self.int = int(np.floor(str_name))
         else:
-            self.int = int(str2num(self))
+            self.int = None
 
     def show(self):
         print(self.str)
