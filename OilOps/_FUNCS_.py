@@ -578,12 +578,14 @@ def tupelize(x):
         out = tuple(x)
     return out
 
-def filetypematch(fname, filetypes,prefix = None):
+def filetypematch(fname, filetypes,prefix = None, contains = None):
     filetypes = tupelize(filetypes)
     output = fname.lower().endswith(filetypes)
     if prefix != None:
         prefix = tupelize(prefix)
         output = output * fname.lower().startswith(prefix)
+    if contains != None:
+        output = output * bool(re.findall(contains, fname, re.I))
     return output
 
 def FirstNumericRow(FILENAME,ROWCOUNT = 100):
