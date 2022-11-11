@@ -556,18 +556,18 @@ def read_excel(file):
         outdf = outdf.dropna(how='all',axis=1)
     return outdf
 
-def filelist(SUBDIR = None,EXT = None, BEGIN = None):
+def filelist(SUBDIR = None,EXT = None, BEGIN = None, CONTAINS = None):
     pathname = path.dirname(argv[0])
 
     if SUBDIR != None:
         pathname = path.join(pathname, SUBDIR)
         
     FLIST = list()
-    if (EXT == None) & (BEGIN == None):
+    if (EXT == None) & (BEGIN == None) & (CONTAINS == None):
         FLIST = listdir(pathname)
     else:
         for f in listdir(pathname):
-            if filetypematch(f, filetypes=EXT, prefix = BEGIN):
+            if filetypematch(f, filetypes=EXT, prefix = BEGIN, contains = CONTAINS):
                 FLIST.append(f)
     return FLIST
 
