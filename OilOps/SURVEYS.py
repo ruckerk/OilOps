@@ -286,6 +286,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
     l = [str(FILENAMEUWI),str(READUWI),str(None)]
     while 'None' in l:
         l.remove('None')
+    while '0' in l:
+        l.remove('0')
     if len(l)==1:
         UWI=l[0]
     else:
