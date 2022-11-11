@@ -59,7 +59,7 @@ def Find_API_Col(df_inAPI):
             if any(x.upper() in k.upper() for x in APIterms):
                 test=True           
             # confirm numbers are > 10 and less than 14 digits
-            df2[k] = df2[k].apply(lambda x:WELLAPI(x)._str2num())
+            df2[k] = df2[k].apply(lambda x:WELLAPI(x).str2num())
             if (df2.loc[(df2[k]<highlim) & (df2[k]>lowlim),k].dropna().shape[0] > longest):
                 fav_k = k
                 longest = df2.loc[(df2[k]<highlim) & (df2[k]>lowlim),k].dropna().shape[0]
@@ -167,7 +167,7 @@ def ExtractSurvey(df_in):
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
                 
-            outdf_in = outdf_in.applymap(lambda x:WELLAPI(x)._str2num())
+            outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
             outdf_in = outdf_in.dropna(how='all',axis = 1)
             outdf_in = outdf_in.dropna(how='all',axis = 0)
             if ('UWI' in outdf_in.keys()) == False:
@@ -214,7 +214,7 @@ def ExtractSurvey(df_in):
                         #    keycols.append(outdf_in.keys().get_loc(c))
                         
                         #outdf_in = outdf_in.copy(deep=True)
-                        outdf_in = outdf_in.applymap(lambda x:WELLAPI(x)._str2num())
+                        outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
                     
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
                         test = outdf_in.loc[:10,cols].dropna(how='any').shape[0]
@@ -241,7 +241,7 @@ def ExtractSurvey(df_in):
 
 def CheckUWI(df_in):
     cols = SurveyCols(df_in)    
-    outdf.UWI = outdf.UWI.apply(lambda x:WELLAPI(x)._str2num())
+    outdf.UWI = outdf.UWI.apply(lambda x:WELLAPI(x).str2num())
 
 def survey_from_excel(file, ERRORS = True): #if True:
     TUPLE_TEST = isinstance(file, tuple)
@@ -321,7 +321,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             #print(ext_df.keys())
             
         if 'UWI' in outdf.keys():
-            outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x)._str2num())
+            outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).str2num())
         else:
             outdf['UWI'] = UWI
             
@@ -345,7 +345,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             return None
         if not(UWI is None):            
             outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).API2INT())
-            outdf = outdf.applymap(lambda x:WELLAPI(x)._str2num())
+            outdf = outdf.applymap(lambda x:WELLAPI(x).str2num())
             outdf = outdf.apply(pd.to_numeric, errors='coerce')
             #outdf = outdf.loc[outdf.T.sum().index,:]
             outdf = outdf.dropna(thresh=3,axis=0)
