@@ -578,11 +578,15 @@ def tupelize(x):
         out = tuple(x)
     return out
 
-def filetypematch(fname, filetypes,prefix = None, contains = None):
+def filetypematch(fname, filetypes, prefix = None, contains = None):
+    
     filetypes = tupelize(filetypes)
+    filetypes = tuple(x.lower() for x in filetypes)
+    
     output = fname.lower().endswith(filetypes)
     if prefix != None:
         prefix = tupelize(prefix)
+        prefix = tuple(x.lower() for x in prefix)
         output = output * fname.lower().startswith(prefix)
     if contains != None:
         output = output * bool(re.findall(contains, fname, re.I))
