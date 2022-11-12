@@ -338,7 +338,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             outdf = ExtractSurveyWrapper(xl)
             outdf = pd.DataFrame(outdf)
             if not 'UWI' in  outdf.keys():
-                outdf['UWI'] = None
+                outdf['UWI'] = UWI
         except:
             pass
     
@@ -349,6 +349,12 @@ def survey_from_excel(file, ERRORS = True): #if True:
             outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).API2INT())
             outdf = outdf.applymap(lambda x:WELLAPI(x).str2num())
             outdf = outdf.apply(pd.to_numeric, errors='coerce')
+            outdf['UWI'].fillna(0,inplace=True)
+            UWI_df = outdf['UWI'].max()
+            if UWI_df == 0:
+               outdf['UWI'] = UWI
+            else:
+               outdf['UWI'] = UWI_df               
             #outdf = outdf.loc[outdf.T.sum().index,:]
             outdf = outdf.dropna(thresh=3,axis=0)
     return outdf
