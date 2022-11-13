@@ -645,3 +645,23 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
         RESULT.to_parquet(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.PARQUET')
     
     return(RESULT)
+
+def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+
+    if isinstance(UWIS,(str, float, int)):
+        UWIS=[UWIS]
+
+    UWI10S = [WELLAPI(X).API2INT(10) for X in UWIS]     
+    sqldb = path.join(path.dirname(adir),'CO_3_2.1.sqlite')
+          
+    with sqlite3.connect(sqldb) as conn:
+        df = pd.read_sql_query('SELECT API,Latitude,Longitude FROM WELL',conn)
+    
+   df['UWI10'] = df.API.map(lambda x: WELLAPI(x).API2INT(10)) 
+   
+   df[['Longitude','Latitude']].apply(lambda x:convert_XY(x.Longitude,x.Latitude,EPSG_OLD = 4269,EPSG_NEW = 2878), axis = 1)
+   df.apply(lambda x: x.Longitude+x.Latitude,axis=1)
+        
+    
