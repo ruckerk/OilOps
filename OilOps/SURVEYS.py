@@ -659,7 +659,7 @@ def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
     with sqlite3.connect(sqldb) as conn:
         df = pd.read_sql_query('SELECT API,Latitude,Longitude FROM WELL',conn)
     
-   df['UWI10'] = df.API.map(lambda x: WELLAPI(x).API2INT(10)) 
+   df['UWI10'] = df.API.apply(lambda x: WELLAPI(x).API2INT(10)) 
    
    df[['Longitude','Latitude']].apply(lambda x:convert_XY(x.Longitude,x.Latitude,EPSG_OLD = 4269,EPSG_NEW = 2878), axis = 1)
    df.apply(lambda x: x.Longitude+x.Latitude,axis=1)
