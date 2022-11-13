@@ -270,7 +270,18 @@ def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
     pyproj.CRS0 = pyproj.CRS.from_epsg(EPSG_OLD)
     pyproj.CRS1 = pyproj.CRS.from_epsg(EPSG_NEW)
     transformer = pyproj.Transformer.from_crs(pyproj.CRS0,pyproj.CRS1,always_xy =True)
-    X2, Y2 =transformer.transform(X_LON,Y_LAT)
+    
+    if isinstance(X_LON,(float, int, str)) or isinstance(Y_LAT,(float, int, str)):
+        X2, Y2 =transformer.transform(X_LON,Y_LAT)
+    elif len(X_LON) == len(Y_LAT):
+        X_LON = np.array(X_LON)
+        Y_LAT = np.array(Y_LAT)
+        X2 = list()
+        Y2 = list()
+        for i in range(len(X_LON)):
+           X, Y = transformer.transform(X_LON[i],Y_LAT[i]) 
+           X2.append(X)
+           Y2.append(Y)     
     return X2,Y2
 
 def county_from_LatLon(LAT,LON):
