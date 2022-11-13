@@ -25,13 +25,13 @@ __all__ = ['EPSG_CODES',
     'Items_in_Polygons']
 
 def EPSG_CODES():
-    
     print('''COMMON EPSG CODES
       NAD83 GRS 80: 4269
       NAD27 CLARK 66: 4267
       WGS84 WGS84: 4326
       UTM CO 13N: 26913
-      NAD83 STATE PLANE: 2232''')
+      NAD83 STATE PLANE: 2232
+      NAD83 HARN CO SOUTH FT: 2878''')
 
 
 def shapely_to_pyshp(geom, GEOJ = False):
