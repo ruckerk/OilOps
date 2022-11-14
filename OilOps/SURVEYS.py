@@ -361,8 +361,6 @@ def survey_from_excel(file, ERRORS = True): #if True:
     return outdf
              
 def SurveyCols(df_s_in=None):
-    
-    
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
              'INC':r'.*INC.*|.*DIP.*',
              'AZI':r'.*AZI.*|.*AZM.*',
@@ -666,5 +664,430 @@ def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
     df.loc[m,['X_FEET','Y_FEET']] = pd.DataFrame({'X_FEET':A[0],'Y_FEET':A[0]}).values
     
     return(df.loc[m,['UWI10','X_FEET','Y_FEET']].drop_duplicates())
+         
+
+def CondenseSurvey(xdf,LIST_IN):
+    # if 1==1:
+    if isinstance(LIST_IN,(pd.Series,np.ndarray)):
+        UWIs=list(LIST_IN)
+    if isinstance(LIST_IN,(str,int,np.uint,np.int64)):
+        UWIs=[LIST_IN]
+    if isinstance(LIST_IN,list):
+        UWIs=LIST_IN
         
+    OUTPUT = dict()
     
+    #UWICOL = xdf.keys().get_loc(xdf.iloc[0,xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)].keys()[0])
+    UWIKEYS = xdf.iloc[0,xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)].keys()
+
+    #xdf['UWI10'] = xdf[UWIKEYS].apply(lambda x: x.apply(API2INT,length = 14), axis =1).max(axis=1)
+    
+    if 'UWI10' in UWIKEYS:
+        UWIKEY = 'UWI10'
+    else:
+        xdf['UWI10'] = None
+        for k in UWIKEYS:
+            #xdf['I'] = xdf[k].apply(API2INT)
+            xdf['I'] = xdf[k].apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+            xdf['UWI10'] = xdf['I','UWI10'].max(axis=1)
+        xdf.drop('I',inplace=True)
+        UWIKEY = 'UWI10'
+
+    UWIKEY = 'UWI10'
+    UWICOL = xdf.keys().get_loc(UWIKEY)
+    #UWIKEY = xdf.keys()[UWICOL]
+
+    # slice dataframe to subset for function
+    xdf = xdf.loc[xdf[UWIKEY].isin(UWIs)].copy(deep=True)
+
+    # format UWI's
+    xdf[UWIKEY] = xdf[UWIKEY].apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+    UWIs = [OilOps.WELLAPI(x).API2INT(10) for x in UWIs]
+    UWIs = list(set(UWIs))
+
+    # Add date column
+    xdf['FileDate'] = xdf.FILE.str.extract(r'SURVEYDATA_([0-9]{4}_[0-9]{2}_[0-9]{2}).*\.x*')
+    xdf['FileDate'] = pd.to_datetime(xdf['FileDate'],errors = 'coerce', format = '%Y_%m_%d')
+
+    # assign date to NaT values
+    xdf.loc[xdf['FileDate'].isna(),'FileDate'] = datetime.datetime(1900,1,1)
+    
+    #SKEYS = list(SurveyCols(xdf).keys())
+    #xdf = xdf.rename(columns = SurveyCols(xdf.head(5)))
+
+    SKEYS = list(SurveyCols(xdf).keys())
+    xdf = xdf.loc[xdf[SKEYS].drop_duplicates().index,:]
+
+    # Make key columns numeric
+    for k in SurveyCols(xdf):
+        xdf[k] = pd.to_numeric(xdf[k],errors = 'coerce')
+
+    # Add Azi decimal column
+    xdf.loc[:,'AZI_DEC'] = xdf.loc[:,'AZI'] - np.floor(xdf.loc[:,'AZI'])
+
+    tot = len(UWIs)
+    ct = 0
+    for UWI in UWIs:
+        ct +=1
+        if math.floor(ct/10)==ct/10:
+            print(ct,'/',tot,': ',UWI)
+        # while df.loc[df.groupby('FILE').MD.apply(lambda x: x-np.floor(x))==0,:]  
+        # filter to UWI of interest
+        xxdf = xdf.copy(deep=True)
+        xxdf = xxdf.loc[xxdf[UWIKEY] == UWI,:]
+        ftest = list(xxdf.FILE.unique())
+        
+        #print(ftest)
+        if xxdf.FILE.unique().shape[0] == 1:
+            file = xxdf.FILE.unique()[0]
+            
+        while xxdf.FILE.unique().shape[0] > 1:
+            # drop duplicates   if 1==1:
+            #xxdf = xxdf.loc[xxdf[SKEYS].drop_duplicates().index,:]
+
+            # if MD is all integers then drop
+            # df.groupby(FILE).MD.apply(lambda x:x-np.floor(x))
+            # sdf = sdf.loc[sdf.groupby('FILE').MD.apply(lambda x:x-np.floor(x))>0]
+            # HZ AZI filter
+            if xxdf.loc[xxdf.INC > 85,:].shape[0]>5:
+                #xxdf.loc[:,'AZI_DEC'] = xxdf.loc[:,'AZI'] - np.floor(xxdf.loc[:,'AZI'])
+
+                #sdf['MD_DEC'] = sdf['MD'] - np.floor(sdf['MD'])
+                ftest = xxdf.loc[xxdf.INC > 85,:].groupby('FILE')['AZI_DEC'].std()
+                ftest = pd.DataFrame(ftest[ftest>0.1])
+                #files = ftest.loc[ftest>0.1].index.to_list()
+                if ftest.empty:
+                    ftest = pd.DataFrame(xxdf.groupby('FILE')['AZI_DEC'].std())
+                xxdf = xxdf.drop(['AZI_DEC'],axis=1)
+            else:
+                ftest = xxdf.groupby('FILE')['AZI'].nunique()/xxdf.groupby('FILE')['AZI'].count()
+                ftest = pd.DataFrame(ftest.loc[ftest>0.4])
+                if ftest.empty:
+                    xxdf.loc[:,'AZI_DEC'] = xxdf.loc[:,'AZI'] - np.floor(xxdf.loc[:,'AZI'])
+                    ftest = pd.DataFrame(xxdf.groupby('FILE')['AZI_DEC'].std())
+                    xxdf = xxdf.drop(['AZI_DEC'],axis=1)
+
+            if ftest.shape[0] > 1:
+                for f in ftest.index:
+                    ftest.loc[f,'DATE'] = datetime.datetime(1900,1,1)
+                    try:
+                        date = re.findall(r'SURVEYDATA_(.*)_[0-9]*.x*',f)[0]
+                        ftest.loc[f,'DATE'] = datetime.datetime.strptime(date, '%Y_%m_%d')
+                    except: pass
+                # set column equal to index
+                ftest['FILEUWI']=ftest.index
+                # get UWI from filename
+
+                #ftest['FILEUWI']=ftest.FILEUWI.apply(APIfromFilename).apply(UWI10_)
+                UWImask = (ftest.FILEUWI.apply(APIfromFilename).apply(lambda x:OilOps.WELLAPI(x).API2INT(10)) )== OilOps.WELLAPI(UWI).API2INT(10)
+                Datemask1 = (ftest.DATE==ftest.loc[UWImask,'DATE'].max())
+                Datemask2 = (ftest.DATE==ftest.DATE.max())
+                #f1 = ftest.loc[UWImask & (ftest.DATE==ftest.DATE.max())].index
+                #f2 = ftest.loc[ftest.DATE==ftest.DATE.max()].index
+                if sum(Datemask1) > 20:
+                    ftest = ftest.loc[Datemask1]
+                elif sum(Datemask2) > 20:
+                    ftest = ftest.loc[Datemask2]
+            file = ftest.index.values[0]
+            xxdf = xxdf.loc[xxdf.FILE == file]
+
+        OUTPUT.update({UWI:file})
+        
+        #OUTPUT = pd.merge(OUTPUT,df,how='outer',on=None, left_index=False, right_index=False)
+        #OUTPUT = pd.merge(OUTPUT,xxdf,how='outer',on=None, left_index=False, right_index=False)
+        
+    return OUTPUT
+
+def Condense_Surveys(xdf):
+    # xdf = pd.read_csv(FILE)
+    # RESULT = pd.DataFrame(columns = xdf.columns.to_list())
+    # if 1==1:
+    #UWICOL = xdf.keys().get_loc(xdf.iloc[0,xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)].keys()[0])
+
+    xdf.keys().get_loc(xdf.iloc[0,xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)].keys()[0])
+    
+    UWIKEYS = list(xdf.keys()[xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)])
+    
+    #xdf['UWI10'] = xdf[UWIKEYS].max(axis=1).apply(API2INT)
+    xdf['UWI10'] = xdf[UWIKEYS].max(axis=1).apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+    #UWIlist = list(xdf.iloc[:,UWICOL].unique())
+    UWICOL = xdf.keys().get_loc('UWI10')
+    UWIKEY = 'UWI10'
+    UWIlist = list(xdf.UWI10.unique())
+    
+
+    chunkmin = 100
+    chunkmax = 1000
+    batchmin = ceil(len(UWIlist)/chunkmax)
+    batchmax = ceil(len(UWIlist)/chunkmin)
+
+    processors = multiprocessing.cpu_count()
+    processors = min(processors,batchmin)
+
+    batches = max(min(batchmax,processors),batchmin)
+    
+    data = np.array_split(UWIlist,batches)
+
+    func = partial(CondenseSurvey, xdf)
+    print ('condensing surveys')
+
+    if processors > 1:
+        with cfutures.ThreadPoolExecutor(max_workers = processors) as executor:
+            f = {executor.submit(func, a): a for a in data}
+        #RESULT=pd.DataFrame()
+        RESULT = dict()
+        print('merging condense sessions')
+        for i in f.keys():
+            #RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
+            RESULT.update(i.result())
+            print(len(RESULT.keys()))
+    else:
+        RESULT=CondenseSurvey(xdf,UWIlist)
+    #RESULT.to_csv(OUTFILE,index=False)
+    return RESULT
+          
+# Define function for nearest neighbors
+def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
+    # SURVEYS in xxdf
+    # WELL DATA in df_UWI
+    # if 1==1:
+    xxdf = xxdf.copy(deep=True)
+    
+    df_UWI = df_UWI.copy(deep=True)
+    #if 1==1:
+    #[xUWI10,args]=arg
+    #[xdf,df_UWI,DATELIMIT]=args
+    xxUWI10=convert_to_list(xxUWI10)
+    
+    #p = psutil.Process(os.getpid())
+    #p.nice(psutil.HIGH_PRIORITY_CLASS)
+
+    ix = -1
+
+    xxUWI10=pd.DataFrame(xxUWI10).iloc[:,0].unique().tolist()
+    
+    col_type = {'UWI10':int(),
+                'LatLen':int(),
+                'MeanTVD':int(),
+                'MeanX':float(),
+                'MeanY':float(),
+                'MAX_MD': float(),
+                'MeanAZI': float(),
+                'MeanAZI180': float(),
+                'overlap1':float(),
+                'dz1':float(),
+                'dxy1':float(),
+                'UWI1':int(),
+                'Days1':int(),
+                'overlap2':float(),
+                'dz2':float(),
+                'dxy2':float(),
+                'UWI2':int(),
+                'Days2':int(),
+                'overlap3':float(),
+                'dz3':float(),
+                'dxy3':float(),
+                'UWI3':int(),
+                'Days3':int(),
+                'overlap4':float(),
+                'dz4':float(),
+                'dxy4':float(),
+                'UWI4':int(),
+                'Days4':int(),
+                'overlap5':float(),
+                'dz5':float(),
+                'dxy5':float(),
+                'UWI5':int(),
+                'Days5':int()}
+    
+    OUTPUT = pd.DataFrame(col_type,index=[])
+
+    COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*', regex=True, case=False,na=False)].keys()
+    df_UWI['MAX_COMPLETION_DATE'] = df_UWI[COMPDATES].fillna(datetime.datetime(1900,1,1)).max(axis=1)
+    COMPDATEdfd = df_UWI.keys().get_loc('MAX_COMPLETION_DATE')
+
+    xxdf = xxdf.rename(columns = SurveyCols(xxdf.head(5)))
+
+    
+    # MAKE KEY COLUMNS NUMERIC
+    for k in SurveyCols(xxdf):
+        xxdf[k]=pd.to_numeric(xxdf[k],errors='coerce')
+
+    #print(list(xxdf.keys()))
+    #print(SurveyCols(xxdf.head(5)))
+    SCOLS = SurveyCols(xxdf.head(5))
+
+    if 'UWI10' in xxdf.keys():
+        UWICOL = xxdf.keys().get_loc('UWI10')
+    else:
+        UWICOL      = xxdf.keys().get_loc(xxdf.iloc[0,xxdf.keys().str.contains('.*UWI.*', regex=True, case=False,na=False)].keys()[0])
+    XPATH       = xxdf.keys().get_loc(list(SCOLS)[5])
+    YPATH       = xxdf.keys().get_loc(list(SCOLS)[4])
+    TVD         = xxdf.keys().get_loc(list(SCOLS)[3])
+    AZI         = xxdf.keys().get_loc(list(SCOLS)[2])
+    DIP         = xxdf.keys().get_loc(list(SCOLS)[1])
+    MD          = xxdf.keys().get_loc(list(SCOLS)[0])
+
+    if 'NORTH_Y_XX' in list(SCOLS):
+        XPATH       = xxdf.keys().get_loc(SCOLS['EAST_X_XX'])
+        YPATH       = xxdf.keys().get_loc(SCOLS['NORTH_Y_XX'])
+    
+    XPATH_NAME  = xxdf.keys()[XPATH] #list(SurveyCols(xxdf.head(5)))[5]
+    YPATH_NAME  = xxdf.keys()[YPATH] #list(SurveyCols(xxdf.head(5)))[4]
+    
+    MD_NAME = xxdf.keys()[MD]
+    
+    for xUWI10 in xxUWI10:
+        # if 1==1:
+        ix+=1
+        xdf = xxdf.copy(deep=True)
+        xdf = xdf.loc[xdf[SurveyCols(xdf)].dropna().index,:]
+        #print(str(xxUWI10.index(xUWI10)),' / ',str(len(xxUWI10)),' ')
+        if ix/10 == math.floor(ix/10):
+            print(str(ix) + '/' + str(len(xxUWI10)))
+        OUTPUT=OUTPUT.append(pd.Series(name=ix,dtype='int64'))
+
+        xUWI10=UWI10_(xUWI10)
+        
+
+        # Check for lateral survey points for reference well
+        if xdf.loc[(xdf['UWI10']==xUWI10) & (xdf['INC']>85),:].shape[0]<=5:
+            continue
+
+        xFILE = xdf.loc[xdf.UWI10==xUWI10,'FILE'].values[0]
+        
+        # PCA is 2 vector components
+        pca = PCA(n_components=2)
+        # add comp date filter at step 1
+        try: 
+            datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+DATELIMIT).values[0]
+        except:
+            continue
+
+        UWI10list=df_UWI[(df_UWI[df_UWI.keys()[COMPDATEdfd]])<=datecondition].UWI10
+        # filter on dates
+        xdf=xdf[xdf.UWI10.isin(UWI10list)]
+        #isolate reference well
+        refXYZ=xdf[xdf.keys()[[UWICOL,XPATH,YPATH,TVD,MD]]][xdf.UWI10==xUWI10]
+        
+        if refXYZ.shape[0]<5:
+            continue
+        #reference well TVD approximation
+        # if 1==1:
+        #refTVD = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))
+        refTVD = statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10])
+        #remove self well to prevent 0' offsets
+        xdf=xdf[xdf['UWI10']!=xUWI10]
+        
+        if xdf.shape[0]>5:
+            # get projection vector from survey points to well of interest
+            #for pt in set(UWI10):   
+            #    fmin_cobyla(objective, x0=[0.5,0.5], cons=[c1])
+            pca.fit(refXYZ.iloc[:,[1,2]])
+            X_fit = pca.transform(refXYZ[xdf.keys()[[XPATH,YPATH]]])
+            RefXMin=min(X_fit[:,0])
+            RefXMax=max(X_fit[:,0])
+            XY_fit = pca.transform(xdf[xdf.keys()[[XPATH,YPATH]]])
+            xdf['Xfit']=XY_fit[:,0]
+            xdf['Yfit']=XY_fit[:,1]
+            
+            # clip to overlapping wells
+            m = xdf['Xfit'] >= RefXMin
+            xdf = xdf.loc[m,:]
+            m = xdf['Xfit'] <= RefXMax
+            xdf = xdf.loc[m,:]
+
+            # clip to 2000' overlap
+            CLIPLIMIT = 2000
+            #XY_fit = XY_fit[(XY_fit[:,0]<max(X_fit[:,0])) & (XY_fit[:,0]>min(X_fit[:,0]))]
+            m = (xdf.loc[(xdf.Xfit<max(X_fit[:,0])) & (xdf.Xfit>min(X_fit[:,0])),['UWI10','Xfit']].groupby(by='UWI10').max()-xdf.loc[(xdf.Xfit<max(X_fit[:,0])) & (xdf.Xfit>min(X_fit[:,0])),['UWI10','Xfit']].groupby(by='UWI10').min())>=CLIPLIMIT
+            m = list(m.loc[m.iloc[:,0].values].index )            
+            xdf = xdf.loc[xdf.UWI10.isin(m)]
+            
+            # clip to 10000' offset
+            xdf=xdf[abs(xdf.Yfit)<10000]
+            
+            # clip to overlapping segments
+            #xdf=xdf[(xdf.Xfit>=RefXMin)&(xdf.Xfit<=RefXMax)]
+
+            # ref completion date
+            refdate = (df_UWI[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]).values[0]
+                                           
+            df_calc = pd.DataFrame(columns = ['UWI10','overlap','dxy','dz','abs_dxy','DAYS'])
+            j=-1
+
+            # CULL TO NEARBY WELLS!!
+            LOCAL_LIMIT = 505
+            LOCAL_UWI = 1
+            
+            for well in set(xdf.UWI10):
+                j+=1
+                overlap = max(xdf.Xfit[xdf.UWI10==well])-min(xdf.Xfit[xdf.UWI10==well])
+                gmeandistance = gmean(abs(xdf.Yfit[xdf.UWI10==well]))*np.sign(statistics.mean(xdf.Yfit[xdf.UWI10==well]))
+                #gmeandepth = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==well]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==well]))-refTVD
+                meandepth = statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==well])-refTVD
+                try:
+                    deltadays =  np.timedelta64(refdate-(df_UWI[df_UWI['UWI10']==well][df_UWI.keys()[COMPDATEdfd]]).values[0],'D').astype(float)
+                except: deltadays = None
+                
+                df_calc.loc[j,'UWI10']=well
+                df_calc.loc[j,'overlap']=overlap
+                df_calc.loc[j,'dxy']=gmeandistance
+                df_calc.loc[j,'abs_dxy']=abs(gmeandistance)
+                df_calc.loc[j,'dz']=meandepth
+                df_calc.loc[j,'DAYS']=deltadays
+                
+                
+            df_calc[df_calc.overlap>=2000]
+            sort_list=df_calc.sort_values(by=['abs_dxy']).UWI10
+
+            #add closest 5 wells passing conditions in order
+            for j in range(0,min(5,len(sort_list))):
+                ol='overlap'+str(j+1)
+                dz='dz'+str(j+1)
+                dxy='dxy'+str(j+1)
+                uwi='UWI'+str(j+1)
+                days = 'Days'+str(j+1)
+                OUTPUT.loc[ix,[ol,dz,dxy,uwi,days]]=df_calc[df_calc.UWI10==sort_list.iloc[j]][['overlap','dz','dxy','UWI10','DAYS']].values[0]
+       
+        OUTPUT.loc[ix,'UWI10']=xUWI10
+        
+        #calc lat len 
+        OUTPUT.loc[ix,['LatLen']] =abs(RefXMax-RefXMin)    
+        OUTPUT.loc[ix,['MeanTVD']]=refTVD
+        OUTPUT.loc[ix,['MeanX']]  =statistics.mean(refXYZ[XPATH_NAME])
+        OUTPUT.loc[ix,['MeanY']]  =statistics.mean(refXYZ[YPATH_NAME])
+        OUTPUT.loc[ix,'MAX_MD']   = max(refXYZ[MD_NAME].dropna())
+        OUTPUT.loc[ix,'XYZFILE'] = xFILE
+        
+        m =refXYZ.index
+        OUTPUT.loc[ix,'MeanAZI']   = circmean(xxdf.loc[m,df.keys()[AZI]]*math.pi/180) * 180/math.pi
+        if OUTPUT.loc[ix,'MeanAZI'] >= 180:
+            OUTPUT.loc[ix,'MeanAZI180'] = OUTPUT.loc[ix,'MeanAZI'] - 180
+        else:
+            OUTPUT.loc[ix,'MeanAZI180'] = OUTPUT.loc[ix,'MeanAZI']
+
+        if OUTPUT.shape[0]<1:
+            m =refXYZ.index
+            MEANAZI = statistics.mean(xxdf.loc[m,df.keys()[AZI]])
+            if MEANAZI >= 180:
+                MEANAZI_180 = MEANAZI - 180
+            OUTPUT=OUTPUT.append({'UWI10':xUWI10,
+                                  'LatLen':abs(RefXMax-RefXMin),
+                                  'MeanTVD':refTVD,
+                                  'MeanX':statistics.mean(refXYZ[XPATH_NAME]),
+                                  'MeanY':statistics.mean(refXYZ[YPATH_NAME]),
+                                  'MAX_MD':max(refXYZ[MD_NAME].dropna()),
+                                  'MeanAZI': MEANAZI,
+                                  'MeanAZI180': MEANAZI_180},
+                                 ignore_index=True)
+    outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
+
+    OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
+
+    OUTPUT.dropna(axis = 0, how='all')
+    OUTPUT = OUTPUT.drop_duplicates()
+    
+    OUTPUT.to_json(outfile+'.JSON')
+    OUTPUT.to_parquet(outfile+'.PARQUET')
+    return(OUTPUT)
