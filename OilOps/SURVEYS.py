@@ -666,7 +666,5 @@ def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
     df.loc[m,['X_FEET','Y_FEET']] = pd.DataFrame({'X_FEET':A[0],'Y_FEET':A[0]}).values
     
     return(df.loc[m,['UWI10','X_FEET','Y_FEET']].drop_duplicates())
-
-    
         
     
