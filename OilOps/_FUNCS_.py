@@ -628,9 +628,9 @@ def FILETYPETEST(file_str,filetype_str):
         return True
 
 def APIfromFilename(ffile,UWIlen=10):
-    lst = re.findall(r'UWI[0-9]{9,}',ffile, re.I)
+    lst = re.findall(r'UWI[0-9]{UWIlen-1,}',ffile, re.I)
     if len(lst)==0:
-        lst = re.findall(r'[0-9]{9,}',ffile)
+        lst = re.findall(r'[0-9]{UWIlen-1,}',ffile)
     else:
         lst[0] = re.sub('UWI','',lst[0],re.I)
     if len(lst)>0:        
@@ -702,3 +702,32 @@ def load_surveyfile(conn, row):
     conn.commit()
     return cur.lastrowid
 
+def convert_to_list(x):
+    try: x=x.tolist()
+    except: pass
+    if isinstance(x,(np.int,str)):
+        x=[x]
+    if isinstance(x,(np.ndarray,pd.DataFrame,pd.Series)):
+        x=list(x)
+    if not isinstance(x,list):
+        x=list(x)
+        x2 = []
+        for i in x:
+            if isinstance(i,list): x2.extend(flatten(i))
+            else: x2.append(i)
+        x=x2
+    return(x)
+
+def findfiles(which, where='.',latest = True):
+    '''Returns list of filenames from `where` path matched by 'which'
+       shell pattern. Matching is case-insensitive.'''
+    # TODO: recursive param with walk() filtering
+    rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
+    list_of_files = [path.join(where,name) for name in listdir(where) if rule.match(name)]
+    latest_file = max(list_of_files, key=path.getctime)
+    if latest == True:
+        return latest_file
+    else:
+        return list_of_files
+
+    
