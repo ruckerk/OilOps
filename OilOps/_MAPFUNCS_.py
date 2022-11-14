@@ -8,6 +8,7 @@ import pycrs
 import pyproj
 import collections
 from geopy.geocoders import Nominatim
+import geopandas as gpd
 
 def read_shapefile(sf):
     # https://towardsdatascience.com/mapping-with-matplotlib-pandas-geopandas-and-basemap-in-python-d11b57ab5dac
@@ -179,3 +180,29 @@ def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     #df_in[['X','Y']]=df_in.apply(lambda x: transform(epsg1,epsg2,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(_FUNCS_.pd.Series)
     return df_in
 
+def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lines.shp'):
+    gp = gpd.read_file(shpfile)
+    try:
+        gp['UWI10'] = gp.API_Label.apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+    except:
+        gp = gp.loc[~gp.API.isna()]
+        gp['UWI10'] = gp.API.str.replace('-','').str[0:10]
+        gp['UWI10'] = "5" + gp['UWI10']
+        gp['UWI10'] = gp['UWI10'].astype(int)
+        
+    ULIST = UWI10LIST
+    USELIST = ULIST.copy()
+    
+    SUB = gp.loc[gp.UWI10.isin(ULIST)]
+    for g in SUB.index:
+        G = SUB.loc[g,'geometry'].buffer(5000)
+        #gpd.tools.sjoin(gp,G,how = 'left')
+        
+        # ROUGH FILTER
+        m = gp.geometry.centroid.distance(G.centroid)<10000
+        m[g] = False
+        m = gp.loc[m].index
+        m2 = gp.loc[m,'geometry'].distance(G)<10000
+        m2 = m2.loc[m2].index
+        USELIST = USELIST + gp.loc[(gp.index.isin(m2)) & (~gp.UWI10.isin(USELIST)),'UWI10'].tolist()
+    return USELIST
