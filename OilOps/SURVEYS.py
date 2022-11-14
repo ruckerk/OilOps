@@ -661,8 +661,12 @@ def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
         df = pd.read_sql_query('SELECT API,Latitude,Longitude FROM WELL',conn)
     
     df['UWI10'] = df.API.apply(lambda x: WELLAPI(x).API2INT(10)) 
-   
-    df[['Longitude','Latitude']].apply(lambda x:convert_XY(x.Longitude,x.Latitude,EPSG_OLD = 4269,EPSG_NEW = 2878), axis = 1)
-    df.apply(lambda x: x.Longitude+x.Latitude,axis=1)
+    m = df[['Longitude','Latitude']].dropna().index
+    A = convert_XY(df.loc[m,'Longitude'],df.loc[m,'Latitude'], EPSG_OLD=4269, EPSG_NEW=2878)
+    df.loc[m,['X_FEET','Y_FEET']] = pd.DataFrame({'X_FEET':A[0],'Y_FEET':A[0]}).values
+    
+    return(df.loc[m,['UWI10','X_FEET','Y_FEET']].drop_duplicates())
+
+    
         
     
