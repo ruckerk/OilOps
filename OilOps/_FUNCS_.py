@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
 from math import floor, cos, sin, radians, atan2, degrees,atan2 , sqrt, ceil, isnan, pi
+import statistics
 from os import path, listdir, remove, makedirs, walk, mkdir, rename
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -17,6 +18,7 @@ from time import perf_counter, sleep
 from tkinter import filedialog
 from zipfile import ZipFile
 import concurrent.futures
+import futures3 as cfutures
 import csv
 import datetime
 import easygui
@@ -30,8 +32,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import multiprocessing
-import concurrent.futures
-
 import numpy as np
 import pandas as pd
 import pylab
@@ -48,10 +48,14 @@ import wget
 import magic
 import textract
 import lasio
+import psutil
+import fnmatch
 
 from scipy import signal
 from scipy import interpolate
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, fmin_cobyla
+from scipy.stats.mstats import gmean
+from scipy.stats import circmean
 
 import openpyxl
 import xlsxwriter
