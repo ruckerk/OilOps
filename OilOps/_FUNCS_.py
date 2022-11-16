@@ -3,7 +3,7 @@ from adjustText import adjust_text
 from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
-from math import floor, cos, sin, radians, atan2, degrees,atan2 , sqrt, ceil, isnan
+from math import floor, cos, sin, radians, atan2, degrees,atan2 , sqrt, ceil, isnan, pi
 from os import path, listdir, remove, makedirs, walk, mkdir, rename
 from requests import Session
 from requests.adapters import HTTPAdapter
