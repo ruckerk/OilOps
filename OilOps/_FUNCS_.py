@@ -730,7 +730,7 @@ def findfiles(which, where='.',latest = True):
     list_of_files = [path.join(where,name) for name in listdir(where) if rule.match(name)]
     if len(list_of_files)>0:
         latest_file = max(list_of_files, key=path.getctime)
-    else
+    else:
         latest_file = None
     if latest == True:
         return latest_file
