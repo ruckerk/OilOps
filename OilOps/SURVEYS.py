@@ -834,7 +834,7 @@ def Condense_Surveys(xdf):
     print ('condensing surveys')
 
     if processors > 1:
-        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+        with cfutures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(func, a): a for a in data}
         #RESULT=pd.DataFrame()
         RESULT = dict()
@@ -959,7 +959,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
         xFILE = xdf.loc[xdf.UWI10==xUWI10,'FILE'].values[0]
         
         # PCA is 2 vector components
-        pca = PCA(n_components=2)
+        pca = sk.decomposition.PCA(n_components=2)
         # add comp date filter at step 1
         try: 
             datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+DATELIMIT).values[0]
