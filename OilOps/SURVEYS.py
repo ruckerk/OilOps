@@ -690,7 +690,7 @@ def CondenseSurvey(xdf,LIST_IN):
         xdf['UWI10'] = None
         for k in UWIKEYS:
             #xdf['I'] = xdf[k].apply(API2INT)
-            xdf['I'] = xdf[k].apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+            xdf['I'] = xdf[k].apply(lambda x: WELLAPI(x).API2INT(10))
             xdf['UWI10'] = xdf['I','UWI10'].max(axis=1)
         xdf.drop('I',inplace=True)
         UWIKEY = 'UWI10'
@@ -703,8 +703,8 @@ def CondenseSurvey(xdf,LIST_IN):
     xdf = xdf.loc[xdf[UWIKEY].isin(UWIs)].copy(deep=True)
 
     # format UWI's
-    xdf[UWIKEY] = xdf[UWIKEY].apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
-    UWIs = [OilOps.WELLAPI(x).API2INT(10) for x in UWIs]
+    xdf[UWIKEY] = xdf[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
+    UWIs = [WELLAPI(x).API2INT(10) for x in UWIs]
     UWIs = list(set(UWIs))
 
     # Add date column
@@ -781,7 +781,7 @@ def CondenseSurvey(xdf,LIST_IN):
                 # get UWI from filename
 
                 #ftest['FILEUWI']=ftest.FILEUWI.apply(APIfromFilename).apply(UWI10_)
-                UWImask = (ftest.FILEUWI.apply(APIfromFilename).apply(lambda x:OilOps.WELLAPI(x).API2INT(10)) )== OilOps.WELLAPI(UWI).API2INT(10)
+                UWImask = (ftest.FILEUWI.apply(APIfromFilename).apply(lambda x:WELLAPI(x).API2INT(10)) )== WELLAPI(UWI).API2INT(10)
                 Datemask1 = (ftest.DATE==ftest.loc[UWImask,'DATE'].max())
                 Datemask2 = (ftest.DATE==ftest.DATE.max())
                 #f1 = ftest.loc[UWImask & (ftest.DATE==ftest.DATE.max())].index
@@ -811,7 +811,7 @@ def Condense_Surveys(xdf):
     UWIKEYS = list(xdf.keys()[xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)])
     
     #xdf['UWI10'] = xdf[UWIKEYS].max(axis=1).apply(API2INT)
-    xdf['UWI10'] = xdf[UWIKEYS].max(axis=1).apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+    xdf['UWI10'] = xdf[UWIKEYS].max(axis=1).apply(lambda x: WELLAPI(x).API2INT(10))
     #UWIlist = list(xdf.iloc[:,UWICOL].unique())
     UWICOL = xdf.keys().get_loc('UWI10')
     UWIKEY = 'UWI10'
