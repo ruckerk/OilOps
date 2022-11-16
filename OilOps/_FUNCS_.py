@@ -734,4 +734,60 @@ def findfiles(which, where='.',latest = True):
     else:
         return list_of_files
 
+def InitTable(CONN,TABLENAME, FIELD_DICT= None):
+    if FIELD_DICT == None:
+        FIELD_DICT = {}
+    QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '_TABLENAME_' '''
+    QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
+    
+    c = CONN.cursor()
+    c.execute(QRY)
+   
+    if c.fetchone()[0]==0 :
+        QRY = """ CREATE TABLE _TABLENAME_ (
+                _FIELDS_
+            ); """
+        QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
+        FIELD_TEXT = ''
+        for k in FIELD_DICT.keys():
+            if isinstance(FIELD_DICT[k], (list, tuple)):
+                FIELD_TEXT = FIELD_TEXT + k + ' ' + ' '.join(FIELD_DICT[k])+'\n'
+            else:
+                FIELD_TEXT = FIELD_TEXT + k + ' ' + FIELD_DICT[k]+'\n'
+        QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
+        c.execute(QRY)
+        
+    else:
+        QRY = 'PRAGMA table_info('+TABLENAME+');'
+        c.execute(QRY)
+        COLS = c.fetchall()
+        COLS = [X[1] for X in COLS]
+        for k in FIELD_DICT.keys():
+            if k in COLS:
+                continue
+            else:
+                if isinstance(FIELD_DICT[k], (list, tuple)):
+                    FIELD_TEXT = k + ' ' + ' '.join(FIELD_DICT[k])
+                else:
+                    FIELD_TEXT = k + ' ' + FIELD_DICT[k]
+                
+            QRY = 'ALTER TABLE _TABLENAME_ ADD COLUMN _FIELDS_'
+            QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
+            QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
+            
+            c.execute(QRY)
+    CONN.commit()
+    return None
+
+def DROP_TABLE(CONN, TABLE_NAME):
+    c = CONN.cursor()
+    QRY = 'DROP TABLE IF EXISTS '+TABLE_NAME
+    c.execute(QRY)
+    CONN.commit()           
+
+def READ_TABLE(CONN, TABLE_NAME):
+    c = CONN.cursor()
+    c.execute('SELECT * FROM ' + TABLE_NAME)
+    OUT = c.fetchall()
+    return OUT
     
