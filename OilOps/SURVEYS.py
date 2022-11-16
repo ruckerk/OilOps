@@ -19,7 +19,9 @@ __all__ = ['Find_API_Col',
           'JoinSurveysInFolder',
           'Survey_Join',
           'COGCC_SURVEY_CLEANUP',
-          'APIfromFrame']
+          'APIfromFrame',
+          'Condense_Surveys',
+          'XYZSpacing']
 
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
