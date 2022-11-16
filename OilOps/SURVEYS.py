@@ -731,7 +731,7 @@ def CondenseSurvey(xdf,LIST_IN):
     ct = 0
     for UWI in UWIs:
         ct +=1
-        if math.floor(ct/10)==ct/10:
+        if floor(ct/10)==ct/10:
             print(ct,'/',tot,': ',UWI)
         # while df.loc[df.groupby('FILE').MD.apply(lambda x: x-np.floor(x))==0,:]  
         # filter to UWI of interest
@@ -945,7 +945,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
         xdf = xxdf.copy(deep=True)
         xdf = xdf.loc[xdf[SurveyCols(xdf)].dropna().index,:]
         #print(str(xxUWI10.index(xUWI10)),' / ',str(len(xxUWI10)),' ')
-        if ix/10 == math.floor(ix/10):
+        if ix/10 == floor(ix/10):
             print(str(ix) + '/' + str(len(xxUWI10)))
         OUTPUT=OUTPUT.append(pd.Series(name=ix,dtype='int64'))
 
@@ -1063,7 +1063,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
         OUTPUT.loc[ix,'XYZFILE'] = xFILE
         
         m =refXYZ.index
-        OUTPUT.loc[ix,'MeanAZI']   = circmean(xxdf.loc[m,df.keys()[AZI]]*math.pi/180) * 180/math.pi
+        OUTPUT.loc[ix,'MeanAZI']   = circmean(xxdf.loc[m,df.keys()[AZI]]*pi/180) * 180/pi
         if OUTPUT.loc[ix,'MeanAZI'] >= 180:
             OUTPUT.loc[ix,'MeanAZI180'] = OUTPUT.loc[ix,'MeanAZI'] - 180
         else:
