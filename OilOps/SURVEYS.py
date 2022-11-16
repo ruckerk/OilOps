@@ -834,7 +834,7 @@ def Condense_Surveys(xdf):
     print ('condensing surveys')
 
     if processors > 1:
-        with cfutures.ThreadPoolExecutor(max_workers = processors) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(func, a): a for a in data}
         #RESULT=pd.DataFrame()
         RESULT = dict()
