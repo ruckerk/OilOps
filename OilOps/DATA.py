@@ -1458,7 +1458,6 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
             return None
         
     for UWI in pdf[UWIKEY]:
-        pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
         try: 
             DATE     = pdf.iloc[:,pdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
             DAYSON   = pdf.iloc[0,pdf.keys().str.contains('.*DAYS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
@@ -1474,7 +1473,8 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
             print(f'Cannot parse tables')
             ERROR = 1
             continue
-
+                      
+        pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
         pdf[DATE] = pd.to_datetime(pdf[DATE]).dt.date
         pdf.sort_values(by=DATE, ascending = True, inplace =True)
 
