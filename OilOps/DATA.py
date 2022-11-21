@@ -1472,7 +1472,8 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     except:
         print(f'Cannot parse tables')
         ERROR = 1
-        continue
+        return None
+ 
         
     pdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
