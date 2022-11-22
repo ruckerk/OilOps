@@ -1427,7 +1427,7 @@ def SUMMARIZE_COGCC():
 def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
-    
+if True:    
     pdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
     OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
@@ -1478,8 +1478,13 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     pdf[DATE] = pd.to_datetime(pdf[DATE]).dt.date
            
     for UWI in pdf[UWIKEY].unique():
+        #UWI
         mB = pdf[UWIKEY] == UWI
         m = pdf.index[mB]
+           
+        if pdf.loc[m,[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
+           #print('NO PRODUCTION')
+           continue
         
         pdf.loc[m,'PROD_DAYS'] = pdf.loc[m,DAYSON].cumsum()
         
