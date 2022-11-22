@@ -1427,7 +1427,7 @@ def SUMMARIZE_COGCC():
 def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
-if True:    
+
     pdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
     OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
