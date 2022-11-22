@@ -630,16 +630,18 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     RESULT = DF_UNSTRING(RESULT)
     RESULT.UWI = RESULT.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
     RESULT = RESULT.drop_duplicates()
-
-    m = RESULT.UWI.isna() * RESULT.API.notnull()
-    RESULT.loc[m,'UWI'] = RESULT.loc[m,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
+    
+   if 'API' in RESULT.keys():
+        m = RESULT.UWI.isna() * RESULT.API.notnull()
+        RESULT.loc[m,'UWI'] = RESULT.loc[m,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
 
     m = RESULT.UWI.isna()
     RESULT.loc[m,'UWI'] = RESULT.loc[m,'FILE'].apply(APIfromString,args = (True,)).fillna(np.nan)   
 
     RESULT = DF_UNSTRING(RESULT)
-    RESULT['API'] = RESULT['API'].fillna('')
-    
+    if 'API' in RESULT.keys():
+        RESULT['API'] = RESULT['API'].fillna('')
+
     if SAVE == True:
         RESULT.to_csv(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.CSV')
         RESULT.to_json(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.JSON')
