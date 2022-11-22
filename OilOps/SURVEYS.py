@@ -631,7 +631,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     RESULT.UWI = RESULT.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
     RESULT = RESULT.drop_duplicates()
     
-   if 'API' in RESULT.keys():
+    if 'API' in RESULT.keys():
         m = RESULT.UWI.isna() * RESULT.API.notnull()
         RESULT.loc[m,'UWI'] = RESULT.loc[m,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
 
