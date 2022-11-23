@@ -1741,14 +1741,14 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                                
             if len(PRODOIL.intersection(PRODGAS).intersection(PRODWTR)) >3 : 
                 if pdf.loc[PREPEAKOIL,WTR].sum()>0:
-                    OUTPUT.at[UWI,'OWR_PrePeakOil']  = np.exp(logsumnexp(pdf.loc[PREPEAKOIL,OIL])-logsumnexp(pdf.loc[PREPEAKOIL,WTR]))
+                    OUTPUT.at[UWI,'OWR_PrePeakOil']  = np.exp(logsumexp(pdf.loc[PREPEAKOIL,OIL])-logsumexp(pdf.loc[PREPEAKOIL,WTR]))
                     #OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
                 if pdf.loc[POSTPEAKGAS,WTR].sum() >0:
-                    OUTPUT.at[UWI,'OWR_PostPeakGas']  = np.exp(logsumnexp(pdf.loc[POSTPEAKGAS,OIL])-logsumnexp(pdf.loc[POSTPEAKGAS,WTR]))
+                    OUTPUT.at[UWI,'OWR_PostPeakGas']  = np.exp(logsumexp(pdf.loc[POSTPEAKGAS,OIL])-logsumexp(pdf.loc[POSTPEAKGAS,WTR]))
                     #OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()     
-                OUTPUT.at[UWI,'WOC_PostPeakOil'] = np.exp(logsumnexp(pdf.loc[POSTPEAKOIL,WTR]) - logsumnexp(pdf.loc[POSTPEAKOIL,WTR].fillna(0)+pdf.loc[POSTPEAKOIL,OIL].fillna(0)))                                                                          
+                OUTPUT.at[UWI,'WOC_PostPeakOil'] = np.exp(logsumexp(pdf.loc[POSTPEAKOIL,WTR]) - logsumexp(pdf.loc[POSTPEAKOIL,WTR].fillna(0)+pdf.loc[POSTPEAKOIL,OIL].fillna(0)))                                                                          
                 #OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
-                OUTPUT.at[UWI,'WOC_PostPeakGas'] = np.exp(logsumnexp(pdf.loc[POSTPEAKGAS,WTR]) - logsumnexp(pdf.loc[POSTPEAKGAS,WTR].fillna(0)+pdf.loc[POSTPEAKGAS,OIL].fillna(0)))                                                               
+                OUTPUT.at[UWI,'WOC_PostPeakGas'] = np.exp(logsumexp(pdf.loc[POSTPEAKGAS,WTR]) - logsumexp(pdf.loc[POSTPEAKGAS,WTR].fillna(0)+pdf.loc[POSTPEAKGAS,OIL].fillna(0)))                                                               
                 #OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
                 OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf[WTR][0:pdf[OIL].idxmax()].sum()
                 OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf[WTR][0:pdf[GAS].idxmax()].sum()
