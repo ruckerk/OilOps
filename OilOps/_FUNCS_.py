@@ -739,7 +739,7 @@ def findfiles(which, where='.',latest = True):
     else:
         return list_of_files
 
-def InitTable(CONN,TABLENAME, FIELD_DICT= None):
+def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
     if FIELD_DICT == None:
         FIELD_DICT = {}
     QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '_TABLENAME_' '''
@@ -756,9 +756,10 @@ def InitTable(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_TEXT = ''
         for k in FIELD_DICT.keys():
             if isinstance(FIELD_DICT[k], (list, tuple)):
-                FIELD_TEXT = FIELD_TEXT + k + ' ' + ' '.join(FIELD_DICT[k])+'\n'
+                FIELD_TEXT = FIELD_TEXT + k + ' ' + ' '.join(FIELD_DICT[k])+', \n'
             else:
-                FIELD_TEXT = FIELD_TEXT + k + ' ' + FIELD_DICT[k]+'\n'
+                FIELD_TEXT = FIELD_TEXT + k + ' ' + FIELD_DICT[k]+', \n '
+        FIELD_TEXT = FIELD_TEXT[:-4]
         QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
         c.execute(QRY)
         
@@ -784,15 +785,45 @@ def InitTable(CONN,TABLENAME, FIELD_DICT= None):
     CONN.commit()
     return None
 
-def DROP_TABLE(CONN, TABLE_NAME):
+def DROP_SQL_TABLE(CONN, TABLE_NAME):
     c = CONN.cursor()
     QRY = 'DROP TABLE IF EXISTS '+TABLE_NAME
     c.execute(QRY)
     CONN.commit()           
 
-def READ_TABLE(CONN, TABLE_NAME):
+def READ_SQL_TABLE(CONN, TABLE_NAME):
     c = CONN.cursor()
     c.execute('SELECT * FROM ' + TABLE_NAME)
     OUT = c.fetchall()
     return OUT
-    
+
+def LIST_SQL_TABLES(CONN):
+    QRY = '''SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name'''
+    c = CONN.cursor()
+    c.execute(QRY)
+    OUT = c.fetchall()
+    return OUT
+
+def QUERY_SQL_TABLES(CONN,QUERY):
+    c = CONN.cursor()
+    c.execute(QUERY)
+    OUT = c.fetchall()
+    return OUT
+
+def DTYPE_TO_SQL(STRING):
+    STRING = str(STRING)
+    STRING = STRING.upper()
+    if any(x in STRING for x in ('OBJECT','DATE')):
+        return 'TEXT'
+    if any(x in STRING for x in ('INT','INT32')):
+        return 'INTEGER'
+    if any(x in STRING for x in ('REAL, FLOAT')):
+        return 'REAL'
+    return STRING
+
+def FRAME_TO_SQL_TYPES(df_in):
+    OUT = dict()
+    for k in df_in.keys():
+        T = df_in[k].dtype.name
+        OUT[k] = DTYPE_TO_SQL(T)        
+    return(OUT)    
