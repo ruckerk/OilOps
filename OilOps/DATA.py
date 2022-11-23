@@ -1678,7 +1678,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         pdf.loc['OIL_RATE'] = pdf.loc[OIL]/pdf.loc[DAYSON]
         pdf.loc['GAS_RATE'] = pdf.loc[GAS]/pdf.loc[DAYSON]
         pdf.loc['WTR_RATE'] = pdf.loc[WTR]/pdf.loc[DAYSON]
-        pdf.loc['PROD_DAYS'] = pdf.loc,DAYSON].cumsum()
+        pdf.loc['PROD_DAYS'] = pdf.loc[DAYSON].cumsum()
         
         pdf.loc['CUMOIL'] = pdf.loc[OIL].cumsum()
         pdf.loc['CUMGAS'] = pdf.loc[GAS].cumsum()
