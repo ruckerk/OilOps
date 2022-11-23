@@ -1444,7 +1444,7 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
                                  ,'Production_Formation'])
     
     MonthArray = np.arange(3,49,3)
-    for i in MonthArray:'CumWtr_Mo'+str(i)
+    for i in MonthArray:
         OUTPUT['CumOil_Mo'+str(i)] = np.nan
         OUTPUT['CumGas_Mo'+str(i)] = np.nan
         OUTPUT['CumWtr_Mo'+str(i)] = np.nan
