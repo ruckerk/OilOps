@@ -851,7 +851,7 @@ def Condense_Surveys(xdf):
     return RESULT
           
 # Define function for nearest neighbors
-def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
+def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10, SAVE = False):
     # SURVEYS in xxdf
     # WELL DATA in df_UWI
     # if 1==1:
@@ -1092,7 +1092,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
 
     OUTPUT.dropna(axis = 0, how='all')
     OUTPUT = OUTPUT.drop_duplicates()
-    
-    OUTPUT.to_json(outfile+'.JSON')
-    OUTPUT.to_parquet(outfile+'.PARQUET')
+    if SAVE:
+        OUTPUT.to_json(outfile+'.JSON')
+        OUTPUT.to_parquet(outfile+'.PARQUET')
     return(OUTPUT)
