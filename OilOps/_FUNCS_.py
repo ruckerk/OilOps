@@ -76,6 +76,7 @@ from scipy.special import logsumexp
 
 from .WELLAPI import WELLAPI as WELLAPI
 
+warnings.filterwarnings('ignore')
 
 def DF_UNSTRING(df_IN):
     df_IN=df_IN.copy()
