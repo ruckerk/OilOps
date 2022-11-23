@@ -7,7 +7,8 @@ __all__ = ['CO_BASEDATA',
            'Get_Scouts',
            'Merge_Frac_Focus',
            'SUMMARIZE_COGCC',
-           'SUMMARIZE_PROD_DATA']
+           'SUMMARIZE_PROD_DATA', 
+           'SUMMARIZE_PROD_DATA2']
 
 #Define Functions for multiprocessing iteration
 
@@ -1595,6 +1596,183 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
                                 OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[mB & (pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
                             if pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
                                 OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
+        OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
+        #pdf.loc[m,'UWI'] = UWI
+           
+    if ADD_RATIOS:
+        return OUTPUT, pdf
+    else:
+        return OUTPUT
+
+def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+
+    ppdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
+    
+    OUTPUT=pd.DataFrame(columns=['UWI','UWI10',
+                                 'BTU_MEAN','BTU_STD'
+                                 ,'API_MEAN','API_STD'
+                                 ,'Peak_Oil_Date','Peak_Oil_Days','Peak_Oil_CumOil','Peak_Oil_CumGas','Peak_Oil_CumWtr'
+                                 ,'Peak_Gas_Date','Peak_Gas_Days','Peak_Gas_CumOil','Peak_Gas_CumGas','Peak_Gas_CumWtr'
+                                 ,'OWR_PrePeakOil','OWR_PostPeakGas'
+                                 ,'GOR_PrePeakOil','GOR_PeakGas','GOR_PostPeakGOR'
+                                 ,'WOC_PostPeakOil','WOC_PostPeakGas'
+                                 ,'GOR_Final','OWC_Final'
+                                 ,'Month1'
+                                 ,'GOR_MO2_4','GOR_MO5_7','GOR_MO11_13','GOR_MO23_25','GOR_MO35_37','GOR_MO47_49'
+                                 ,'OWR_MO2_4','OWR_MO5_7','OWR_MO11_13','OWR_MO23_25','OWR_MO35_37','OWR_MO47_49'
+                                 ,'Production_Formation'])
+    
+    MonthArray = np.arange(3,49,3)
+    for i in MonthArray:
+        OUTPUT['CumOil_Mo'+str(i)] = np.nan
+        OUTPUT['CumGas_Mo'+str(i)] = np.nan
+        OUTPUT['CumWtr_Mo'+str(i)] = np.nan
+    
+    if 'UWI10' in ppdf.keys():
+        UWIKEY = 'UWI10'
+    else:
+        UWIKEY = Find_Str_Locs(df_in,'UWI|API')
+        try:
+            UWIKEY = ppdf[UWIKEY].applymap(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+        except:
+            print('NO UWI COLUMN!')
+            return None
+           
+    try: 
+        DATE     = ppdf.iloc[:,pdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
+        DAYSON   = ppdf.iloc[0,pdf.keys().str.contains('.*DAYS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
+        OIL      = ppdf.iloc[0,pdf.keys().str.contains('.*OIL.*PROD.*', regex=True, case=False,na=False)].keys()[0]
+        GAS      = ppdf.iloc[0,pdf.keys().str.contains('.*GAS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
+        WTR      = ppdf.iloc[0,pdf.keys().str.contains('.*WATER.*VOLUME.*', regex=True, case=False,na=False)].keys()[0]
+        API      = ppdf.iloc[0,pdf.keys().str.contains('.*OIL.*GRAVITY.*', regex=True, case=False,na=False)].keys()[0]
+        BTU      = ppdf.iloc[0,pdf.keys().str.contains('.*GAS.*BTU.*', regex=True, case=False,na=False)].keys()[0]
+        FM       = ppdf.iloc[0,pdf.keys().str.contains('.*Formation.*', regex=True, case=False,na=False)].keys()[0]
+        #SEQ      = pdf.iloc[0,pdf.keys().str.contains('.*SEQUENCE.*', regex=True, case=False,na=False)].keys()[0]
+
+    except:
+        print(f'Cannot parse tables')
+        ERROR = 1
+        return None
+    
+    ppdf[DATE] = pd.to_datetime(pdf[DATE]).dt.date
+           
+    for UWI in ppdf[UWIKEY].unique():
+        pdf = pdf.loc[pdf[UWIKEY] == UWI]
+           
+        if pdf.loc[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
+           #print('NO PRODUCTION')
+           continue
+        OUTPUT.at[UWI,'UWI'] = UWI
+        OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
+
+        pdf.loc['PROD_DAYS'] = pdf.loc[m,DAYSON].cumsum()
+        
+        pdf.sort_values(by=DATE, ascending = True, inplace =True)
+
+        PRODOIL = pdf.loc[OIL].dropna().index
+        PRODGAS = pdf.loc[GAS].dropna().index
+        PRODWTR = pdf.loc[WTR].dropna().index
+
+        pdf.loc['OIL_RATE'] = pdf.loc[OIL]/pdf.loc[DAYSON]
+        pdf.loc['GAS_RATE'] = pdf.loc[GAS]/pdf.loc[DAYSON]
+        pdf.loc['WTR_RATE'] = pdf.loc[WTR]/pdf.loc[DAYSON]
+        pdf.loc['PROD_DAYS'] = pdf.loc,DAYSON].cumsum()
+        
+        pdf.loc['CUMOIL'] = pdf.loc[OIL].cumsum()
+        pdf.loc['CUMGAS'] = pdf.loc[GAS].cumsum()
+        pdf.loc['CUMWTR'] = pdf.loc[WTR].cumsum()
+
+        #pdf[['TMB_OIL','TMB_GAS','TMB_WTR']] = np.nan
+        
+        pdf.loc[PRODOIL,'TMB_OIL'] = pdf.loc[PRODOIL,'CUMOIL'] / pdf.loc[PRODOIL,OIL]
+        pdf.loc[PRODGAS,'TMB_GAS'] = pdf.loc[PRODGAS,'CUMGAS'] / pdf.loc[PRODGAS,GAS]
+        pdf.loc[PRODWTR,'TMB_WTR'] = pdf.loc[PRODWTR,'CUMWTR'] / pdf.loc[PRODWTR,WTR]      
+
+        #pdf[['GOR','OWR','WOR','OWC','WOC']] = np.nan
+        pdf.loc[PRODOIL,'GOR'] = pdf.loc[PRODOIL,GAS]*1000/pdf.loc[PRODOIL,OIL]
+        pdf.loc[PRODWTR,'OWR'] = pdf.loc[PRODWTR,OIL]/pdf.loc[PRODWTR,WTR]
+        pdf.loc[PRODOIL,'WOR'] = pdf.loc[PRODOIL,WTR]/pdf.loc[PRODOIL,OIL]
+        
+        m2 = PRODOIL.join(PRODWTR,how='outer')
+        pdf.loc[m2,'OWC'] = pdf.loc[m2,OIL]/(pdf.loc[m2,WTR]+pdf.loc[m2,OIL])
+        pdf.loc[m2,'WOC'] = pdf.loc[m2,WTR]/(pdf.loc[m2,WTR]+pdf.loc[m2,OIL])
+        
+        if pdf[[API]].dropna(how='any').shape[0]>3:
+            OUTPUT.at[UWI,'API_MEAN']         = pdf.loc[API].astype('float').describe()[1]
+            OUTPUT.at[UWI,'API_STD']          = pdf.loc[API].astype('float').describe()[2]
+        if pdf[[BTU]].dropna(how='any').shape[0]>3:
+            OUTPUT.at[UWI,'BTU_MEAN']         = pdf.loc[BTU].astype('float').describe()[1]
+            OUTPUT.at[UWI,'BTU_STD']          = pdf.loc[BTU].astype('float').describe()[2]
+        if pdf[[OIL,GAS]].dropna(how='any').shape[0]>3:
+            OUTPUT.at[UWI,'Peak_Oil_Date']   = pdf.loc[DATE][pdf.loc[OIL].idxmax()]
+            OUTPUT.at[UWI,'Peak_Oil_Days']   = pdf.loc['PROD_DAYS'][pdf.loc[OIL].idxmax()]
+            OUTPUT.at[UWI,'Peak_Oil_CumOil'] = pdf.loc[OIL][0:pdf.loc[OIL].idxmax()].sum()
+            OUTPUT.at[UWI,'Peak_Oil_CumGas'] = pdf.loc[GAS][0:pdf.loc[OIL].idxmax()].sum()
+
+            OUTPUT.at[UWI,'Peak_Gas_Date']   = pdf.loc[DATE][pdf.loc[GAS].idxmax()]
+            OUTPUT.at[UWI,'Peak_Gas_Days']   = pdf.loc['PROD_DAYS'][pdf.loc[GAS].idxmax()]
+            OUTPUT.at[UWI,'Peak_Gas_CumOil'] = pdf.loc[OIL][0:pdf.loc[GAS].idxmax()].sum()
+            OUTPUT.at[UWI,'Peak_Gas_CumGas'] = pdf.loc[GAS][0:pdf.loc[GAS].idxmax()].sum()
+
+            #PREPEAKOIL  = pdf.index[mB][(pdf.loc[m,'PROD_DAYS']-pdf.loc[m,'PROD_DAYS'][pdf.loc[m,OIL].idxmax()]).between(-100,0)]
+            PREPEAKOIL  = pdf.index[(pdf.loc['PROD_DAYS'] - pdf.loc[pdf.loc[OIL].idxmax(),'PROD_DAYS']).between(-200,0)]
+           
+            #POSTPEAKOIL = pdf.loc[(pdf.loc[m,'PROD_DAYS'][pdf.loc[m,OIL].idxmax()]-pdf.loc[m,'PROD_DAYS']).between(0,100),:].index
+            POSTPEAKOIL  = pdf.index[(pdf.loc['PROD_DAYS'] - pdf.loc[pdf.loc[OIL].idxmax(),'PROD_DAYS']).between(0,100)]
+            
+            #POSTPEAKGAS = pdf.loc[(pdf.loc[m,'PROD_DAYS'][pdf.loc[m,GAS].idxmax()]-pdf.loc[m,'PROD_DAYS']).between(0,100),:].index
+            POSTPEAKGAS  = pdf.index[(pdf.loc['PROD_DAYS'] - pdf.loc[pdf.loc[GAS].idxmax(),'PROD_DAYS']).between(0,100)]
+            
+            #PEAKGAS = pdf.loc[(pdf.loc[m,'PROD_DAYS'][pdf.loc[m,GAS].idxmax()]-pdf.loc[m,'PROD_DAYS']).between(-50,50),:].index
+            PEAKGAS = pdf.index[(pdf.loc['PROD_DAYS'] - pdf.loc[pdf.loc[GAS].idxmax(),'PROD_DAYS']).between(-50,50)]
+           
+            LATEWATER = pdf.index[pdf.loc['TMB_WTR']>500]
+            LATEGAS = pdf.index[pdf.loc['TMB_GAS']>30]
+            
+            if pdf.loc[PREPEAKOIL,OIL].sum()>0:
+                OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
+            if pdf.loc[PEAKGAS,OIL].sum()>0:
+                OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
+                               
+            if len(PRODOIL.intersection(PRODGAS).intersection(PRODWTR)) >3 : 
+                if pdf.loc[PREPEAKOIL,WTR].sum()>0:
+                    OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
+                if pdf.loc[POSTPEAKGAS,WTR].sum() >0:
+                    OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()     
+                
+                OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
+                OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
+                OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf.loc[m,WTR][0:pdf.loc[m,OIL].idxmax()].sum()
+                OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf.loc[m,WTR][0:pdf.loc[m,GAS].idxmax()].sum()
+              
+                if len(LATEGAS)>3:
+                    OUTPUT.at[UWI,'GOR_Final'] = pdf.loc[LATEGAS, GAS].sum() / pdf.loc[LATEGAS, OIL].sum() * 1000
+                if len(LATEWATER)>3:
+                    OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
+
+            if len(pdf[DATE].dropna())>10:
+                MONTH1 = pdf.loc[(pdf[DAYSON]>14) & (pdf[OIL]>0),DATE].min()
+                OUTPUT.at[UWI,'Month1'] = MONTH1
+
+                if not isinstance(MONTH1,float):
+                    pdf['EM_PRODMONTH'] = (pd.to_datetime(pdf.loc[DATE]).dt.year - MONTH1.year)*12+(pd.to_datetime(pdf.loc[DATE]).dt.month - MONTH1.month)+1
+
+                    for i in MonthArray:
+                        if max(pdf.loc['EM_PRODMONTH']) >= i:
+                            i_dwn = i-1
+                            i_up = i+1
+                            OUTPUT['CumOil_Mo'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']<=i),OIL].sum()
+                            OUTPUT['CumGas_Mo'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']<=i),GAS].sum()
+                            OUTPUT['CumWtr_Mo'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']<=i),WTR].sum()
+                                    
+                            if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() > 0:
+                                OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
+                            if (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum()) >=1:   
+                                OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
+                            if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
+                                OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
         OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
         #pdf.loc[m,'UWI'] = UWI
            
