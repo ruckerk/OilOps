@@ -1672,7 +1672,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         OUTPUT.at[UWI,'UWI'] = UWI
         OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
            
-        OUTPUT.at[UWI,'FIRST_PRODUCTION' = pdf[[OIL,GAS,WTR,DATE]].dropna(how='all')[DATE].min()
+        OUTPUT.at[UWI,'FIRST_PRODUCTION'] = pdf[[OIL,GAS,WTR,DATE]].dropna(how='all')[DATE].min()
 
         pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
         
