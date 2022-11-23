@@ -72,6 +72,7 @@ import pyproj
 from pyproj import Transformer, CRS
 
 import collections
+from scipy.special import logsumexp
 
 from .WELLAPI import WELLAPI as WELLAPI
 
