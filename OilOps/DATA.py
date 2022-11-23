@@ -1439,8 +1439,8 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
                                  ,'WOC_PostPeakOil','WOC_PostPeakGas'
                                  ,'GOR_Final','OWC_Final'
                                  ,'Month1'
-                                 ,'GOR_MO2-4','GOR_MO5-7','GOR_MO11-13','GOR_MO23-25','GOR_MO35-37','GOR_MO47-49'
-                                 ,'OWR_MO2-4','OWR_MO5-7','OWR_MO11-13','OWR_MO23-25','OWR_MO35-37','OWR_MO47-49'
+                                 ,'GOR_MO2_4','GOR_MO5_7','GOR_MO11_13','GOR_MO23_25','GOR_MO35_37','GOR_MO47_49'
+                                 ,'OWR_MO2_4','OWR_MO5_7','OWR_MO11_13','OWR_MO23_25','OWR_MO35_37','OWR_MO47_49'
                                  ,'Production_Formation'])
     
     MonthArray = np.arange(3,49,3)
