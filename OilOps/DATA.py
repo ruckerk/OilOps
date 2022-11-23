@@ -1444,10 +1444,10 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
                                  ,'Production_Formation'])
     
     MonthArray = np.arange(3,49,3)
-    for i in MonthArray:
-        OUTPUT[str(i)+'Mo_CumOil'] = np.nan
-        OUTPUT[str(i)+'Mo_CumGas'] = np.nan
-        OUTPUT[str(i)+'Mo_CumWtr'] = np.nan
+    for i in MonthArray:'CumWtr_Mo'+str(i)
+        OUTPUT['CumOil_Mo'+str(i)] = np.nan
+        OUTPUT['CumGas_Mo'+str(i)] = np.nan
+        OUTPUT['CumWtr_Mo'+str(i)] = np.nan
     
     if 'UWI10' in pdf.keys():
         UWIKEY = 'UWI10'
@@ -1582,16 +1582,16 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
                         if max(pdf.loc[m,'EM_PRODMONTH']) >= i:
                             i_dwn = i-1
                             i_up = i+1
-                            OUTPUT[str(i)+'Mo_CumOil'] = pdf.loc[mB & (pdf['EM_PRODMONTH']<=i),OIL].sum()
-                            OUTPUT[str(i)+'Mo_CumGas'] = pdf.loc[mB & (pdf['EM_PRODMONTH']<=i),GAS].sum()
-                            OUTPUT[str(i)+'Mo_CumWtr'] = pdf.loc[mB & (pdf['EM_PRODMONTH']<=i),WTR].sum()
+                            OUTPUT['CumOil_Mo'+str(i)] = pdf.loc[mB & (pdf['EM_PRODMONTH']<=i),OIL].sum()
+                            OUTPUT['CumGas_Mo'+str(i)] = pdf.loc[mB & (pdf['EM_PRODMONTH']<=i),GAS].sum()
+                            OUTPUT['CumWtr_Mo'+str(i)] = pdf.loc[mB & (pdf['EM_PRODMONTH']<=i),WTR].sum()
                                     
                             if pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() > 0:
-                                OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
+                                OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
                             if (pdf.loc[mB & (pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum()) >=1:   
                                 OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[mB & (pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
                             if pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
-                                OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
+                                OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[mB & (pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
         OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
         #pdf.loc[m,'UWI'] = UWI
            
