@@ -1614,7 +1614,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
 
     ppdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
-    OUTPUT=pd.DataFrame(columns=['UWI','UWI10',
+    OUTPUT=pd.DataFrame(columns=['UWI','UWI10','FIRST_PRODUCTION',
                                  'BTU_MEAN','BTU_STD'
                                  ,'API_MEAN','API_STD'
                                  ,'Peak_Oil_Date','Peak_Oil_Days','Peak_Oil_CumOil','Peak_Oil_CumGas','Peak_Oil_CumWtr'
@@ -1671,6 +1671,8 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
            continue
         OUTPUT.at[UWI,'UWI'] = UWI
         OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
+           
+        OUTPUT.at[UWI,'FIRST_PRODUCTION' = pdf[[OIL,GAS,WTR,DATE]].dropna(how='all')[DATE].min()
 
         pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
         
