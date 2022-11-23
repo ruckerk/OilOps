@@ -1669,7 +1669,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         OUTPUT.at[UWI,'UWI'] = UWI
         OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
 
-        pdf.loc['PROD_DAYS'] = pdf[DAYSON].cumsum()
+        pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
         
         pdf.sort_values(by=DATE, ascending = True, inplace =True)
 
