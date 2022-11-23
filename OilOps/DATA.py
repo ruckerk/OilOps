@@ -1607,6 +1607,8 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
         return OUTPUT
 
 def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
+    warnings.filterwarnings('ignore')
+
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
 
