@@ -1565,9 +1565,11 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
                     OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
                 if pdf.loc[POSTPEAKGAS,WTR].sum() >0:
                     OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()     
-                
+                from scipy.special import logsumexp
                 OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
-                OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
+                                            
+                OUTPUT.at[UWI,'WOC_PostPeakGas'] = np.exp(logsumnexp(pdf.loc[POSTPEAKGAS,WTR]) - logsumnexp(pdf.loc[POSTPEAKGAS,WTR].fillna(0)+pdf.loc[POSTPEAKGAS,OIL].fillna(0)))                                                               
+                #OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
                 OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf.loc[m,WTR][0:pdf.loc[m,OIL].idxmax()].sum()
                 OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf.loc[m,WTR][0:pdf.loc[m,GAS].idxmax()].sum()
               
