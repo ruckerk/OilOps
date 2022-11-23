@@ -961,7 +961,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
         xFILE = xdf.loc[xdf.UWI10==xUWI10,'FILE'].values[0]
         
         # PCA is 2 vector components
-        pca = sk.decomposition.PCA(n_components=2)
+        pca = PCA(n_components=2)
         # add comp date filter at step 1
         try: 
             datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+DATELIMIT).values[0]
