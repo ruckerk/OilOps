@@ -1430,7 +1430,8 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
 
     pdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
-    OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
+    OUTPUT=pd.DataFrame(columns=['UWI','UWI10',
+                                 'BTU_MEAN','BTU_STD'
                                  ,'API_MEAN','API_STD'
                                  ,'Peak_Oil_Date','Peak_Oil_Days','Peak_Oil_CumOil','Peak_Oil_CumGas','Peak_Oil_CumWtr'
                                  ,'Peak_Gas_Date','Peak_Gas_Days','Peak_Gas_CumOil','Peak_Gas_CumGas','Peak_Gas_CumWtr'
@@ -1485,7 +1486,9 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
         if pdf.loc[m,[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
            #print('NO PRODUCTION')
            continue
-        
+        OUTPUT.at[UWI,'UWI'] = UWI
+        OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
+
         pdf.loc[m,'PROD_DAYS'] = pdf.loc[m,DAYSON].cumsum()
         
         pdf.sort_values(by=DATE, ascending = True, inplace =True)
