@@ -1661,7 +1661,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     for UWI in ppdf[UWIKEY].unique():
         pdf = ppdf.loc[ppdf[UWIKEY] == UWI,:].copy()
            
-        if pdf.loc[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
+        if pdf[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
            #print('NO PRODUCTION')
            continue
         OUTPUT.at[UWI,'UWI'] = UWI
