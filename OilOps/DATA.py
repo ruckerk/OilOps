@@ -1775,7 +1775,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                                 OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
                             if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
                                 OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
-        print(pdf[FM])
+
         OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
         #pdf.loc[m,'UWI'] = UWI
            
