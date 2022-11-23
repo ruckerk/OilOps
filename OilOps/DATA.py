@@ -1656,7 +1656,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         ERROR = 1
         return None
     
-    ppdf[DATE] = pd.to_datetime(pdf[DATE]).dt.date
+    ppdf[DATE] = pd.to_datetime(ppdf[DATE]).dt.date
            
     for UWI in ppdf[UWIKEY].unique():
         ppdf = ppdf.loc[ppdf[UWIKEY] == UWI]
