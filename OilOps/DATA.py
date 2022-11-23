@@ -1659,7 +1659,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     ppdf[DATE] = pd.to_datetime(pdf[DATE]).dt.date
            
     for UWI in ppdf[UWIKEY].unique():
-       ppdf = ppdf.loc[ppdf[UWIKEY] == UWI]
+        ppdf = ppdf.loc[ppdf[UWIKEY] == UWI]
            
         if pdf.loc[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
            #print('NO PRODUCTION')
