@@ -902,7 +902,8 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
                 'dz5':float(),
                 'dxy5':float(),
                 'UWI5':int(),
-                'Days5':int()}
+                'Days5':int(),
+                'XYZFILE':str()}
     
     OUTPUT = pd.DataFrame(col_type,index=[])
 
