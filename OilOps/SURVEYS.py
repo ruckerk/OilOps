@@ -782,7 +782,7 @@ def CondenseSurvey(xdf,LIST_IN):
                 ftest['FILEUWI']=ftest.index
                 # get UWI from filename
 
-                #ftest['FILEUWI']=ftest.FILEUWI.apply(APIfromFilename).apply(UWI10_)
+                #ftest['FILEUWI']=ftest.FILEUWI.apply(APIfromFilename).apply(lambda x: WELLAPI(x).API2INT(10))
                 UWImask = (ftest.FILEUWI.apply(APIfromFilename).apply(lambda x:WELLAPI(x).API2INT(10)) )== WELLAPI(UWI).API2INT(10)
                 Datemask1 = (ftest.DATE==ftest.loc[UWImask,'DATE'].max())
                 Datemask2 = (ftest.DATE==ftest.DATE.max())
@@ -951,7 +951,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10):
             print(str(ix) + '/' + str(len(xxUWI10)))
         OUTPUT=OUTPUT.append(pd.Series(name=ix,dtype='int64'))
 
-        xUWI10=UWI10_(xUWI10)
+        xUWI10=WELLAPI(xUWI10).API2INT(10)
         
 
         # Check for lateral survey points for reference well
