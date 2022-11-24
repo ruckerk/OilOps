@@ -39,7 +39,27 @@ setup(
                       'xlrd'],
     license='MIT',
     description='Oilfield Operations Tools',
-    long_description=open('README.txt').read()
+    long_description=open('README.txt').read(),
+    classifiers=[
+        'Development Status :: 2 - Alpha',
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Education',
+        'Intended Audience :: Developers',
+        'Natural Language :: English',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Software Development :: Libraries',
+        'Typing :: Typed'
+    ],
+    keywords=[
+        'OilOps', 'Colorado data', 'petrophysics', 'well spacing',
+        'oilfield data', 'oilfield analysis', 'well survey', 'subsurface mapping'
+    ],
 )
 
 #if "LINUX" in sys.platform.upper():
