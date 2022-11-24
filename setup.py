@@ -7,7 +7,7 @@ setup(
     version = __version__,
     url='https://github.com/ruckerk/OilOps',
     author='W Kurt Rucker',
-    author_email='william.rucker@gmail.com',
+    author_email='OilOpsDev@gmail.com',
     packages=['OilOps'],
     install_requires=['adjustText',
                       'beautifulsoup4',
