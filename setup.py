@@ -37,7 +37,7 @@ setup(
                       'urllib3',
                       'wget',
                       'xlrd'],
-    license='GPL',
+    license='MIT',
     description='Oilfield Operations Tools',
     long_description=open('README.txt').read()
 )
