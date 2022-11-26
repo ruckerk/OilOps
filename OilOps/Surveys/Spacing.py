@@ -79,7 +79,7 @@ def c1(X):
     return f(x) - y
 
 def str2num(str_in):
-    if isinstance(str_in,(int,float)) == False:
+    if not isinstance(str_in, (int, float)):
         val = re.sub(r'[^0-9\.]','',str(str_in))
         if val == '':
             return None
@@ -92,18 +92,15 @@ def str2num(str_in):
     return val
 
 def str2num_noalpha(str_in):
-    if str_in == None:
+    if str_in is None:
         return None
     str_in = str(str_in)
     #regexp = re.compile(r'[a-z]')
     #if regexp.search(str_in,re.IGNORECASE):
-    if re.search(r'[a-z]',str_in,re.IGNORECASE):
-        return(None)
-    else:
-        return(str2num(str_in))
+    return None if re.search(r'[a-z]',str_in,re.IGNORECASE) else (str2num(str_in))
 
 def API2INT(val_in,length = 10):
-    if val_in == None:
+    if val_in is None:
         return None
     val = str2num(val_in)
     lim = 10**length-1
@@ -118,11 +115,7 @@ def API2INT(val_in,length = 10):
 
 def APIfromFilename(ffile,UWIlen=10):
     lst = re.findall(r'[0-9]{9,}',ffile)
-    if len(lst)>0:
-        UWI = API2INT(lst[0],length=UWIlen)
-    else:
-        UWI = None
-    return UWI
+    return API2INT(lst[0],length=UWIlen) if len(lst)>0 else None
 
 def SurveyCols(df_in):
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|.*^(?!t).*^(?!v).*Depth.*',
@@ -171,9 +164,9 @@ def CondenseSurvey(xdf,LIST_IN):
         UWIs=[LIST_IN]
     if isinstance(LIST_IN,list):
         UWIs=LIST_IN
-        
-    OUTPUT = list()
-    
+
+    OUTPUT = []
+
     UWICOL = xdf.keys().get_loc(xdf.iloc[0,xdf.keys().str.contains('.*UWI.*|.*API.*', regex=True, case=False,na=False)].keys()[0])
     UWIKEY = xdf.keys()[UWICOL]
 
@@ -190,7 +183,7 @@ def CondenseSurvey(xdf,LIST_IN):
 
     # assign date to NaT values
     xdf.loc[xdf['FileDate'].isna(),'FileDate'] = datetime.datetime(1900,1,1)
-    
+
     #SKEYS = list(SurveyCols(xdf).keys())
     #xdf = xdf.rename(columns = SurveyCols(xdf.head(5)))
 
@@ -205,9 +198,7 @@ def CondenseSurvey(xdf,LIST_IN):
     xdf.loc[:,'AZI_DEC'] = xdf.loc[:,'AZI'] - np.floor(xdf.loc[:,'AZI'])
 
     tot = len(UWIs)
-    ct = 0
-    for UWI in UWIs:
-        ct +=1
+    for ct, UWI in enumerate(UWIs, start=1):
         if math.floor(ct/10)==ct/10:
             print(ct,'/',tot,': ',UWI)
         # while df.loc[df.groupby('FILE').MD.apply(lambda x: x-np.floor(x))==0,:]  
@@ -215,9 +206,9 @@ def CondenseSurvey(xdf,LIST_IN):
         xxdf = xdf.copy(deep=True)
         xxdf = xxdf.loc[xxdf[UWIKEY] == UWI,:]
         ftest = list(xxdf.FILE.unique())
-        
+
         #print(ftest)
-        
+
         while xxdf.FILE.unique().shape[0] > 1:
             # drop duplicates   if 1==1:
             #xxdf = xxdf.loc[xxdf[SKEYS].drop_duplicates().index,:]
@@ -270,10 +261,10 @@ def CondenseSurvey(xdf,LIST_IN):
 
 
         OUTPUT = OUTPUT+list(xxdf.FILE.unique())
-        
-        #OUTPUT = pd.merge(OUTPUT,df,how='outer',on=None, left_index=False, right_index=False)
-        #OUTPUT = pd.merge(OUTPUT,xxdf,how='outer',on=None, left_index=False, right_index=False)
-        
+            
+            #OUTPUT = pd.merge(OUTPUT,df,how='outer',on=None, left_index=False, right_index=False)
+            #OUTPUT = pd.merge(OUTPUT,xxdf,how='outer',on=None, left_index=False, right_index=False)
+
     return OUTPUT
 
 def Condense_Surveys(xdf):
@@ -292,7 +283,7 @@ def Condense_Surveys(xdf):
     processors = min(processors,batchmin)
 
     batches = max(min(batchmax,processors),batchmin)
-    
+
     data = np.array_split(UWIlist,batches)
 
     func = partial(CondenseSurvey, xdf)
@@ -302,9 +293,9 @@ def Condense_Surveys(xdf):
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(func, a): a for a in data}
         #RESULT=pd.DataFrame()
-        RESULT = list()
+        RESULT = []
         print('merging condense sessions')
-        for i in f.keys():
+        for i in f:
             #RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
             RESULT = RESULT + i.result()
     else:

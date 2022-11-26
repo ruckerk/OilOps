@@ -151,11 +151,7 @@ def GetKeyRow(df_in,keys,regexparam = False):
     df_in = df_in.astype(str).apply(' '.join,axis=1)
     for k in keys:
         df_in=df_in.loc[df_in.str.contains(k,case=False,regex=regexparam)]
-    if df_in.empty:
-        out = None
-    else:
-        out = df_in.index.to_list()
-    return out
+    return None if df_in.empty else df_in.index.to_list()
   
 def SurveyCols(df_in):
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*',
@@ -216,14 +212,14 @@ def IN_TC_AREA(well2,tc2):
             ln = shapely.geometry.LineString(well2.coords.values)
     elif len(well2.coords)==1:
         ln = shapely.geometry.Point(well2.coords[0])
-    if ln == None:
+    if ln is None:
         return(False)
     test = False
-    for j in range(0,tc2.shape[0]):
+    for j in range(tc2.shape[0]):
         if test == False:
             poly = shapely.geometry.Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(15000)):
-                test = True   
+                test = True
     return(test) 
 
 def GROUP_IN_TC_AREA(tc,wells):
@@ -259,9 +255,7 @@ def Find_Str_Locs(df_in,string):
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     #Output.astype({'Title': 'object','Columns': 'object','Rows': 'object'}).dtypes
     Output.astype(object)
-    ii = -1
-    for item in string:
-        ii += 1
+    for ii, item in enumerate(string):
         Output.at[ii,'Columns'] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns'),:].index.values ]
         Output.at[ii,'Rows'] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
@@ -270,14 +264,13 @@ def Find_Str_Locs(df_in,string):
 def Summarize_Page(df_in,string):
     #build well as preliminary single row of data
     StringLocs = Find_Str_Locs(df_in,string)
-    Summary=pd.DataFrame([],index=range(0,30),columns=StringLocs.Title)
-    for item in StringLocs.Title:        
+    Summary = pd.DataFrame([], index=range(30), columns=StringLocs.Title)
+    for item in StringLocs.Title:    
         colrow=StringLocs.loc[StringLocs.Title==item,['Columns','Rows',]].values.tolist()[0]
         itemlist = []
         for c in colrow[0]:
-            for r in colrow[1]:
-                itemlist.append(df_in.iloc[c,r+1])
-            #itemlist=list(dict.fromkeys(itemlist))
+            itemlist.extend(df_in.iloc[c,r+1] for r in colrow[1])
+                    #itemlist=list(dict.fromkeys(itemlist))
         try:
             itemlist=itemlist.remove('')
         except: None
@@ -286,13 +279,15 @@ def Summarize_Page(df_in,string):
         Summary.loc[:len(itemlist)-1,item]=itemlist
 
     Summary=Summary.dropna(axis=0,how='all')
-    
+
     for item in StringLocs.Title:
         if len(Summary[item].dropna())==1:
             if ('LAT/LON' in item.upper()):
                 pattern = re.compile('[a-zA-Z:]+')
                 Summary.loc[0,item]=pattern.sub('',Summary[item].dropna().values[0])
-            if ('DATE' in item.upper()) & (isinstance(Summary.loc[0,item],datetime.date)==False):
+            if ('DATE' in item.upper()) & (
+                not isinstance(Summary.loc[0, item], datetime.date)
+            ):
                 pattern = re.compile('[a-zA-Z:]+')
                 Summary.loc[0,item]=pd.to_datetime(pattern.sub('',Summary[item].dropna().values[0]),infer_datetime_format=True,errors='coerce')
             if pd.isna(Summary.loc[0,item]):
@@ -318,17 +313,17 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     # Define CRS from EPSG reference frame number
     EPSG_OLD= int(EPSG_OLD)
     EPSG_NEW=int(EPSG_NEW)
-    
+
     crs_old = CRS.from_user_input(EPSG_OLD)
     crs_new = CRS.from_user_input(EPSG_NEW)
 
     #read shapefile
     r = shp.Reader(SHP_File)   # THIS IS IN X Y COORDINATES!!!
 
-    
+
     #define output filename
     out_fname = re.sub(r'(.*)(\.shp)',r'\1_EPSG'+str(EPSG_NEW)+Label+r'\2',SHP_File,flags=re.IGNORECASE)
-    
+
     #if FilterFile != None:
     #    FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
     #    pdf = read_shapefile(r)
@@ -338,7 +333,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     #    SUBSET = np.arange(0,len(r.shapes()))
 
     # Speed, get subset of records
-    if FilterFile == None:
+    if FilterFile is None:
         SUBSET=np.arange(0,len(r.shapes()))
     else:
         FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
@@ -347,27 +342,24 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
         SUBSET=pdf[pdf.isin(FILTERUWI)].index.tolist()
 
     total = len(SUBSET)
-    #compile converted output file    
+    #compile converted output file
     with shp.Writer(out_fname, shapeType=r.shapeType) as w:
         w.fields = list(r.fields)
-        ct=0
         outpoints = []
-        for i in SUBSET:
-        #for shaperec in r.iterShapeRecords(): if 1==1:
-            ct+=1
+        for ct, i in enumerate(SUBSET, start=1):
             if (floor(ct/20)*20) == ct:
-                 print(str(ct)+" of "+str(total))
+                print(f"{ct} of {total}")
             shaperec=r.shapeRecord(i)
-            Xshaperec=shaperec.shape            
+            Xshaperec=shaperec.shape
             points = np.array(shaperec.shape.points).T
-            
+
             TFORM = Transformer.from_crs(
                          pyproj.CRS.from_wkt(crs_old.to_ogc_wkt()),
                          pyproj.CRS.from_wkt(crs_old.to_ogc_wkt()),
                          always_xy=True).transform
-            
+
             points_t= TFORM(crs_old, crs_new, points[0],points[1],always_xy=True)
-            points[0:2]=points_t[0:2]
+            points[:2] = points_t[:2]
             #Xshaperec.points = list(map(tuple, points.T))
             json_shape = shaperec.shape.__geo_interface__
             json_shape['coordinates']=tuple(map(tuple, points.T))
@@ -388,8 +380,8 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
 ##                w.null()
             w.record(*shaperec.record)
             w.shape(json_shape)
-            #w.shape(Xshaperec)
-            #del(Xshaperec)
+                    #w.shape(Xshaperec)
+                    #del(Xshaperec)
     prjfile = re.sub(r'\.shp','.prj',out_fname,flags=re.IGNORECASE)
     tocrs = pycrs.parse.from_epsg_code(EPSG_NEW)
     with open(prjfile, "w") as writer:    
@@ -420,24 +412,21 @@ def check_2EPSG(epsg1,epsg2):
     try:
         CRS2 = CRS.from_user_input(int(epsg2))
     except: pass
-    if CRS1==None:
+    if CRS1 is None:
         MESSAGE = 'Invalid input EPSG code'
         OUTPUT = False
-    if CRS2 == None:
+    if CRS2 is None:
         MESSAGE = 'Invalid output EPSG code'
         OUTPUT = False
     return(OUTPUT,MESSAGE)
 
 def check_EPSG(epsg1):
     CRS1=None
-    OUTPUT = 'Validated EPSG code'
     CHECK = 1
     try:
         CRS1 = CRS.from_user_input(int(epsg1))
     except: pass
-    if CRS1==None:
-        OUTPUT = 'Invalid'
-    return(OUTPUT)
+    return 'Invalid' if CRS1 is None else 'Validated EPSG code'
 
 def get_driver():
     ## initialize options
@@ -449,15 +438,13 @@ def get_driver():
 
     opts = Options()
     opts.headless = True
-    driver = Firefox(options=opts)
-    return driver
+    return Firefox(options=opts)
 
 def listjoin(list_in, sep="_"):
     list_in = list(set(list_in))
     list_in = sorted(list_in)
     list_in = [s.strip() for s in list_in]
-    str_out = sep.join(list_in)
-    return str_out
+    return sep.join(list_in)
 
 def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     #2876
@@ -473,13 +460,12 @@ def CheckDuplicate(fname):
         pattern = re.compile('.*_([0-9]*)\.(?:[0-9a-zA-Z]{3,4})',re.I)
         ct = re.search(pattern, fname)
         try:
-            ct = ct.group(1)
-            ct = int(ct)
-            ct += 1
-            ct = '_'+str(ct)
+            ct = ct[1]
+            ct = int(ct) + 1
+            ct = f'_{str(ct)}'
         except:
             ct = '_1'
-        
+
         pattern = re.compile(r'(.*)(_[0-9]{1,4})(\.[a-z0-9]{3,4})',re.I)
         fname = re.sub(pattern,r'\1'+ct+r'\3',fname)
     return(fname)
@@ -489,7 +475,7 @@ def STIM_VALS_FROM_TXT(row):
              'FLUID2':r'([0-9,\.]*) BBL',
              'PROP`':r'([0-9,\.]*) *(?:#|LBS)',
              'PRESSURE':r'([0-9,\.]*) *PSI'}
-    for k in TERMS.keys():
+    for k in TERMS:
         # if 1==1:
         TERMS[k] = re.findall(TERMS[k],row,re.I)
         TERMS[k] = [re.sub(r',', '', i) for i in TERMS[k]]
@@ -500,16 +486,10 @@ def STIM_VALS_FROM_TXT(row):
             continue            
         else:
             TERMS[k] = TERMS[k].astype(np.float)
-        if k == 'PRESSURE':
-            try:
-                TERMS[k] = TERMS[k].max()
-            except:
-                pass
-        else:
-            try:
-                TERMS[k] = TERMS[k].sum()
-            except:
-                pass
+        try:
+            TERMS[k] = TERMS[k].max() if k == 'PRESSURE' else TERMS[k].sum()
+        except:
+            pass
         if isinstance(TERMS[k],np.ndarray):
             TERMS[k] = 0
     return(TERMS)
@@ -526,9 +506,8 @@ def STIM_SUMMARY_TO_ARRAY(row):
     PSI = data[3]
     if PSI == 0:
         PSI = np.nan
-        
-    OUT = pd.Series([FLUID,PROP,PSI])
-    return(OUT)
+
+    return pd.Series([FLUID,PROP,PSI])
 
 def TRYDICT(TERM,D):
     try:
@@ -545,11 +524,10 @@ def read_excel(file):
         xl = pd.read_excel(file,None)
     except:
         xl = pd.read_excel(file)
-        pass
     if len(xl)==0:
         print('FILE XL READ ERROR IN: '+ file)
         outdf = 'FILE XL READ ERROR IN: '+ file
-    
+
     if isinstance(xl,dict): # test if file read delivered a dictionary
         for k in xl.keys(): # for each sheet
             df_s = xl[k].copy(deep=True)
@@ -557,7 +535,7 @@ def read_excel(file):
             #print(outdf)
             if isinstance(outdf,pd.DataFrame):
                 return outdf
-        
+
     if isinstance(outdf,pd.DataFrame):
         outdf = outdf.dropna(how='any',axis=0)
         outdf = outdf.dropna(how='all',axis=1)
@@ -568,9 +546,9 @@ def filelist(SUBDIR = None,EXT = None, BEGIN = None, CONTAINS = None):
 
     if SUBDIR != None:
         pathname = path.join(pathname, SUBDIR)
-        
-    FLIST = list()
-    if (EXT == None) & (BEGIN == None) & (CONTAINS == None):
+
+    FLIST = []
+    if (EXT is None) & (BEGIN is None) & (CONTAINS is None):
         FLIST = listdir(pathname)
     else:
         for f in listdir(pathname):
@@ -579,11 +557,7 @@ def filelist(SUBDIR = None,EXT = None, BEGIN = None, CONTAINS = None):
     return FLIST
 
 def tupelize(x):
-    if isinstance(x,(str,float,int)):
-        out = tuple([x])
-    else:
-        out = tuple(x)
-    return out
+    return (x, ) if isinstance(x,(str,float,int)) else tuple(x)
 
 def filetypematch(fname, filetypes = None, prefix = None, contains = None):
     output = True
@@ -619,20 +593,15 @@ def FTYPE(FILELIST,COUNTER = False):
     if not isinstance(FILELIST,list):
         FILELIST = [FILELIST]
     ENDCNT = len(FILELIST)
-    CNT = 0
-    TYPES = list()
-    for f in FILELIST:
-        CNT+=1
+    TYPES = []
+    for CNT, f in enumerate(FILELIST, start=1):
         if COUNTER:
             COUNTER(CNT,ENDCNT,10)
         TYPES.append(magic.from_file(f))
     return(TYPES)
 
 def FILETYPETEST(file_str,filetype_str):
-    if not filetype_str.upper() in FTYPE(file_str)[0].upper():
-        return False
-    else:
-        return True
+    return filetype_str.upper() in FTYPE(file_str)[0].upper()
 
 def APIfromFilename(ffile,UWIlen=10):
     lst = re.findall(r'UWI[0-9]{UWIlen-1,}',ffile, re.I)
@@ -640,11 +609,7 @@ def APIfromFilename(ffile,UWIlen=10):
         lst = re.findall(r'[0-9]{UWIlen-1,}',ffile)
     else:
         lst[0] = re.sub('UWI','',lst[0],re.I)
-    if len(lst)>0:        
-        UWI = WELLAPI(lst[0]).API2INT(UWIlen)
-    else:
-        UWI = None
-    return UWI
+    return WELLAPI(lst[0]).API2INT(UWIlen) if len(lst)>0 else None
 
 def APIfromString(STRING,ListResult=False,BlockT2=False):
     STRING = re.sub(r'[-−﹣−–—−]','-',STRING)
@@ -659,8 +624,8 @@ def APIfromString(STRING,ListResult=False,BlockT2=False):
             term = None
     except:
         pass
-    
-    if BlockT2 == False and term == None:
+
+    if BlockT2 == False and term is None:
         try:
             terms = re.findall(t2,STRING)
             terms = list(map(str.strip, terms))
@@ -731,25 +696,19 @@ def findfiles(which, where='.',latest = True):
     # TODO: recursive param with walk() filtering
     rule = re.compile(fnmatch.translate(which), re.IGNORECASE)
     list_of_files = [path.join(where,name) for name in listdir(where) if rule.match(name)]
-    if len(list_of_files)>0:
-        latest_file = max(list_of_files, key=path.getctime)
-    else:
-        latest_file = None
-    if latest == True:
-        return latest_file
-    else:
-        return list_of_files
+    latest_file = max(list_of_files, key=path.getctime) if list_of_files else None
+    return latest_file if latest == True else list_of_files
 
 def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
-    if FIELD_DICT == None:
+    if FIELD_DICT is None:
         FIELD_DICT = {}
     QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '_TABLENAME_' '''
     QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
-    
+
     c = CONN.cursor()
     c.execute(QRY)
-   
-    if c.fetchone()[0]==0 :
+
+    if c.fetchone()[0]==0:
         QRY = """ CREATE TABLE _TABLENAME_ (
                 _FIELDS_
             ); """
@@ -763,7 +722,7 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_TEXT = FIELD_TEXT[:-4]
         QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
         c.execute(QRY)
-        
+
     else:
         QRY = 'PRAGMA table_info('+TABLENAME+');'
         c.execute(QRY)
@@ -772,16 +731,15 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         for k in FIELD_DICT.keys():
             if k in COLS:
                 continue
+            if isinstance(FIELD_DICT[k], (list, tuple)):
+                FIELD_TEXT = k + ' ' + ' '.join(FIELD_DICT[k])
             else:
-                if isinstance(FIELD_DICT[k], (list, tuple)):
-                    FIELD_TEXT = k + ' ' + ' '.join(FIELD_DICT[k])
-                else:
-                    FIELD_TEXT = k + ' ' + FIELD_DICT[k]
-                
+                FIELD_TEXT = k + ' ' + FIELD_DICT[k]
+
             QRY = 'ALTER TABLE _TABLENAME_ ADD COLUMN _FIELDS_'
             QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
             QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
-            
+
             c.execute(QRY)
     CONN.commit()
     return None
@@ -795,21 +753,18 @@ def DROP_SQL_TABLE(CONN, TABLE_NAME):
 def READ_SQL_TABLE(CONN, TABLE_NAME):
     c = CONN.cursor()
     c.execute('SELECT * FROM ' + TABLE_NAME)
-    OUT = c.fetchall()
-    return OUT
+    return c.fetchall()
 
 def LIST_SQL_TABLES(CONN):
     QRY = '''SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name'''
     c = CONN.cursor()
     c.execute(QRY)
-    OUT = c.fetchall()
-    return OUT
+    return c.fetchall()
 
 def QUERY_SQL_TABLES(CONN,QUERY):
     c = CONN.cursor()
     c.execute(QUERY)
-    OUT = c.fetchall()
-    return OUT
+    return c.fetchall()
 
 def DTYPE_TO_SQL(STRING):
     STRING = str(STRING)
@@ -818,13 +773,11 @@ def DTYPE_TO_SQL(STRING):
         return 'TEXT'
     if any(x in STRING for x in ('INT','INT32')):
         return 'INTEGER'
-    if any(x in STRING for x in ('REAL, FLOAT')):
-        return 'REAL'
-    return STRING
+    return 'REAL' if any(x in STRING for x in ('REAL, FLOAT')) else STRING
 
 def FRAME_TO_SQL_TYPES(df_in):
-    OUT = dict()
+    OUT = {}
     for k in df_in.keys():
         T = df_in[k].dtype.name
-        OUT[k] = DTYPE_TO_SQL(T)        
+        OUT[k] = DTYPE_TO_SQL(T)
     return(OUT)    

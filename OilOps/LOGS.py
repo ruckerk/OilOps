@@ -28,7 +28,7 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                 las = lasio.read(f, ignore_data=True)
                 LASDATA = False
             except:
-                print('Error reading '+f)
+                print(f'Error reading {f}')
                 continue
 
         LOGDATE = np.nan
@@ -62,9 +62,9 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                 except:
                     pass
         if UWI == '':
-            print('NO UWI FOR '+f)
+            print(f'NO UWI FOR {f}')
             continue
-            
+
         UWI = str(UWI).zfill(10)
         MAXDEPTH = las.header['Well']['STOP'].value
 
@@ -79,7 +79,7 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
                     TVAL = las[c.mnemonic][-10:].mean()
                     DEPTH = las.df()[c.mnemonic].dropna().index.max()
                     SUMMARY.loc[len(SUMMARY.index)] = [UWI, c.mnemonic, TVAL, c.descr, DEPTH, LOGDATE,f]
-                    
+
         for i in [i for i in las.header.keys() if 'CURVE' not in i.upper()]:
             # look for what values match true BHT values for wells with them
             if isinstance(las.header[i],str):
@@ -100,10 +100,9 @@ def TEMP_SUMMARY_LAS(_LASFILES_):
 
     
 def HTMLtoTXT(file,TYPECHECK=True):
-    if TYPECHECK:
-        if not FILETYPETEST(file,'HTML'):
-            print('ERROR: Are you sure ' + str(file)+' is HTML?')
-            return
+    if TYPECHECK and not FILETYPETEST(file, 'HTML'):
+        print(f'ERROR: Are you sure {str(file)} is HTML?')
+        return
     file2 = file.split('.')[0]+'.html'
     shutil.move(file,file2)
     with open(file2,'r') as F2:
@@ -116,10 +115,8 @@ def HTMLtoTXT(file,TYPECHECK=True):
     return None
     
 def ZIPtoTXT(file,TYPECHECK=True):
-    if TYPECHECK:
-        if not FILETYPETEST(file,'ZIP'):
-            raise NameError('ERROR: Is ' + str(file)+' a ZIP file?')
-            return
+    if TYPECHECK and not FILETYPETEST(file, 'ZIP'):
+        raise NameError(f'ERROR: Is {str(file)} a ZIP file?')
     usepath = path.dirname(f)
     if usepath == '':
         usepath=None
@@ -130,18 +127,15 @@ def ZIPtoTXT(file,TYPECHECK=True):
             if path.exists(file):
                 file = file.split('.')[0]+'_1'+'.las'
             ZF.extract(z,usepath)
-            if usepath == None:
+            if usepath is None:
                 shutil.move(z,file)
             else:
-                shutil.move(path.join(usepath,z),file)    
+                shutil.move(path.join(usepath,z),file)
     return None
 
 def DOCtoTXT(file,TYPECHECK=True):
-    if TYPECHECK:
-        if not FILETYPETEST(file,'Microsoft Word'):
-            raise NameError('ERROR: Are you sure ' + str(file)+' is MS DOC?')
-            return
-       
+    if TYPECHECK and not FILETYPETEST(file, 'Microsoft Word'):
+        raise NameError(f'ERROR: Are you sure {str(file)} is MS DOC?')
     file2 = file.split('.')[0]+'.html'
     rename(file,file2)
 
@@ -155,9 +149,7 @@ def DOCtoTXT(file,TYPECHECK=True):
     return None
 
 def LAS_TEXTABORTED_FIX(FILESIN):
-    if isinstance(FILESIN,str):
-        FILESIN = list(FILESIN)
-    elif not isinstance(FILESIN,list):
+    if isinstance(FILESIN, str) or not isinstance(FILESIN, list):
         FILESIN = list(FILESIN)
     for FILEIN in FILESIN:
         with open (FILEIN,'rb+') as FILE:
@@ -165,7 +157,7 @@ def LAS_TEXTABORTED_FIX(FILESIN):
             ENDLINE = -1
             pattern = re.compile(b'Thread was being aborted',re.I)
             for i,l in enumerate(lines):
-                for match in re.finditer(pattern,l):
+                for _ in re.finditer(pattern,l):
                     ENDLINE = max(i,ENDLINE)
             if ENDLINE > -1:
                 a = FILE.seek(0)
@@ -177,7 +169,7 @@ def LASREPAIR(FILES):
     if isinstance(FILES,str):
         FILES = [FILES]
     if not isinstance(FILES,list):
-        FILES = list(FILES)    
+        FILES = list(FILES)
     LASACTIONS = {'TROFF':None,
     'UTF-16':None,
     'UTF-8':None,
@@ -193,7 +185,7 @@ def LASREPAIR(FILES):
     _df['TYPES'] = FTYPE(FILES)
     print('end type')
     _df['SIMPLETYPE'] = _df['TYPES'].apply(lambda x: x.split(',')[0])
-    for k in [k for k in LASACTIONS.keys() if LASACTIONS[k]!=None]:
+    for k in [k for k in LASACTIONS if LASACTIONS[k]!=None]:
         print(k)
         m = _df.index[_df.SIMPLETYPE.str.upper().str.contains(k.upper())]
         if len(m)>0 :
@@ -205,20 +197,19 @@ def LASREPAIR(FILES):
 def List_LAS_Files_In_Folder():
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
-    FILES = [f for f in listdir(adir) if '.LAS' in f.upper()]
-    return FILES
+    return [f for f in listdir(adir) if '.LAS' in f.upper()]
 
 def FIND_SP_KEY(LAS):
     SP_KEYS = [k.mnemonic for k in LAS.curves if 'SP' in k.mnemonic.upper()]
-    SP_KEYS = SP_KEYS + [k.mnemonic for k in LAS.curves if 'SP' in k.descr.upper()]
+    SP_KEYS += [k.mnemonic for k in LAS.curves if 'SP' in k.descr.upper()]
     SP_KEYS = list(set(SP_KEYS))
-    
+
     if len(SP_KEYS)==1:
         KEY = SP_KEYS[0]
     else:
         KEY = LAS.df()[SP_KEYS].apply(pd.Series.nunique, axis= 0).sort_values(ascending=False).keys()[0]
-        print(SP_KEYS+': Assumed '+KEY)
-        
+        print(f'{SP_KEYS}: Assumed {KEY}')
+
     return KEY
 
 def LOG_DETREND(LOG,KEY):
@@ -232,8 +223,8 @@ def LOG_DETREND(LOG,KEY):
     IDX_KEY = df1.index.name
     df1.reset_index(drop=False, inplace = True)
     df1.sort_values(by ='DEPT',inplace=True)
-    NEWKEY = KEY+'_DETREND'
-    m = df1[KEY].dropna().index 
+    NEWKEY = f'{KEY}_DETREND'
+    m = df1[KEY].dropna().index
     df1[NEWKEY] = np.nan
     df1.loc[m,NEWKEY]   = signal.detrend(df1.loc[m,KEY])
     df1.set_index(keys = IDX_KEY,drop=True, inplace = True)
@@ -244,8 +235,7 @@ def ARRAY_CHANGEPOINTS(ARRAY, COUNT):
     if not isinstance(ARRAY, np.ndarray):
         raise Exception('Data is not an array')
     algo = rpt.Dynp(model="l2").fit(ARRAY)
-    RESULT = algo.predict(n_bkps=COUNT)
-    return(RESULT)
+    return algo.predict(n_bkps=COUNT)
 
 def Init_Futures(APPLY_DATA = None, MAX_SIZE = 5000, MIN_SIZE = 10):
     processors = max(1,multiprocessing.cpu_count())
@@ -261,36 +251,36 @@ def SP_WORKFLOW(LASFILES,OUTFOLDER = 'SP_OUT'):
     OUTFOLDER = path.join(adir,OUTFOLDER)
     if not path.exists(OUTFOLDER):
         mkdir(OUTFOLDER)
-        
+
     if isinstance(LASFILES,str):
         LASFILES = [LASFILES]
     for F in LASFILES:
         las = lasio.read(F)
         df = las.df().copy()
-        
+
         KKEY = FIND_SP_KEY(las)
         df['SP_DETREND'] = LOG_DETREND(df,KKEY)
-        
+
         # Ruptures changepoint detection
         breakpoints = ARRAY_CHANGEPOINTS(df[KKEY].to_numpy(),10)
-        
+
         breakpoints = [0] + breakpoints
 
-        if not 'DEPT' in df.keys():
+        if 'DEPT' not in df.keys():
             IDX_KEY = df.index.name
             df[IDX_KEY] = df.index
-            
+
         df['BreakPoints'] = 0
         for i in np.arange(1,len(breakpoints)):
             last_break = breakpoints[i-1]
             this_break = breakpoints[i]
-            
+
             #handle break at last point
             this_break = min(this_break,df.shape[0]-1)
 
             last_break = df.index[last_break]
             this_break = df.index[this_break]
-            
+
             depth0 = df.loc[last_break, 'DEPT']
             depth1 = df.loc[this_break,'DEPT']
 

@@ -32,14 +32,14 @@ def IN_TC_AREA(well2,tc2):
             ln = shapely.geometry.LineString(well2.coords.values)
     elif len(well2.coords)==1:
         ln = shapely.geometry.Point(well2.coords[0])
-    if ln == None:
+    if ln is None:
         return(False)
     test = False
-    for j in range(0,tc2.shape[0]):
+    for j in range(tc2.shape[0]):
         if test == False:
             poly = shapely.geometry.Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(15000)):
-                test = True   
+                test = True
     return(test) 
 
 def GROUP_IN_TC_AREA(tc,wells):
@@ -53,7 +53,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     # Define CRS from EPSG reference frame number
     EPSG_OLD= int(EPSG_OLD)
     EPSG_NEW=int(EPSG_NEW)
-    
+
     crs_old = CRS.from_user_input(EPSG_OLD)
     crs_new = CRS.from_user_input(EPSG_NEW)
     TFORMER =  pyproj.Transformer.from_crs(crs_old, crs_new, always_xy= True)
@@ -61,10 +61,10 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     #read shapefile
     r = shp.Reader(SHP_File)   # THIS IS IN X Y COORDINATES!!!
 
-    
+
     #define output filename
     out_fname = re.sub(r'(.*)(\.shp)',r'\1_EPSG'+str(EPSG_NEW)+Label+r'\2',SHP_File,flags=re.IGNORECASE)
-    
+
     #if FilterFile != None:
     #    FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
     #    pdf = read_shapefile(r)
@@ -74,7 +74,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     #    SUBSET = np.arange(0,len(r.shapes()))
 
     # Speed, get subset of records
-    if FilterFile == None:
+    if FilterFile is None:
         SUBSET=_FUNCS_.np.arange(0,len(r.shapes()))
     else:
         FILTERUWI=_FUNCS_.pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
@@ -83,24 +83,21 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
         SUBSET=pdf[pdf.isin(FILTERUWI)].index.tolist()
 
     total = len(SUBSET)
-    #compile converted output file    
+    #compile converted output file
     with shp.Writer(out_fname, shapeType=r.shapeType) as w:
         w.fields = list(r.fields)
-        ct=0
         outpoints = []
-        for i in SUBSET:
-        #for shaperec in r.iterShapeRecords(): if 1==1:
-            ct+=1
+        for ct, i in enumerate(SUBSET, start=1):
             if (floor(ct/20)*20) == ct:
-                 print(str(ct)+" of "+str(total))
+                print(f"{ct} of {total}")
             shaperec=r.shapeRecord(i)
-            Xshaperec=shaperec.shape            
+            Xshaperec=shaperec.shape
             points = _FUNCS_.np.array(shaperec.shape.points).T
-            
+
             #points_t= transform(crs_old, crs_new, points[0],points[1],always_xy=True
             # NEEDS TO BE LON LAT ORDER
             points_t = TFORMER.transform(points[0],points[1])
-                                
+
             #Xshaperec.points = list(map(tuple, points.T))
             json_shape = shaperec.shape.__geo_interface__
             json_shape['coordinates']=tuple(map(tuple, points.T))
@@ -121,8 +118,8 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
 ##                w.null()
             w.record(*shaperec.record)
             w.shape(json_shape)
-            #w.shape(Xshaperec)
-            #del(Xshaperec)
+                    #w.shape(Xshaperec)
+                    #del(Xshaperec)
     prjfile = re.sub(r'\.shp','.prj',out_fname,flags=re.IGNORECASE)
     tocrs = pycrs.parse.from_epsg_code(EPSG_NEW)
     with open(prjfile, "w") as writer:    
@@ -153,24 +150,21 @@ def check_2EPSG(epsg1,epsg2):
     try:
         CRS2 = CRS.from_user_input(int(epsg2))
     except: pass
-    if CRS1==None:
+    if CRS1 is None:
         MESSAGE = 'Invalid input EPSG code'
         OUTPUT = False
-    if CRS2 == None:
+    if CRS2 is None:
         MESSAGE = 'Invalid output EPSG code'
         OUTPUT = False
     return(OUTPUT,MESSAGE)
 
 def check_EPSG(epsg1):
     CRS1=None
-    OUTPUT = 'Validated EPSG code'
     CHECK = 1
     try:
         CRS1 = CRS.from_user_input(int(epsg1))
     except: pass
-    if CRS1==None:
-        OUTPUT = 'Invalid'
-    return(OUTPUT)
+    return 'Invalid' if CRS1 is None else 'Validated EPSG code'
 
 def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     #2876
@@ -186,18 +180,18 @@ def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lin
         gp['UWI10'] = gp.API_Label.apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
     except:
         gp = gp.loc[~gp.API.isna()]
-        gp['UWI10'] = gp.API.str.replace('-','').str[0:10]
+        gp['UWI10'] = gp.API.str.replace('-','').str[:10]
         gp['UWI10'] = "5" + gp['UWI10']
         gp['UWI10'] = gp['UWI10'].astype(int)
-        
+
     ULIST = UWI10LIST
     USELIST = ULIST.copy()
-    
+
     SUB = gp.loc[gp.UWI10.isin(ULIST)]
     for g in SUB.index:
         G = SUB.loc[g,'geometry'].buffer(5000)
         #gpd.tools.sjoin(gp,G,how = 'left')
-        
+
         # ROUGH FILTER
         m = gp.geometry.centroid.distance(G.centroid)<10000
         m[g] = False

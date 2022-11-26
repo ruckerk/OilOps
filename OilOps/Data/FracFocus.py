@@ -19,11 +19,10 @@ def read_excel(file):
         xl = pd.read_excel(file,None)
     except:
         xl = pd.read_excel(file)
-        pass
     if len(xl)==0:
         print('FILE XL READ ERROR IN: '+ file)
         outdf = 'FILE XL READ ERROR IN: '+ file
-    
+
     if isinstance(xl,dict): # test if file read delivered a dictionary
         for k in xl.keys(): # for each sheet
             df_s = xl[k].copy(deep=True)
@@ -31,7 +30,7 @@ def read_excel(file):
             #print(outdf)
             if isinstance(outdf,pd.DataFrame):
                 return outdf
-        
+
     if isinstance(outdf,pd.DataFrame):
         outdf = outdf.dropna(how='any',axis=0)
         outdf = outdf.dropna(how='all',axis=1)
@@ -42,9 +41,9 @@ def filelist(SUBDIR = None,EXT = None, BEGIN = None):
 
     if SUBDIR != None:
         pathname = os.path.join(pathname, SUBDIR)
-        
-    FLIST = list()
-    if (EXT == None) & (BEGIN == None):
+
+    FLIST = []
+    if (EXT is None) & (BEGIN is None):
         FLIST = listdir(pathname)
     else:
         for f in listdir(pathname):
@@ -53,11 +52,7 @@ def filelist(SUBDIR = None,EXT = None, BEGIN = None):
     return FLIST
 
 def tupelize(x):
-    if isinstance(x,(str,float,int)):
-        out = tuple([x])
-    else:
-        out = tuple(x)
-    return out
+    return (x, ) if isinstance(x,(str,float,int)) else tuple(x)
 
 def filetypematch(fname, filetypes,prefix = None):
     filetypes = tupelize(filetypes)

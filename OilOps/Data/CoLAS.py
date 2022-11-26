@@ -18,8 +18,7 @@ def get_driver():
 
     opts = Options()
     opts.headless = True
-    driver = Firefox(options=opts)
-    return driver
+    return Firefox(options=opts)
 
 #Define Functions for multiprocessing iteration
 
@@ -31,18 +30,15 @@ def Get_LAS(UWIS):
     #adir = path.abspath(pathname)
     #dir_add = path.join(adir,"\\LOGS")
     warnings.simplefilter("ignore")
-    
-    if isinstance(UWIS,(str,float,int)):
-        UWIS = [UWIS]
-    else:
-        UWIS = list(UWIS)
+
+    UWIS = [UWIS] if isinstance(UWIS,(str,float,int)) else list(UWIS)
     BADLINKS = []
     with get_driver() as browser:
+        connection_attempts = 0
         for UWI in UWIS:
             print(UWI)
             ERROR=0
             while ERROR == 0: #if 1==1:
-                connection_attempts = 0 
                 #Screen for Colorado wells
                 userows=pd.DataFrame()
                 if UWI[:2] == '05':
@@ -55,14 +51,14 @@ def Get_LAS(UWIS):
                     #option = webdriver.ChromeOptions()
                     #option.add_argument(' — incognito')
                     #browser = webdriver.Chrome('\\\Server5\\Users\\KRucker\\chromedriver.exe')
-                    
+
                     try:
                         browser.get(docurl)
                     except Exception as ex:
                         print(f'Error connecting to {base_url}.')
                         ERROR=1
 
-                    browser.find_element_by_link_text('Class').click()    
+                    browser.find_element_by_link_text('Class').click()
                     soup = BS(browser.page_source, 'lxml')
                     parsed_table = soup.find_all('table')[0]
 
@@ -72,7 +68,7 @@ def Get_LAS(UWIS):
                     pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
 
                     userows=pdf.loc[(pdf.Class.astype(str).str.contains('Well Logs')==True)]
-                    
+
                     # If another page, scan it too
                     # select next largest number
                     tables=len(soup.find_all('table'))
@@ -82,7 +78,7 @@ def Get_LAS(UWIS):
                             for td in row.find_all('td')]
                             for row in parsed_table.find_all('tr')]
                     pages=len(data[0])
-                    
+
                     if pages>1:
                         for p in range(1,pages):
                             try:
@@ -100,12 +96,12 @@ def Get_LAS(UWIS):
                             links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
                             pdf['LINK']=None
                             pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
-                            
+
                             #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                             #surveyrows.append(dirdata)
 
                             userows.append(pdf.loc[(pdf.Class.astype(str).str.contains('Well Logs')==True)])
-                            
+
                     #browser.quit()
                     userows=pd.DataFrame(userows)
                     LINKCOL=userows.columns.get_loc('LINK')
@@ -114,8 +110,8 @@ def Get_LAS(UWIS):
                         continue
                     userows.loc[:,'DateString']=None
                     userows.loc[:,'DateString']=userows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')
-                        
-                    for i in range(0,userows.shape[0]):
+
+                    for i in range(userows.shape[0]):
                         dl_url = re.sub('XLINKX', str(userows.iloc[i,LINKCOL]),DL_BASE)
                         r=requests.get(dl_url, allow_redirects=True)
                         filetype=path.splitext(re.sub(r'.*filename=\"(.*)\"',r'\1',r.headers['content-disposition']))[1]
@@ -129,14 +125,14 @@ def Get_LAS(UWIS):
                             except:
                                 print('ERROR: '+dl_url)
                                 BADLINKS = BADLINKS.append(dl_url)
-                                
+
                 ERROR = 1
 
 if __name__ == "__main__":
     # Initialize constants
     global URL_BASE
     URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
-    global DL_BASE 
+    global DL_BASE
     DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
     global pathname
     pathname = path.dirname(sys.argv[0])
@@ -150,24 +146,23 @@ if __name__ == "__main__":
     for file in listdir(adir):
         if file.lower().endswith(".uwi"):       
             with open(file, 'r') as f:
-                for line in f:
-                    UWIlist.append(line[:-1])
+                UWIlist.extend(line[:-1] for line in f)
     print ("read UWI file(s)")
     #UWIlist=UWIlist[40464:]
     # Create download folder
     if not path.exists(dir_add):
         makedirs(dir_add)
-        
+
     # Parallel Execution
     processors = multiprocessing.cpu_count()-1
     #count_per_iteration = len(UWIlist) / float(processors)
     #pool=multiprocessing.Pool(processors)
     #results = pool.map(Get_Surveys,UWIlist)
     print ("starting map function")
-           
+
     #with multiprocessing.Pool(processes=processors) as pool:
     #    pool.map(Get_Surveys,UWIlist[0:10],1)
-        
+
     #for i in range(0, processors):
     #    list_start = int(count_per_iteration * i)
     #    list_end = int(count_per_iteration * (i+1))
@@ -179,11 +174,11 @@ if __name__ == "__main__":
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(Get_LAS, a): a for a in data}
         RESULT=pd.DataFrame()
-        for i in f.keys():
+        for i in f:
             RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
     else:
         RESULT = Get_LAS(UWIlist)
-        
+
     with multiprocessing.Pool(processes=processors) as pool:
         pool.map(Get_LAS,UWIlist)
 

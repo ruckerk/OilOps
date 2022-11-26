@@ -27,7 +27,7 @@ with ZipFile(filename, 'r') as zipObj:
 files = []
 start_dir = os.path.join(adir,'COOGC_SQL')
 pattern   = r'CO_3_2.*'
-   
+
 for dir,_,_ in os.walk(start_dir):
     files.extend(glob(os.path.join(dir,pattern)))
 
@@ -41,7 +41,7 @@ with ZipFile(filename, 'r') as zipObj:
    # Extract all the contents of zip file in current directory
    zipObj.extractall()
 os.remove(filename)
-   
+
 url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP'
 filename = wget.download(url)
 with ZipFile(filename, 'r') as zipObj:

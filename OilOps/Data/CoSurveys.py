@@ -53,8 +53,7 @@ def UWI10(num,limit=10):
     try:
         num=int(num)
     except:
-        num=None
-        return num
+        return None
     while num > high_val:
         num = math.floor(num/100)
     while num < low_val:
@@ -151,21 +150,21 @@ def Get_Surveys(UWIx, DB = None):
     if isinstance(UWIx,(np.ndarray,pd.Series,pd.DataFrame)):
         UWIx=pd.DataFrame(UWIx).iloc[:,0].tolist()
 
-    print('start: '+str(UWIx[0]) + '\n')
+    print(f'start: {str(UWIx[0])}' + '\n')
     ct = 0
     tot = len(UWIx)
-    
+
     with get_driver() as browser:
         #browser.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS)
         for UWI in UWIx:
             ct += 1
             UWI = str(UWI10(UWI)).zfill(10)
-            
+
             interval = math.floor(len(UWIx)/10)
             if interval == 0:
                 interval = -1
             if np.floor(ct/interval) == ct/interval:
-                print(str(ct)+' of '+str(tot) + ' for '+str(UWIx[0]) + ' : ' + str(UWI))
+                print(f'{ct} of {tot} for {str(UWIx[0])} : {UWI}')
 
             #print(UWI)
             warnings.simplefilter("ignore")
@@ -179,7 +178,7 @@ def Get_Surveys(UWIx, DB = None):
                         time.sleep(5*(1+0.2)**TRYCOUNT)
                     #Screen for Colorado wells
                     surveyrows=pd.DataFrame();
-                    if UWI[0:2] != '05':
+                    if UWI[:2] != '05':
                         ERROR = 1
                     #Reduce well to county and well numbers
                     COWELL=UWI[2:10]
@@ -192,11 +191,11 @@ def Get_Surveys(UWIx, DB = None):
                     #capabilities = {'chrome.binary': "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"}
                     #options = Options();
                     #options.setBinary("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")
-                    
+
                     #options.setBinary("C:/Program Files (x86)/Google/Chrome/Application/chrome.exe")
                     #option.add_argument(' — incognito')
                     #browser = webdriver.Chrome('\\\Server5\\Users\\KRucker\\chromedriver.exe')
-                 
+
                     try:
                         browser.get(docurl)
                     except Exception as ex:                       
@@ -211,9 +210,9 @@ def Get_Surveys(UWIx, DB = None):
                     except:
                         SUMMARY.loc[SUMMARY.shape[0]+1] = [UWI,None,None,docurl,None];
                         ERROR = 1
-                      
+
                     soup = BS(browser.page_source, 'lxml');
-                    
+
                     # PARSED TABLE MAY BE GIVING INDEX ERROR
                     try:
                         parsed_table = soup.find_all('table')[0]
@@ -221,12 +220,12 @@ def Get_Surveys(UWIx, DB = None):
                         ERROR = 1
                         continue
                     links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
- 
+
                     pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
                     pdf['LINK']=None
                     pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
                     pdf['DOCID'] = pdf.LINK.astype('str').str.split("=").str[-1]
-   
+
                     surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY')==True)]
 
                     # If another page, scan it too
@@ -248,7 +247,7 @@ def Get_Surveys(UWIx, DB = None):
 
                     #Major bugfix on not pulling multi-page doc tables
                     if pages>0:
-                        for p in range(0,pages+2):
+                        for p in range(pages+2):
                             #print(p)
                             if p>0:
                                 try:
@@ -282,7 +281,7 @@ def Get_Surveys(UWIx, DB = None):
                             #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                             #surveyrows.append(dirdata)
                             surveyrows = surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA')==True])
-                    elif (pages == 0) and (sum([len(i) for i in data]) > 10):
+                    elif pages == 0 and sum(len(i) for i in data) > 10:
                         try:
                             parsed_table = soup.find_all('table')[0]
                         except:
@@ -301,18 +300,18 @@ def Get_Surveys(UWIx, DB = None):
                         SUMMARY.loc[SUMMARY.shape[0]+1] = [UWI,None,None,None,None]
                         PAGEERROR=ERROR=1
                         break
-                    
+
                     surveyrows=pd.DataFrame(surveyrows)
                     if len(surveyrows)==0:
                         SUMMARY.loc[SUMMARY.shape[0]+1] = [UWI,None,None,None,None]
                         ERROR=1
                         break
-                    
+
                     surveyrows.loc[:,'DateString']=None
                     surveyrows.loc[:,'DateString']=surveyrows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')
                     LINKCOL=surveyrows.columns.get_loc('LINK')
-                    
-                    for i in range(0,surveyrows.shape[0]):
+
+                    for i in range(surveyrows.shape[0]):
                         #dl_url= re.sub('XLINKX', str(surveyrows.loc[surveyrows['Date'].astype('datetime64').idxmax(),'LINK']),DL_BASE)
                         #DocDate=str(surveyrows.loc[surveyrows['Date'].astype('datetime64').idxmax(),'DateString'])
                         dl_url= re.sub('XLINKX', str(surveyrows.iloc[i,LINKCOL]),DL_BASE)
@@ -339,17 +338,29 @@ def Get_Surveys(UWIx, DB = None):
                         #XX=df.loc[df[0].str.contains("DocDate"),:].replace({r'.*([0-9]{2}/[0-9]{2}/[0-9]{2,4}).*':r'\1'},regex=True).astype('datetime64').transpose().idxmax()
                         #dl_url=re.sub('XLINKX',df.loc[df[0].str.contains("Download"),int(XX)].to_string(index=False),DL_BASE)
                         r=requests.get(dl_url, allow_redirects=True)
-                        
+
                         # THIS LINE CREATED AN ERROR
                         try:
                             filetype=path.splitext(re.sub(r'.*filename=\"(.*)\"',r'\1',r.headers['content-disposition']))[1]
                         except:
                             filetype = ".xxx"
-                        f2 = '_'.join(['SURVEYDATA',DocDate,'DOCID'+DocID,'DOCNUM'+DocNum,'UWI'+str(UWI)]) + filetype
+                        f2 = (
+                            '_'.join(
+                                [
+                                    'SURVEYDATA',
+                                    DocDate,
+                                    f'DOCID{DocID}',
+                                    f'DOCNUM{DocNum}',
+                                    f'UWI{UWI}',
+                                ]
+                            )
+                            + filetype
+                        )
+
                         filename = path.join(dir_add,f2)
                         filename = CheckDuplicate(filename)
                         #urllib.request.urlretrieve(dl_url, filename)
-                        SUMMARY.loc[SUMMARY.shape[0]+1] = [UWI,int(DocID),int(DocNum),dl_url,f2]                        
+                        SUMMARY.loc[SUMMARY.shape[0]+1] = [UWI,int(DocID),int(DocNum),dl_url,f2]
                     SUCCESS=1
                     if SUCCESS==1:
                         ERROR = 1
@@ -357,13 +368,13 @@ def Get_Surveys(UWIx, DB = None):
     #    browser.quit() 
     #except Exception:
     #    pass
-    fname = 'SURVEYS_'+str(UWIx[0])+'_'+str(UWIx[-1])
+    fname = f'SURVEYS_{str(UWIx[0])}_{str(UWIx[-1])}'
     fname = path.join(dir_add,fname)
     SUMMARY.to_json(fname+'.JSON')
     SUMMARY.to_parquet(fname+'.PARQUET')
-                       
-    print('end: '+str(UWIx[0]) + '\n')
-                       
+
+    print(f'end: {str(UWIx[0])}' + '\n')
+
     return(SUMMARY)
 
 def CheckDuplicate(fname):
@@ -372,10 +383,9 @@ def CheckDuplicate(fname):
         pattern = re.compile(r'.*_([0-9]{0,2})\.(?:[0-9a-zA-Z]{,4})',re.I)
         ct = re.search(pattern, fname)
         try:
-            ct = ct.group(1)
-            ct = int(ct)
-            ct += 1
-            ct = '_'+str(ct)
+            ct = ct[1]
+            ct = int(ct) + 1
+            ct = f'_{str(ct)}'
         except:
             ct = '_1'
         pattern = re.compile(r'(.*)(_[0-9]{1,4}){0,1}(\.[a-z0-9]{,4})',re.I)
@@ -422,7 +432,7 @@ def DF_UNSTRING(df_IN):
     return(df_IN)
 
 def str2num(str_in):
-    if isinstance(str_in,(int,float)) == False:
+    if not isinstance(str_in, (int, float)):
         val = re.sub(r'[^0-9\.]','',str(str_in))
         if val == '':
             return None
@@ -435,7 +445,7 @@ def str2num(str_in):
     return val
 
 def API2INT(val_in,length = 10):
-    if val_in == None:
+    if val_in is None:
         return None
     val = str2num(val_in)
     lim = 10**length-1
@@ -451,20 +461,15 @@ def API2INT(val_in,length = 10):
 def APIfromFilename(ffile,UWIlen=10):
     lst = re.findall(r'[0-9]{9,}',ffile)
     if len(lst)>0:
-        UWI = API2INT(lst[0],length=UWIlen)
-    else:
-        lst = re.findall(r'[0-9]{9,}',re.sub('\-','',ffile))
-        if len(lst)>0:
-            UWI = API2INT(lst[0],length=UWIlen)
-        else:
-            UWI = None
-    return UWI
+        return API2INT(lst[0],length=UWIlen)
+    lst = re.findall(r'[0-9]{9,}',re.sub('\-','',ffile))
+    return API2INT(lst[0],length=UWIlen) if len(lst)>0 else None
 
 def DL_from_URL(df_in):
     #URLS = df_in.iloc[:,0]
     #FILENAMES = df_in.iloc[:,1]
-    
-    ERRORS = list()
+
+    ERRORS = []
     for r in df_in.iterrows():
         try:
             url = r[1][0]

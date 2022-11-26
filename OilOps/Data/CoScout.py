@@ -87,11 +87,11 @@ def IN_TC_AREA(well2,tc2):
     except:
         ln = LineString(well2.coords.values)
     test = False
-    for j in range(0,tc2.shape[0]):
+    for j in range(tc2.shape[0]):
         if test == False:
             poly = Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(10000)):
-                test = True   
+                test = True
     return(test) 
 
 def GROUP_IN_TC_AREA(tc,wells):
@@ -136,9 +136,7 @@ def Find_Str_Locs(df_in,string):
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     #Output.astype({'Title': 'object','Columns': 'object','Rows': 'object'}).dtypes
     Output.astype(object)
-    ii = -1
-    for item in string:
-        ii += 1
+    for ii, item in enumerate(string):
         Output.iloc[ii,1] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns'),:].index.values ]
         Output.iloc[ii,2] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
@@ -147,14 +145,13 @@ def Find_Str_Locs(df_in,string):
 def Summarize_Page(df_in,string):
     #build well as preliminary single row of data
     StringLocs = Find_Str_Locs(df_in,string)
-    Summary=pd.DataFrame([],index=range(0,30),columns=StringLocs.Title)
-    for item in StringLocs.Title:        
+    Summary = pd.DataFrame([], index=range(30), columns=StringLocs.Title)
+    for item in StringLocs.Title:    
         colrow=StringLocs.loc[StringLocs.Title==item,['Columns','Rows',]].values.tolist()[0]
         itemlist = []
         for c in colrow[0]:
-            for r in colrow[1]:
-                itemlist.append(df_in.iloc[c,r+1])
-            #itemlist=list(dict.fromkeys(itemlist))
+            itemlist.extend(df_in.iloc[c,r+1] for r in colrow[1])
+                    #itemlist=list(dict.fromkeys(itemlist))
         try:
             itemlist=itemlist.remove('')
         except: None
@@ -163,13 +160,15 @@ def Summarize_Page(df_in,string):
         Summary.loc[:len(itemlist)-1,item]=itemlist
 
     Summary=Summary.dropna(axis=0,how='all')
-    
+
     for item in StringLocs.Title:
         if len(Summary[item].dropna())==1:
             if ('LAT/LON' in item.upper()):
                 pattern = re.compile('[a-zA-Z:]+')
                 Summary.loc[0,item]=pattern.sub('',Summary[item].dropna().values[0])
-            if ('DATE' in item.upper()) & (isinstance(Summary.loc[0,item],datetime.date)==False):
+            if ('DATE' in item.upper()) & (
+                not isinstance(Summary.loc[0, item], datetime.date)
+            ):
                 pattern = re.compile('[a-zA-Z:]+')
                 Summary.loc[0,item]=pd.to_datetime(pattern.sub('',Summary[item].dropna().values[0]),infer_datetime_format=True,errors='coerce')
             if pd.isna(Summary.loc[0,item]):
@@ -223,7 +222,7 @@ def Get_Scouts(UWIs,db=None):
                'BBLS_H2O','BBLS_OIL','CALC_GOR', 'GRAVITY_OIL','BTU_GAS','TREATMENT SUMMARY']
 
     status_pat = re.compile(r'Status:([\sA-Z]*)[0-9]{1,2}/[0-9]{1,2}/[0-9]{1,2}', re.I)
-                
+
     OUTPUT=[]
     pagedf=[]
     xSummary = None
@@ -231,20 +230,20 @@ def Get_Scouts(UWIs,db=None):
     pathname = path.dirname(sys.argv[0])
     adir = path.abspath(pathname)
     warnings.simplefilter("ignore")
-    if isinstance(UWIs,list) == False:
+    if not isinstance(UWIs, list):
         UWIs=[UWIs]
+    connection_attempts = 4
     for UWI in UWIs:
         #if 1==1:
         UWI = str(UWI)
         if len(UWI)%2 == 1:
             UWI = UWI.zfill(len(UWI)+1)
-            
-        print(UWI+" "+datetime.datetime.now().strftime("%d/%m/%Y_%H:%M:%S"))
+
+        print(f"{UWI} " + datetime.datetime.now().strftime("%d/%m/%Y_%H:%M:%S"))
         docurl = None
-        connection_attempts = 4 
         #Screen for Colorado wells
         userows=pd.DataFrame()
-        if UWI[:2] == '05':
+        if UWI.startswith('05'):
             #Reduce well to county and well numbers
             docurl=re.sub('XNUMBERX',UWI[2:10],URL_BASE)
             RETRY=0
@@ -256,7 +255,7 @@ def Get_Scouts(UWIs,db=None):
                     pagedf=[]
                     RETRY += 1
                     sleep(10)
-            
+
         if len(pagedf)>0:
             xSummary = Summarize_Page(pagedf,Strings)
             xSummary['UWI']=UWI
@@ -265,14 +264,12 @@ def Get_Scouts(UWIs,db=None):
             STAT_CODE = None
             try:
                 status = status_pat.search(pagedf.iloc[1,0])
-                status = status.group(1)
+                status = status[1]
                 STAT_CODE = status.strip()
             except:
                 print('status error')
-                pass
-
             xSummary['WELL_STATUS'] = STAT_CODE
-            
+
             xSummary = pd.DataFrame([xSummary.values],columns= xSummary.index.tolist())
 
             if type(OUTPUT)==list:
@@ -280,11 +277,15 @@ def Get_Scouts(UWIs,db=None):
             else:
                 OUTPUT=OUTPUT.append(xSummary,ignore_index=True)
 
-    FILENAME = str(UWIs[0])+'_'+str(UWIs[-1])+"_"+datetime.datetime.now().strftime("%d%m%Y_%H%M%S")
-    FILENAME = path.join(dir_add,FILENAME) 
+    FILENAME = (
+        f'{str(UWIs[0])}_{str(UWIs[-1])}_'
+        + datetime.datetime.now().strftime("%d%m%Y_%H%M%S")
+    )
+
+    FILENAME = path.join(dir_add,FILENAME)
     DF_UNSTRING(OUTPUT).to_json(FILENAME+'.JSON')
     DF_UNSTRING(OUTPUT).to_parquet(FILENAME+'.PARQUET')
-    
+
     if db != None:
         DATECOLS = [col for col in OUTPUT.columns if 'DATE' in col.upper()]
         for k in DATECOLS:
@@ -293,7 +294,7 @@ def Get_Scouts(UWIs,db=None):
         conn = sqlite3.connect(db)
         c = conn.cursor()
         TABLE_NAME = 'CO_SCOUT'
-        SQL_COLS = list()
+        SQL_COLS = []
         # NEEDS CONVERSION OF PYTHON TYPES TO SQL TYPES
         for k,v in OUTPUT.dtypes.to_dict().items():    
             SQL_COLS=SQL_COLS+'['+str(k)+'] '+str(v)+','
@@ -304,7 +305,7 @@ def Get_Scouts(UWIs,db=None):
         #ADD_COLS = list(set(SQL_COLS).difference(TBL_COLS))
         OUTPUT.to_sql(TABLE_NAME,conn,if_exists='append',index=False)
 
-        #OUTPUT.to_csv(FILENAME)
+            #OUTPUT.to_csv(FILENAME)
 
     return(OUTPUT)
 
@@ -326,17 +327,17 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     # Define CRS from EPSG reference frame number
     EPSG_OLD= int(EPSG_OLD)
     EPSG_NEW=int(EPSG_NEW)
-    
+
     crs_old = CRS.from_user_input(EPSG_OLD)
     crs_new = CRS.from_user_input(EPSG_NEW)
 
     #read shapefile
     r = shp.Reader(SHP_File)   # THIS IS IN X Y COORDINATES!!!
 
-    
+
     #define output filename
     out_fname = re.sub(r'(.*)(\.shp)',r'\1_EPSG'+str(EPSG_NEW)+Label+r'\2',SHP_File,flags=re.IGNORECASE)
-    
+
     #if FilterFile != None:
     #    FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
     #    pdf = read_shapefile(r)
@@ -346,7 +347,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     #    SUBSET = np.arange(0,len(r.shapes()))
 
     # Speed, get subset of records
-    if FilterFile == None:
+    if FilterFile is None:
         SUBSET=np.arange(0,len(r.shapes()))
     else:
         FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
@@ -355,20 +356,17 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
         SUBSET=pdf[pdf.isin(FILTERUWI)].index.tolist()
 
     total = len(SUBSET)
-    #compile converted output file    
+    #compile converted output file
     with shp.Writer(out_fname, shapeType=r.shapeType) as w:
         w.fields = list(r.fields)
-        ct=0
         outpoints = []
-        for i in SUBSET:
-        #for shaperec in r.iterShapeRecords(): if 1==1:
-            ct+=1
-            print(str(ct)+" of "+str(total))
+        for ct, i in enumerate(SUBSET, start=1):
+            print(f"{ct} of {total}")
             shaperec=r.shapeRecord(i)
-            Xshaperec=shaperec.shape            
+            Xshaperec=shaperec.shape
             points = np.array(shaperec.shape.points).T
             points_t= transform(crs_old, crs_new, points[0],points[1],always_xy=True)
-            points[0:2]=points_t[0:2]
+            points[:2] = points_t[:2]
             #Xshaperec.points = list(map(tuple, points.T))
             json_shape = shaperec.shape.__geo_interface__
             json_shape['coordinates']=tuple(map(tuple, points.T))
@@ -389,8 +387,8 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
 ##                w.null()
             w.record(*shaperec.record)
             w.shape(json_shape)
-            #w.shape(Xshaperec)
-            #del(Xshaperec)
+                    #w.shape(Xshaperec)
+                    #del(Xshaperec)
     prjfile = re.sub(r'\.shp','.prj',out_fname,flags=re.IGNORECASE)
     tocrs = pycrs.parse.from_epsg_code(EPSG_NEW)
     with open(prjfile, "w") as writer:    
@@ -421,24 +419,21 @@ def check_2EPSG(epsg1,epsg2):
     try:
         CRS2 = CRS.from_user_input(int(epsg2))
     except: pass
-    if CRS1==None:
+    if CRS1 is None:
         MESSAGE = 'Invalid input EPSG code'
         OUTPUT = False
-    if CRS2 == None:
+    if CRS2 is None:
         MESSAGE = 'Invalid output EPSG code'
         OUTPUT = False
     return(OUTPUT,MESSAGE)
 
 def check_EPSG(epsg1):
     CRS1=None
-    OUTPUT = 'Validated EPSG code'
     CHECK = 1
     try:
         CRS1 = CRS.from_user_input(int(epsg1))
     except: pass
-    if CRS1==None:
-        OUTPUT = 'Invalid'
-    return(OUTPUT)
+    return 'Invalid' if CRS1 is None else 'Validated EPSG code'
 
 def CheckDuplicate(fname):
     ct = ''
@@ -446,13 +441,12 @@ def CheckDuplicate(fname):
         pattern = re.compile('.*_([0-9]*)\.(?:[0-9a-zA-Z]{3,4})',re.I)
         ct = re.search(pattern, fname)
         try:
-            ct = ct.group(1)
-            ct = int(ct)
-            ct += 1
-            ct = '_'+str(ct)
+            ct = ct[1]
+            ct = int(ct) + 1
+            ct = f'_{str(ct)}'
         except:
             ct = '_1'
-        
+
         pattern = re.compile(r'(.*)(_[0-9]{1,4})(\.[a-z0-9]{3,4})',re.I)
         fname = re.sub(pattern,r'\1'+ct+r'\3',fname)
     return(fname)
@@ -503,7 +497,7 @@ def STIM_VALS_FROM_TXT(row):
              'FLUID2':r'([0-9,\.]*) BBL',
              'PROP`':r'([0-9,\.]*) *(?:#|LBS)',
              'PRESSURE':r'([0-9,\.]*) *PSI'}
-    for k in TERMS.keys():
+    for k in TERMS:
         # if 1==1:
         TERMS[k] = re.findall(TERMS[k],row,re.I)
         TERMS[k] = [re.sub(r',', '', i) for i in TERMS[k]]
@@ -514,16 +508,10 @@ def STIM_VALS_FROM_TXT(row):
             continue            
         else:
             TERMS[k] = TERMS[k].astype(np.float)
-        if k == 'PRESSURE':
-            try:
-                TERMS[k] = TERMS[k].max()
-            except:
-                pass
-        else:
-            try:
-                TERMS[k] = TERMS[k].sum()
-            except:
-                pass
+        try:
+            TERMS[k] = TERMS[k].max() if k == 'PRESSURE' else TERMS[k].sum()
+        except:
+            pass
         if isinstance(TERMS[k],np.ndarray):
             TERMS[k] = 0
     return(TERMS)
@@ -541,9 +529,8 @@ def STIM_SUMMARY_TO_ARRAY(row):
     PSI = data[3]
     if PSI == 0:
         PSI = np.nan
-        
-    OUT = pd.Series([FLUID,PROP,PSI])
-    return(OUT)
+
+    return pd.Series([FLUID,PROP,PSI])
 
 def TRYDICT(TERM,D):
     try:
@@ -573,14 +560,18 @@ if __name__ == "__main__":
     outfile_key = 'SCOUT_PULL_SUMMARY_'
     outfile = path.join(dir_add,outfile_key+datetime.datetime.now().strftime("%d%m%Y"))
 
-    DATES = dict()
+    DATES = {}
     try:
-        lastfile = sorted(glob.glob(path.join(dir_add,outfile_key+'*arquet')),key = os.path.getctime)[0]
+        lastfile = sorted(
+            glob.glob(path.join(dir_add, f'{outfile_key}*arquet')),
+            key=os.path.getctime,
+        )[0]
+
         df = pd.read_parquet(lastfile)
         DATES = dict(zip(df.UWI,df.STATUS_DATE))
         del df
     except: pass
-        
+
     #Read UWI files and form UWI list
     UWIlist=[]
 ##    for file in listdir(adir):
@@ -612,14 +603,14 @@ if __name__ == "__main__":
     transformer = Transformer.from_crs(epsg1, epsg2,always_xy =True)
     p_shp = shp.Reader(polygons_file)
     poly_df = read_shapefile(p_shp)
-    
+
     del p_shp
-    for i in range(0,poly_df.shape[0]):
+    for i in range(poly_df.shape[0]):
         pts = poly_df.coords.iloc[i]
         pts = pd.DataFrame(pts)
         pts[['X','Y']]=pts.apply(lambda x: transformer.transform(x.iloc[0],x.iloc[1]), axis=1).apply(pd.Series)
         poly_df.coords.iloc[i] = list(pts[['X','Y']].to_records(index=False))        
-    
+
     # remember
     # line.intersection(polygon.buffer(0.2))
 
@@ -633,9 +624,9 @@ if __name__ == "__main__":
     quit()
     if processors > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-            f = {executor.submit(func, a): a for a in data}        
+            f = {executor.submit(func, a): a for a in data}
         RESULT=pd.DataFrame()
-        for i in f.keys():
+        for i in f:
             RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
     else:
         RESULT = GROUP_IN_TC_AREA(poly_df,sdf)
@@ -671,7 +662,6 @@ if __name__ == "__main__":
     
     #quit()
 
-if 1==1:
 ##    #lst = pd.read_csv('PullScoutSummary.csv')
 ##    if path.exists('PullScoutSummary.PARQUET'):
 ##        lst = pd.read_parquet('PullScoutSummary.PARQUET')
@@ -680,38 +670,38 @@ if 1==1:
 ##    else:
 ##        lst=[]
 
-    
-    #batch = max(int(len(CoList)/2000),processors)
-    data=np.array_split(UWIlist,processors)
+
+#batch = max(int(len(CoList)/2000),processors)
+data=np.array_split(UWIlist,processors)
 
 ##    chunksize = min(1000,int(len(CoList)/processors))
 ##    batch = int(len(CoList)/chunksize)
 ##    processors = min(processors,batch)
 ##    data = np.array_split(CoList,batch)
-    print ("starting map function")
+print ("starting map function")
     # outfile = "BTU_API_PULL_"+datetime.datetime.now().strftime("%d%m%Y")+".csv"
 
     #processors = 0
-    if processors > 1:
-        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-            f = {executor.submit(Get_Scouts, a): a for a in data}
-        RESULT=pd.DataFrame()
-        for i in f.keys():
-            try:
-                RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
-            except:
-                pass
-    else:
-        RESULT = Get_Scouts(UWIlist)
+if processors > 1:
+    with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+        f = {executor.submit(Get_Scouts, a): a for a in data}
+    RESULT=pd.DataFrame()
+    for i in f:
+        try:
+            RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
+        except:
+            pass
+else:
+    RESULT = Get_Scouts(UWIlist)
 
-    for f in listdir(dir_add):
-        if 'parquet' in f.lower():
-            a=pd.read_parquet(path.join(dir_add,f))
-            b=pd.concat([a,b],axis=0, join='outer',ignore_index=True)
-            b.dropna(axis=1,how='all',inplace=True)
-            b = DF_UNSTRING(b) # BACKUP VERSION FOR RESULT
-    
-    #DF_UNSTRING TESTING if True:
+for f in listdir(dir_add):
+    if 'parquet' in f.lower():
+        a=pd.read_parquet(path.join(dir_add,f))
+        b=pd.concat([a,b],axis=0, join='outer',ignore_index=True)
+        b.dropna(axis=1,how='all',inplace=True)
+        b = DF_UNSTRING(b) # BACKUP VERSION FOR RESULT
+
+#DF_UNSTRING TESTING if True:
 ##    a = DF_UNSTRING(b)
 ##    test = (b.groupby('UWI').FACILITYID.count()>1)
 ##    test.loc[test==True].index.to_list()
@@ -731,47 +721,46 @@ if 1==1:
 ##    for k in lst:
 ##        m = (a[k]!=b[k])
 ##        pd.concat([a.loc[m,k],b.loc[m,k]], axis = 1)
-    
-    Problem_Columns = ['LAT/LON','TREATMENT_SUMMARY','STATUS_DATE','1ST_PRODUCTION_DATE']
-    RESULT = RESULT.loc[RESULT.drop(Problem_Columns, axis=1).drop_duplicates().index]
 
-    
-    RESULT[['TREAT_FLUID','TREAT_PROPPANT','TREAT_PRESSURE']] = RESULT.TREATMENT_SUMMARY.apply(STIM_SUMMARY_TO_ARRAY)
-    
+Problem_Columns = ['LAT/LON','TREATMENT_SUMMARY','STATUS_DATE','1ST_PRODUCTION_DATE']
+RESULT = RESULT.loc[RESULT.drop(Problem_Columns, axis=1).drop_duplicates().index]
+
+
+RESULT[['TREAT_FLUID','TREAT_PROPPANT','TREAT_PRESSURE']] = RESULT.TREATMENT_SUMMARY.apply(STIM_SUMMARY_TO_ARRAY)
+
 
 ##    if 1==1:
 ##        cts = R.FACILITYID.value_counts()
 ##        dbl = cts.loc[cts>1].index.values
 ##        R.loc[R.FACILITYID.isin(dbl)]
-    
-    #RESULT = Get_Scouts(UWIlist,SQLDB)
-    #outfile = path.join(dir_add,'SCOUT_PULL_SUMMARY_'+datetime.datetime.now().strftime("%d%m%Y"))
-    #RESULT.to_csv(outfile+'.csv',sep=',')
-    RESULT.to_json(outfile+'.json')
-    RESULT.to_parquet(outfile+'.parquet')
-    
-if 1==1:
-    #SQLDB = '\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\prod_data.db'
-    SQLDB = 'prod_data.db'
-    pd_sql_types={'object':'TEXT',
-                  'int8':'INTEGER',
-                  'int16':'INTEGER',
-                  'int32':'INTEGER',
-                  'int64':'INTEGER',                  
-                  'float32':'REAL',
-                  'float64':'REAL',
-                  'bool':'TEXT',
-                  'datetime64[ns]':'TEXT',
-                  'timedelta[ns]':'REAL',
-                  'category':'TEXT'
-        }
-    df_dtypes = RESULT.dtypes.astype('str').map(pd_sql_types).to_dict()
-    with sqlite3.connect(SQLDB) as conn:
-        TABLE_NAME = 'CO_SCOUT'
-        RESULT.to_sql(TABLE_NAME,conn,
-                      if_exists='replace',
-                      index=False,
-                      dtype=df_dtypes)
+
+#RESULT = Get_Scouts(UWIlist,SQLDB)
+#outfile = path.join(dir_add,'SCOUT_PULL_SUMMARY_'+datetime.datetime.now().strftime("%d%m%Y"))
+#RESULT.to_csv(outfile+'.csv',sep=',')
+RESULT.to_json(outfile+'.json')
+RESULT.to_parquet(outfile+'.parquet')
+
+#SQLDB = '\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\prod_data.db'
+SQLDB = 'prod_data.db'
+pd_sql_types={'object':'TEXT',
+              'int8':'INTEGER',
+              'int16':'INTEGER',
+              'int32':'INTEGER',
+              'int64':'INTEGER',                  
+              'float32':'REAL',
+              'float64':'REAL',
+              'bool':'TEXT',
+              'datetime64[ns]':'TEXT',
+              'timedelta[ns]':'REAL',
+              'category':'TEXT'
+    }
+df_dtypes = RESULT.dtypes.astype('str').map(pd_sql_types).to_dict()
+with sqlite3.connect(SQLDB) as conn:
+    TABLE_NAME = 'CO_SCOUT'
+    RESULT.to_sql(TABLE_NAME,conn,
+                  if_exists='replace',
+                  index=False,
+                  dtype=df_dtypes)
 
 
     

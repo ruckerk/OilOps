@@ -25,37 +25,37 @@ __all__ = ['Find_API_Col',
 
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
-    
+
     #if 1==1:
     APIterms = ['API','UWI']
-    
+
     df2 = df_inAPI.copy(deep = True)
     lowlim = 10**(8)
     highlim = 10**14
-    
+
     df2 = df2.apply(lambda x:WELLAPI(x).str2num(), axis=1)
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
         return (None,None)
     keys = df2.keys()
-    
+
     keylist=[]
     UWIlist = pd.Series(data=None,dtype = int)
 
     knum = None
     UWI = None
-    
+
     for k in keys:        
         # check for GT 100 rows per value
         if df2[k].shape[0]/len(df2[k].unique()) > 100:
             keylist.append(k)
         UWIlist = UWIlist.append(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
 
-    if len(keylist) > 0:
+    if keylist:
         longest = 0
         fav_k = keylist[0]
-        
+
         for k in keylist:
             test = False
             # check for API/UWI key
@@ -76,15 +76,17 @@ def Find_API_Col(df_inAPI):
             return (None,None)
             #raise Exception('Found more than one UWI in Find_API_Col')
         UWI = int(UWI)
-        
+
     return(UWI,knum)
 
 
 def APIfromFrame(df_in):
-    terms = list()
+    terms = []
     if isinstance(df_in,dict):
-        for k in df_in:
-            terms.append(APIfromString(df_in[k].to_string(),ListResult=True))
+        terms.extend(
+            APIfromString(df_in[k].to_string(), ListResult=True) for k in df_in
+        )
+
         term = max(set(terms), key = terms.count)
     if isinstance(df_in,pd.DataFrame):
         term = APIfromString(df_in.to_string())
@@ -96,28 +98,26 @@ def COGCC_SURVEY_CLEANUP(df_in):#if True:
     skeys = df_in.keys().str.upper().str.strip().str.replace(' ','')
     mask = skeys.str.contains('HEADER')
     skey = list(df_in.keys()[mask])
-    # Look for normal Col 1 template terms
-    if len(skey) == 1:
-        df_dummy = df_in[skey[0]].str.upper().str.strip().str.replace(' ','')
-        m1 = df_dummy.str.contains('OPERATORNAME').fillna(False)
-        m2 = df_dummy.str.contains('OPERATORNUMBER').fillna(False)
-        m3 = df_dummy.str.contains('NORTHREFERENCE').fillna(False)
+    if len(skey) != 1:
+        return None
+    df_dummy = df_in[skey[0]].str.upper().str.strip().str.replace(' ','')
+    m1 = df_dummy.str.contains('OPERATORNAME').fillna(False)
+    m2 = df_dummy.str.contains('OPERATORNUMBER').fillna(False)
+    m3 = df_dummy.str.contains('NORTHREFERENCE').fillna(False)
 
-        # If all strings above are found, rename columes
-        if df_in.loc[m1 + m2 + m3,skey[0]].size == 3:
-            col1 = df_in.keys().get_loc(skey[0])
-            default_keys = ['measured depth\n(ft)', 'inclination (°)', 'azimuth (°)', 'true vertical depth\n(ft)', 'northing \n+N/-S  (ft)', 'easting \n+E/-W  (ft)']
-            
-            ncol = len(skey) + len(default_keys)
+    # If all strings above are found, rename columes
+    if df_in.loc[m1 + m2 + m3,skey[0]].size == 3:
+        col1 = df_in.keys().get_loc(skey[0])
+        default_keys = ['measured depth\n(ft)', 'inclination (°)', 'azimuth (°)', 'true vertical depth\n(ft)', 'northing \n+N/-S  (ft)', 'easting \n+E/-W  (ft)']
 
-            newkeys = pd.Series(df_in.keys())
-            newkeys.iloc[col1:ncol]= skey+default_keys
-            newkeys = list(newkeys)
+        ncol = len(skey) + len(default_keys)
 
-            df_in.columns = newkeys
-            return df_in
-    else:
-        return None 
+        newkeys = pd.Series(df_in.keys())
+        newkeys.iloc[col1:ncol]= skey+default_keys
+        newkeys = list(newkeys)
+
+        df_in.columns = newkeys
+        return df_in 
 
 def ExtractSurveyWrapper(df_in):
     OUT=pd.DataFrame()
@@ -133,9 +133,8 @@ def ExtractSurveyWrapper(df_in):
             df_in = pd.DataFrame(df_in)
             if not df_in.empty:
                 raise Exception('No survey found in dataframe')
-            else:
-                OUT = ExtractSurvey(df_in)
-                OUT.rename(columns = SurveyCols(OUT),inplace=True)
+            OUT = ExtractSurvey(df_in)
+            OUT.rename(columns = SurveyCols(OUT),inplace=True)
             return outdf_in
         except:
             raise Exception('No survey found in dataframe')
@@ -150,7 +149,7 @@ def ExtractSurveyWrapper(df_in):
 def ExtractSurvey(df_in):
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
-    
+
     adf_in=df_in.copy(deep=True)
 
     try: 
@@ -158,7 +157,7 @@ def ExtractSurvey(df_in):
         if df_in[list(SurveyCols(df_in))].dropna(how='all',axis = 1).dropna(how='all',axis = 0).shape[0]>5:
             cols = list(SurveyCols(df_in))
             outdf_in = df_in[cols].copy(deep=True)
-                    
+
             outdf_in['UWI'] = ReadUWI
 ##                (DEAD,APICOL) = Find_API_Col(df_in)
 ##                if APICOL != None:
@@ -169,11 +168,11 @@ def ExtractSurvey(df_in):
 ##                    outdf_in = df_in[cols].copy(deep=True)
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
-                
+
             outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
             outdf_in = outdf_in.dropna(how='all',axis = 1)
             outdf_in = outdf_in.dropna(how='all',axis = 0)
-            if ('UWI' in outdf_in.keys()) == False:
+            if 'UWI' not in outdf_in.keys():
                 outdf_in['UWI']=None
             #outdf_in.rename(columns = SurveyCols(outdf_in),inplace=True)
             return outdf_in
@@ -181,9 +180,9 @@ def ExtractSurvey(df_in):
         # test for strings
         test = re.findall(r'MD|TVD|DEPTH|INC|AZ',adf_in.to_string(),re.I)
         if len(test)>=3:
+            drow = -1
             for n in [1,2,3,4]:
-                drow = -1
-                for i in range(0,100): # is survey header in 1st 15 rows?
+                for i in range(100): # is survey header in 1st 15 rows?
                     try:
                         df_in=adf_in.copy()
                         N=min(i,n)
@@ -215,27 +214,22 @@ def ExtractSurvey(df_in):
                         #keycols = list()
                         #for c in cols:
                         #    keycols.append(outdf_in.keys().get_loc(c))
-                        
+
                         #outdf_in = outdf_in.copy(deep=True)
                         outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
-                    
+
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
                         test = outdf_in.loc[:10,cols].dropna(how='any').shape[0]
                         if test<10:
                             continue
 
-                        #for k in outdf_in.keys():
-                            # GETTING SLICE ERROR HERE
-                            #outdf_in.loc[:,k] = np.array(outdf_in.loc[:,k].astype(str).str.replace(r'[^0-9\.]*','',regex=True))
-                            # GETTING SLICE ERROR HERE
-                            #outdf_in.loc[:,k] = np.array(pd.to_numeric(outdf_in.loc[:,k], errors='coerce'))
                         outdf_in = outdf_in.apply(pd.to_numeric, errors='coerce')
                         outdf_in = outdf_in.dropna(how='all',axis = 1)
                         outdf_in = outdf_in.dropna(how='all',axis = 0)
                         if outdf_in.shape[0] > 5:
                             outdf_in = df_in[SurveyCols(df_in)]
                             outdf_in.rename(columns = SurveyCols(outdf_in),inplace=True)
-                            if ('UWI' in outdf_in.keys()) == False:
+                            if 'UWI' not in outdf_in.keys():
                                 outdf_in['UWI'] = None
                             return outdf_in
                     except: pass
@@ -251,12 +245,9 @@ def survey_from_excel(file, ERRORS = True): #if True:
     if TUPLE_TEST:
           FNAME = file[0]
           file = file[1]
-          
-    ERR_FOLDER = None
-    RUNERROR = False
-    if ERRORS == True:
-        ERR_FOLDER = ERRORFILES()
 
+    RUNERROR = False
+    ERR_FOLDER = ERRORFILES() if ERRORS == True else None
     outdf = pd.DataFrame()
     xl = {}
     # read excel as a dictionary of dataframes
@@ -266,17 +257,17 @@ def survey_from_excel(file, ERRORS = True): #if True:
         try:
             xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl')
         except:
-            print(file+': ERROR')
+            print(f'{file}: ERROR')
             RUNERROR = True
-        
+
     if len(xl)==0:
-        print('FILE XL READ ERROR IN: '+ file)
-        outdf = 'FILE XL READ ERROR IN: '+ file
+        print(f'FILE XL READ ERROR IN: {file}')
+        outdf = f'FILE XL READ ERROR IN: {file}'
         if ERRORS == True:
             shutil.move(file, ERR_FOLDER)
         RUNERROR = True
         return None   
-        
+
     READUWI = APIfromFrame(xl)
     if TUPLE_TEST:
         FILENAMEUWI =  APIfromString(FNAME,BlockT2 = True)
@@ -291,11 +282,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
         l.remove('None')
     while '0' in l:
         l.remove('0')
-    if len(l)>=1:
-        UWI=l[0]
-    else:
-        UWI = None        
-        
+    UWI = l[0] if l else None
     if isinstance(xl,dict): # test if file read delivered a dictionary
         for k in xl.keys(): # for each sheet  #if True:
             df_s = xl[k].copy(deep=True)
@@ -320,16 +307,16 @@ def survey_from_excel(file, ERRORS = True): #if True:
                 outdf = ext_df
             #else:
             #    UWI = set(list(outdf.UWI.apply(str2num)))
-                
+
             #outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
-            
+
             #print(ext_df.keys())
-            
+
         if 'UWI' in outdf.keys():
             outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).str2num())
         else:
             outdf['UWI'] = UWI
-            
+
             #pd.to_numeric(outdf.UWI, errors='coerce').dropna().to_list()
             #print('outdf dict done')
             #print(outdf)
@@ -340,24 +327,21 @@ def survey_from_excel(file, ERRORS = True): #if True:
         try:
             outdf = ExtractSurveyWrapper(xl)
             outdf = pd.DataFrame(outdf)
-            if not 'UWI' in  outdf.keys():
+            if 'UWI' not in outdf.keys():
                 outdf['UWI'] = UWI
         except:
             pass
-    
+
     if isinstance(outdf,pd.DataFrame):
         if outdf.empty:
             return None
-        if not(UWI is None):            
+        if UWI is not None:    
             outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).API2INT())
             outdf = outdf.applymap(lambda x:WELLAPI(x).str2num())
             outdf = outdf.apply(pd.to_numeric, errors='coerce')
             outdf['UWI'].fillna(0,inplace=True)
             UWI_df = outdf['UWI'].max()
-            if UWI_df == 0:
-               outdf['UWI'] = UWI
-            else:
-               outdf['UWI'] = UWI_df               
+            outdf['UWI'] = UWI if UWI_df == 0 else UWI_df
             #outdf = outdf.loc[outdf.T.sum().index,:]
             outdf = outdf.dropna(thresh=3,axis=0)
     return outdf
@@ -369,13 +353,13 @@ def SurveyCols(df_s_in=None):
              'TVD':r'.*TVD.*|.*TRUE.*|.*VERTICAL.*DEPTH.*',
              'NORTH_Y':r'.*\+N.*|.*(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}.*FT.*|.*N\+.*|^\s*N(?:[\/\\]){0,1}S\s*|.*NORTH(?!ING).*|(?:^|_)(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}(?:$|_)',
              'EAST_X':r'.*\+E.*|.*(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}.*FT.*|.*E\+.*|^\s*E(?:[\/\\]){0,1}W\s*|.*EAST(?!ING).*|(?:^|_)(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}(?:$|_)'
-        
+
            #  'NORTH_Y':r'.*ORTH.*|.*\+N.*|.*NS.*FT.*|.*N/S*',
            #  'EAST_X':r'.*EAST.*|.*\+E.*|.*EW.*FT.*|.*E/W.*'
         }
     if df_s_in is None:
         return(sterms)
-    
+
     if isinstance(df_s_in,pd.Series):
         df_s_in=list(df_s_in)
     #if isinstance(df_s_in,pd.DataFrame):
@@ -386,15 +370,12 @@ def SurveyCols(df_s_in=None):
             term = df_s_in.iloc[0,df_s_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()
             if not isinstance(term, str) and len(term)>0:
                 term = term[0]
-            if len(term)>0:
-                sterms[s] = term
-            else:
-                sterms[s] = None
-            #sterms[s]=df_s_in.iloc[0,df_s_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()[0]
-            
-            #sterms[s] = term
+            sterms[s] = term if len(term)>0 else None
+                    #sterms[s]=df_s_in.iloc[0,df_s_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()[0]
+                    
+                    #sterms[s] = term
         if isinstance(df_s_in,list):
-            sterms[s]= list(filter(re.compile('(?i)'+sterms[s]).match,df_s_in))[0]
+            sterms[s] = list(filter(re.compile(f'(?i){sterms[s]}').match, df_s_in))[0]
 
     # sterms=dict((v, k) for k, v in sterms.iteritems())
     sterms = {v: k for k, v in sterms.items()}
@@ -411,34 +392,34 @@ def SurveyCols_row(r_in):
     return OUTPUT
 
 def str2num(IN):
-        str_in = str(IN)
-        if (str_in.upper() == 'NONE'):
-            return None
-        if str(int(IN)).upper() == 'NONE':
-            str_in = str(str_in)
-            str_in = str_in.strip()
-            str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
-            c = len(re.findall('-',str_in))
-            if c>1:
-                val = re.sub(r'[^0-9\.]','',str(str_in))
-            else:
-                val = re.sub(r'[^0-9-\.]','',str(str_in))
-            if val == '':
-                return None
-            try:
-                val = np.floor(float(val))
-            except:
-                val = None
+    str_in = str(IN)
+    if (str_in.upper() == 'NONE'):
+        return None
+    if str(int(IN)).upper() == 'NONE':
+        str_in = str_in
+        str_in = str_in.strip()
+        str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
+        c = len(re.findall('-',str_in))
+        if c>1:
+            val = re.sub(r'[^0-9\.]','',str(str_in))
         else:
-            val = int(IN)
-        return val
+            val = re.sub(r'[^0-9-\.]','',str(str_in))
+        if val == '':
+            return None
+        try:
+            val = np.floor(float(val))
+        except:
+            val = None
+    else:
+        val = int(IN)
+    return val
     
 def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
     if SAVEFILE != None:
         SAVEFILE = re.sub(re.compile(r'\.[^.]+$'),'',SAVEFILE)
     if ERRORS == True:
         ERR_FOLDER = ERRORFILES()
-        ERR_FILES = list()
+        ERR_FILES = []
     pd.set_option('mode.chained_assignment', None)
     # if 1==1:
     df=pd.DataFrame()
@@ -447,7 +428,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
     if isinstance(FLIST,(np.ndarray,pd.DataFrame,pd.Series)):
         FLIST=list(FLIST)
     #ERROR_LIST = list()
-        
+
     for ffile in FLIST:#if 1==1:
         try:
             #print(ffile)
@@ -456,20 +437,20 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
                 #if 1==1:
                 rdf = survey_from_excel(ffile)
                 if not isinstance(rdf,pd.DataFrame):
-                    print('NO SURVEY FOUND IN: '+ ffile)
+                    print(f'NO SURVEY FOUND IN: {ffile}')
                     if ERRORS == True:
                         shutil.move(ffile, ERR_FOLDER)
                     continue
 
                 if rdf.empty:
-                    print('NO SURVEY FOUND IN: '+ ffile)
+                    print(f'NO SURVEY FOUND IN: {ffile}')
                     if ERRORS == True:
                         shutil.move(ffile, ERR_FOLDER)
                     continue                    
-          
+
                 #standardize column names
                 rdf=rdf.rename(columns=SurveyCols(rdf))
-            
+
                 # all columns to numeric while catching decimals in strings
                 rdf = rdf.applymap(str2num)
 
@@ -478,27 +459,27 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
 
                 rdf['FILE']=ffile
                 rdf.UWI = pd.Series([WELLAPI(xi).API2INT(14) for xi in rdf.UWI])
-                
+
                 if rdf.UWI.dropna().empty:
                     rdf.loc[:,'UWI'] = APIfromFilename(ffile,UWIlen=14)
-                    
-                
+
+
                 if df.empty:
                     df=rdf
-                    continue           
+                    continue
                 #df.columns=rdf.columns
                 try:
                     df=pd.concat([df, rdf], ignore_index=True)
                 except:
-                    print('ERROR IN: '+ ffile)
+                    print(f'ERROR IN: {ffile}')
                     if ERRORS == True:
                         #specify full path to force overwrite
                         shutil.move(path.join(adir,ffile), path.join(ERR_FOLDER,ffile))
-                    #ERROR_LIST.append(ffile)
+                                    #ERROR_LIST.append(ffile)
         except OSError as err:
             print(err)
-            print('GENERAL ERROR IN: '+ ffile)
-            
+            print(f'GENERAL ERROR IN: {ffile}')
+
     #df.loc[pd.to_numeric(df.iloc[:,2],errors='ignore').dropna().index,:].to_csv('JOINED_SURVEYS.csv')
     #df.loc[pd.to_numeric(df.iloc[:,2],errors='ignore').dropna().index,:].
     df = df.dropna(axis = 0, how='all').dropna(axis=1,how='all')
@@ -510,7 +491,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
     #    else:
     #        df.to_csv(SAVEFILE+'.CSV', header = True, index = False)
     #        df.to_json(SAVEFILE,+'.JSON')
-        df.to_json(SAVEFILE+'.JSON')
+        df.to_json(f'{SAVEFILE}.JSON')
     return df
 
 
@@ -521,12 +502,12 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
 
     df=pd.DataFrame()
     df1 = pd.DataFrame()
-          
-    if FILESTRING == None:
+
+    if FILESTRING is None:
         JOINEDFILE = 'JOINED_SURVEY_FILE_V2_MERGE'
     else:
         JOINEDFILE = FILESTRING
-    
+
     #for file in listdir(pathname):
     #    if file.lower().endswith(('.json')) and ('surveys' in file.lower()):
     #        if df.empty:
@@ -537,12 +518,13 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
 
     PAT = re.compile(r'joined(?:[ -_]*)survey',re.I)
 
-    FLIST=list()
-    for file in listdir(adir):
-        if file.lower().endswith(('.xls','xlsx','xlsm')):
-            FLIST.append(file)
+    FLIST = [
+        file
+        for file in listdir(adir)
+        if file.lower().endswith(('.xls', 'xlsx', 'xlsm'))
+    ]
 
-    print(str(len(FLIST))+' FILES CONSIDERED')
+    print(f'{len(FLIST)} FILES CONSIDERED')
 
     for file in listdir(adir):
         if file.lower().endswith(('.parquet')) and PAT.search(file) and ('abs' not in file.lower()) and ('xyz' not in file.lower())and ('3d' not in file.lower()):
@@ -554,14 +536,14 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
                     df1 = pd.concat([df1, pd.read_parquet(file)],axis=0,join='outer',ignore_index=True)
                     df1 = df1.drop_duplicates()
             except:
-                print("ERROR IN FILE: " + str(file))
-                
+                print(f"ERROR IN FILE: {str(file)}")
+
     #CLEAN UP API/UWI
     if not df1.empty:
         df1['UWI'] = df1.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
         m1 = df1.UWI.isna()
         df1.loc[m1,'UWI'] = df1.loc[m1,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
-   
+
     if not df1.empty:
         df1 = df1.drop_duplicates()
         FLIST = pd.Series(FLIST)
@@ -569,7 +551,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
         FLIST = FLIST.loc[~mask]
         FLIST = FLIST.drop_duplicates()
         FLIST = list(FLIST)
-    
+
     #if path.exists(JOINEDFILE+'.PARQUET'):
     #    #df1 = pd.read_json('JOINED_SURVEY_FILE_V2'+'.JSON')
     #    df1 = pd.read_parquet('JOINED_SURVEY_FILE_V2'+'.PARQUET')
@@ -585,7 +567,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     #    FLIST = list(FLIST)
 
     #initialize multiprocessing
-    
+
     #if path.exists(JOINEDFILE):
     #    PreUsedFiles = pd.read_csv(JOINEDFILE,usecols = ['FILE'],squeeze=True)
     #    PreUsedFiles=PreUsedFiles.unique().tolist()
@@ -605,7 +587,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     processors = min(processors,splits)
     data = np.array_split(FLIST,splits)
     del df
-    
+
     func = partial(Survey_Join, None)
 
     #for f in FLIST:
@@ -617,11 +599,11 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(func, a): a for a in data}
         RESULT=pd.DataFrame()
-        for i in f.keys():
+        for i in f:
             RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
     else:
         RESULT=Survey_Join(None,FLIST)
-        
+
     if not(df1.empty):
         RESULT = pd.concat([RESULT,df1],axis=0,join='outer',ignore_index=True)
 
@@ -630,7 +612,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     RESULT = DF_UNSTRING(RESULT)
     RESULT.UWI = RESULT.UWI.apply(lambda x: WELLAPI(x).API2INT(14))
     RESULT = RESULT.drop_duplicates()
-    
+
     if 'API' in RESULT.keys():
         m = RESULT.UWI.isna() * RESULT.API.notnull()
         RESULT.loc[m,'UWI'] = RESULT.loc[m,'API'].apply(lambda x: WELLAPI(x).API2INT(14))
@@ -643,10 +625,25 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
         RESULT['API'] = RESULT['API'].fillna('')
 
     if SAVE == True:
-        RESULT.to_csv(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.CSV')
-        RESULT.to_json(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.JSON')
-        RESULT.to_parquet(JOINEDFILE+'_'+datetime.datetime.now().strftime('%Y%M%d')+'.PARQUET')
-    
+        RESULT.to_csv(
+            f'{JOINEDFILE}_'
+            + datetime.datetime.now().strftime('%Y%M%d')
+            + '.CSV'
+        )
+
+        RESULT.to_json(
+            f'{JOINEDFILE}_'
+            + datetime.datetime.now().strftime('%Y%M%d')
+            + '.JSON'
+        )
+
+        RESULT.to_parquet(
+            f'{JOINEDFILE}_'
+            + datetime.datetime.now().strftime('%Y%M%d')
+            + '.PARQUET'
+        )
+
+
     return(RESULT)
 
 def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):

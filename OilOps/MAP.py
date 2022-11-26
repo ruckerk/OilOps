@@ -42,15 +42,11 @@ def shapely_to_pyshp(geom, GEOJ = False):
     #    import shapely.geometry
     #    shapelytogeojson = shapely.geometry.mapping
     #geoj = shapelytogeojson(shapelygeom)
-    if GEOJ:
-        geoj = geom
-    else:
-        geoj = geom.__geo_interface__
- 
+    geoj = geom if GEOJ else geom.__geo_interface__
     # create empty pyshp shape
     #record = shp._Shape()
     record = shp.Shape
-    
+
     # set shapetype
     if geoj["type"] == "Null":
         pyshptype = 0
@@ -68,16 +64,13 @@ def shapely_to_pyshp(geom, GEOJ = False):
         pyshptype = 5
     record.shapeType = pyshptype
     # set points and parts
-    if geoj["type"] == "Point":
+    if geoj["type"] in ("Point", "MultiPoint", "Linestring"):
         record.points = geoj["coordinates"]
         record.parts = [0]
-    elif geoj["type"] in ("MultiPoint","Linestring"):
-        record.points = geoj["coordinates"]
-        record.parts = [0]
-    elif geoj["type"] in ("Polygon"):
+    elif geoj["type"] in "Polygon":
         record.points = geoj["coordinates"][0]
         record.parts = [0]
-    elif geoj["type"] in ("MultiPolygon","MultiLineString"):
+    elif geoj["type"] in ("MultiPolygon", "MultiLineString"):
         index = 0
         points = []
         parts = []
@@ -91,9 +84,8 @@ def shapely_to_pyshp(geom, GEOJ = False):
 
 def reverse_geom(geom):
     def _reverse(x, y, z=None):
-        if z:
-            return x[::-1], y[::-1], z[::-1]
-        return x[::-1], y[::-1]
+        return (x[::-1], y[::-1], z[::-1]) if z else (x[::-1], y[::-1])
+
     return shapely.ops.transform(_reverse, geom)
 
 def CenterOfGeom(geom):
@@ -103,7 +95,7 @@ def CenterOfGeom(geom):
 def DXF_to_geojson(DXFFILE):
     DXFDOC = ezdxf.readfile(DXFFILE)
     MSP = DXFDOC.modelspace()
-    OUTLIST = list()
+    OUTLIST = []
     for el in MSP:
         #if "LINE" in el.dxftype():
         #    geo.proxy(el).__geo_interface__
@@ -122,25 +114,25 @@ def GEOJSONLIST_to_SHP(GEOJLIST,OUT_BASEFILENAME, FOLDER = False):
         adir = path.abspath(pathname)
     else:
         adir = FOLDER
-        
-    for t in set([l['type'] for l in GEOJLIST]):
-       with shp.Writer(OUT_BASEFILENAME+'_'+t.upper()) as shapewriter:
-           stype = shapely_to_pyshp([l for l in L if l['type'] == t][0],True).shapeType
-           shapewriter.shapeType = stype
-           shapewriter.field('FAULT_LABEL', 'C')
-           for l in L:
-               shapewriter.record('REGIONAL WRENCH')
-               shapewriter.shape(l)
 
-       with open(path.join(adir,OUT_BASEFILENAME+'_'+t.upper()+'.prj'), "w") as writer:
-           try:
-               ESRI_WKT = tocrs.to_esri_wkt()
-               _ = writer.write(tocrs.to_esri_wkt())
-           except:
-               url = 'https://spatialreference.org/ref/epsg/EPSGCODE/prj/'
-               url = re.sub('EPSGCODE',str(26753),url)
-               r = requests.get(url, allow_redirects=True)
-               writer.write(r.content.decode())
+    for t in {l['type'] for l in GEOJLIST}:
+        with shp.Writer(f'{OUT_BASEFILENAME}_{t.upper()}') as shapewriter:
+            stype = shapely_to_pyshp([l for l in L if l['type'] == t][0],True).shapeType
+            shapewriter.shapeType = stype
+            shapewriter.field('FAULT_LABEL', 'C')
+            for l in L:
+                shapewriter.record('REGIONAL WRENCH')
+                shapewriter.shape(l)
+
+        with open(path.join(adir, f'{OUT_BASEFILENAME}_{t.upper()}.prj'), "w") as writer:
+            try:
+                ESRI_WKT = tocrs.to_esri_wkt()
+                _ = writer.write(tocrs.to_esri_wkt())
+            except:
+                url = 'https://spatialreference.org/ref/epsg/EPSGCODE/prj/'
+                url = re.sub('EPSGCODE',str(26753),url)
+                r = requests.get(url, allow_redirects=True)
+                writer.write(r.content.decode())
     return()
 
 def DAT_to_GEOJSONLIST(DATFILE):
@@ -148,22 +140,21 @@ def DAT_to_GEOJSONLIST(DATFILE):
     df = pd.read_csv(DATFILE, header = None, skiprows = SKIPROWS)
     if df.shape[1] == 1:
         df = df.iloc[:,0].str.strip().str.split(r' +',expand=True)
-    PGONS = list()
+    PGONS = []
     for i in df.iloc[:,-1].unique():
         m = df.index[df.iloc[:,-1] == i]
         poly = Polygon(df.loc[m,[0,1]].astype(float).values.tolist())
         PGONS.append(poly)
-    polygons = [shapely.wkt.loads(p.wkt) for p in PGONS]
-    return polygons
+    return [shapely.wkt.loads(p.wkt) for p in PGONS]
 
 def SHP_to_GEOJSONLIST(SHPFILE):
     _SHP = shp.Reader(SHPFILE)
-    GLIST = [s.__geo_interface__['geometry'] for s in _SHP]
-    return GLIST
+    return [s.__geo_interface__['geometry'] for s in _SHP]
 
 def GEOJSONLIST_to_SHAPELY(GEOJSON_IN):  
-    GEOCOLLECTION = shapely.geometry.GeometryCollection([shapely.geometry.shape(x) for x in GEOJSON_IN])
-    return(GEOCOLLECTION)
+    return shapely.geometry.GeometryCollection(
+        [shapely.geometry.shape(x) for x in GEOJSON_IN]
+    )
 
 def CRS_FROM_SHAPE(SHAPEFILE):
     FPRJ = SHAPEFILE.split('.')[0]+'.prj'
@@ -174,7 +165,7 @@ def CRS_FROM_SHAPE(SHAPEFILE):
             FPRJ = SHAPEFILE.split('.')[0]+'.PRJ'
             pyprojCRS = pycrs.load.from_file(FPRJ)
         except:    
-            warnings.showwarning('No pyprojCRS read from '+SHAPEFILE)
+            warnings.showwarning(f'No pyprojCRS read from {SHAPEFILE}')
     return(pyprojCRS)
 
 def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
@@ -238,7 +229,7 @@ def SHP_DISTANCES(SHP1,SHP2,MAXDIST=10000,CALCEPSG = 26753):
 def IN_TC_AREA(well2,tc2):
     # wells is read_shapefile dataframe
     # tc2 is read_shapefile dataframe
-    
+
     if len(well2.coords)>=2:
         try:
             ln =  shapely.geometry.LineString(well2.coords)
@@ -246,16 +237,16 @@ def IN_TC_AREA(well2,tc2):
             ln =  shapely.geometry.LineString(well2.coords.values)
     elif len(well2.coords)==1:
         ln =  shapely.geometry.Point(well2.coords[0])
-        
-    if ln == None:
+
+    if ln is None:
         return(False)
     test = False
-    
-    for j in range(0,tc2.shape[0]):
+
+    for j in range(tc2.shape[0]):
         if test == False:
             poly =  shapely.geometry.Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(0)):
-                test = True   
+                test = True
     return(test) 
 
 
@@ -276,17 +267,22 @@ def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
     elif len(X_LON) == len(Y_LAT):
         X_LON = np.array(X_LON)
         Y_LAT = np.array(Y_LAT)
-        X2 = list()
-        Y2 = list()
+        X2 = []
+        Y2 = []
         for i in range(len(X_LON)):
            X, Y = transformer.transform(X_LON[i],Y_LAT[i]) 
            X2.append(X)
-           Y2.append(Y)     
+           Y2.append(Y)
     return X2,Y2
 
 def county_from_LatLon(LAT,LON):
     geolocator = Nominatim(user_agent="geoapiExercises")
-    CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
+    CNTY = (
+        geolocator.reverse(f"{str(LAT)},{str(LON)}")
+        .raw['address']
+        .get('county')
+    )
+
     CNTY = CNTY.upper()
     CNTY = CNTY.replace('COUNTY','')
     CNTY = CNTY.strip()
@@ -302,8 +298,7 @@ def Pt_Distance(pt1,pt2):
     dlat = lat2-lat1
     a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    distance = R * c
-    return(distance)
+    return R * c
 
 def Pt_Bearing(pt1,pt2):
     #Bearing from pt1 to pt2
@@ -346,30 +341,31 @@ def elevation_function(LAT83, LON83):
             'y': LAT83,
             'units': 'Feet'
         }
-        # format query string and return query value
     result = requests.get((url + urllib.parse.urlencode(params)))
-    if '<error>' in result.text:
-        ELEVATION = np.nan
-    else:
-        ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
-    return ELEVATION
+    return (
+        np.nan
+        if '<error>' in result.text
+        else result.json()['USGS_Elevation_Point_Query_Service'][
+            'Elevation_Query'
+        ]['Elevation']
+    )
 
 def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
-    T = Transformer.from_crs('EPSG:'+str(epsg_in), 'EPSG:4326',always_xy =True)
+    T = Transformer.from_crs(f'EPSG:{str(epsg_in)}', 'EPSG:4326', always_xy =True)
     long,lat = T.transform(long,lat)
-    
+
     query = ('https://api.open-elevation.com/api/v1/lookup'
              f'?locations={lat},{long}')
-    
+
     r = requests.get(query).json()  # json object, various ways you can extract value
     # one approach is to use pandas json functionality:
-    
+
     elevation = pd.json_normalize(r, 'results')['elevation'].values[0]
-    
+
     if units.upper()=='FEET':
         # meters to feet
         elevation = elevation * 3.28084
-   
+
     return elevation
 
 def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY = None):
@@ -380,55 +376,55 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY
     POLYS = shp.Reader(POLYGON_SHAPEFILE)
     POLYS = read_shapefile(POLYS)
     CRS_POLYS = CRS_FROM_SHAPE(POLYGON_SHAPEFILE)
-    
+
     TFORMER = pyproj.Transformer.from_crs(pyproj.CRS.from_wkt(CRS_POLYS.to_ogc_wkt()),
                                           pyproj.CRS.from_wkt(CRS_ITEMS.to_ogc_wkt()),
                                           always_xy = True)
-    
+
     ITEMS['coords_old'] = ITEMS['coords']
     POLYS['coords_old'] = POLYS['coords']
-    
+
     NAMES = POLYS.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
     NAMES = POLYS[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False).index[0]
-        
+
     for i in POLYS.index:   
         NAME = POLYS.loc[i,NAMES]
-        
+
         converted = TFORMER.transform(pd.DataFrame(POLYS.coords_old[0])[0],
                           pd.DataFrame(POLYS.coords_old[0])[1])
         POLYS.at[i,'coords'] = list(map(tuple, np.array(converted).T))
         POLY_SHAPE = shapely.geometry.Polygon(POLYS.loc[i,'coords'] )
-        
+
         RESULT = GROUP_IN_TC_AREA(POLYS.loc[[i],:],ITEMS)
-        ITEMS['IN_'+NAME] = RESULT.TEST.values
-        
+        ITEMS[f'IN_{NAME}'] = RESULT.TEST.values
+
     return ITEMS    
     
                                                               
 def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY = None):
     OUT_ITEMS = shp.Reader(ITEM_SHAPEFILE)
     OUT_ITEMS = read_shapefile(OUT_ITEMS)
-    
+
     POLY = shp.Reader(POLYGON_SHAPEFILE)
     POLY = read_shapefile(POLY)
-    
+
     NAMES = POLY.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
     NAMES = POLY[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False)
     MAXITEMS = NAMES.max()
-    
+
     NAMES = NAMES.index[NAMES == MAXITEMS].to_list()
     NAMES_DF = POLY[NAMES].copy()
-    
+
     ITEMS_GJ = SHP_to_GEOJSONLIST(ITEM_SHAPEFILE)
     ITEMS =  GEOJSONLIST_to_SHAPELY(ITEMS_GJ)
     ITEMS_C =  CRS_FROM_SHAPE(ITEM_SHAPEFILE)
     ITEMS_C = pyproj.CRS.from_wkt(ITEMS_C.to_ogc_wkt())
-    
+
     POLY_GJ = SHP_to_GEOJSONLIST(POLYGON_SHAPEFILE)
-    POLY =  GEOJSONLIST_to_SHAPELY(POLY_GJ) 
+    POLY =  GEOJSONLIST_to_SHAPELY(POLY_GJ)
     POLY_C =  CRS_FROM_SHAPE(POLYGON_SHAPEFILE)
     POLY_C = pyproj.CRS.from_wkt(POLY_C.to_ogc_wkt())
-           
+
     if EPSG4POLY != None:
         POLY_OLD = POLY
         project2 = pyproj.Transformer.from_crs(
@@ -437,27 +433,26 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
                              always_xy=True).transform
         POLY = transform(project2, POLY_OLD)
         POLY_C = pyproj.CRS.from_epsg(EPSG4POLY)
-    
-    POLY_LIST = list()
-    if BUFFER != None:
-        for p in POLY.geoms:
-            POLY_LIST.append(p.buffer(BUFFER))
-    else:
-        for p in POLY.geoms:
+
+    POLY_LIST = []
+    for p in POLY.geoms:
+        if BUFFER is None:
             POLY_LIST.append(p)                          
-             
-    
+
+
+        else:
+            POLY_LIST.append(p.buffer(BUFFER))
     project = pyproj.Transformer.from_crs(
                          POLY_C,
                          ITEMS_C,
                          always_xy=True).transform
-    
+
     #OLY_USE = transform(project, POLY)
-    
+
     for j in np.arange(0,len(POLY_LIST)):
         p = POLY_LIST[j]
         p = transform(project, p)
-                      
+
         NAME = '__'.join(NAMES_DF.iloc[j,:].astype(str))
         NAME = NAME.replace(' ','_')
         OUT_ITEMS[NAME] = [l.intersects(p) for l in ITEMS.geoms]
