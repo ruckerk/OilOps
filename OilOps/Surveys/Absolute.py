@@ -25,16 +25,14 @@ def Find_Str_Locs(df_in,string):
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     #Output.astype({'Title': 'object','Columns': 'object','Rows': 'object'}).dtypes
     Output.astype(object)
-    ii = -1
-    for item in string:
-        ii += 1
+    for ii, item in enumerate(string):
         Output.iloc[ii,1] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns'),:].index.values ]
         Output.iloc[ii,2] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     return (Output)
 
 def str2num(str_in):
-    if isinstance(str_in,(int,float)) == False:
+    if not isinstance(str_in, (int, float)):
         val = re.sub(r'[^0-9\.]','',str(str_in))
         if val == '':
             return None
@@ -47,7 +45,7 @@ def str2num(str_in):
     return val
 
 def API2INT(val_in,length = 10):
-    if val_in == None:
+    if val_in is None:
         return None
     try:
         if math.isnan(val_in):
@@ -71,22 +69,17 @@ def APIfromFilename(ffile,UWIlen=10):
         lst = re.findall(r'[0-9]{9,}',ffile)
     else:
         lst[0] = re.sub('UWI','',lst[0],re.I)
-    if len(lst)>0:        
-        UWI = API2INT(lst[0],length=UWIlen)
-    else:
-        UWI = None
-    return UWI
+    return API2INT(lst[0],length=UWIlen) if len(lst)>0 else None
 
-if 1==1:
-    pathname = path.dirname(sys.argv[0])
-    adir = path.abspath(pathname)
-    
-                        
+pathname = path.dirname(sys.argv[0])
+adir = path.abspath(pathname)
+
+
 #survey file
 SFile = '\\\\Server5\\Verdad Resources\\Operations and Wells\\Geology and Geophysics\\WKR\\Decline_Parameters\\DeclineParameters_v200\\SURVEYS\\JOINED_SURVEY_FILE_V2.csv'
 SFile = 'JOINED_SURVEY_FILE_V2_MERGE_20225906'
 #sdf = pd.read_json(SFile+'.JSON')
-sdf = pd.read_parquet(SFile+'.PARQUET')
+sdf = pd.read_parquet(f'{SFile}.PARQUET')
 
 # REMOVE DUPLICATE DATA SOURCED FROM SEPARATE FILES
 mask = sdf.sort_values(by=['FILE','UWI','MD'])[['MD', 'INC', 'AZI', 'TVD', 'NORTH_Y', 'EAST_X', 'UWI']].drop_duplicates().index
@@ -150,7 +143,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor
         f = {executor.submit(XYtransform, a): a for a in data}
 
 RESULT=pd.DataFrame()
-for i in f.keys():
+for i in f:
     RESULT=pd.concat([RESULT,i.result()],axis=0,join='outer',ignore_index=True)
 
 #df[['Y','X']]=df.apply(lambda x: transform(4269,2876,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(pd.Series)

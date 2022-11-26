@@ -112,14 +112,14 @@ def IN_TC_AREA(well2,tc2):
             ln = LineString(well2.coords.values)
     elif len(well2.coords)==1:
         ln = Point(well2.coords[0])
-    if ln == None:
+    if ln is None:
         return(False)
     test = False
-    for j in range(0,tc2.shape[0]):
+    for j in range(tc2.shape[0]):
         if test == False:
             poly = Polygon(tc2.coords.iloc[j])
             if ln.intersects(poly.buffer(15000)):
-                test = True   
+                test = True
     return(test) 
 
 def GROUP_IN_TC_AREA(tc,wells):
@@ -155,9 +155,7 @@ def Find_Str_Locs(df_in,string):
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     #Output.astype({'Title': 'object','Columns': 'object','Rows': 'object'}).dtypes
     Output.astype(object)
-    ii = -1
-    for item in string:
-        ii += 1
+    for ii, item in enumerate(string):
         Output.iloc[ii,1] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns'),:].index.values ]
         Output.iloc[ii,2] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
@@ -166,14 +164,13 @@ def Find_Str_Locs(df_in,string):
 def Summarize_Page(df_in,string):
     #build well as preliminary single row of data
     StringLocs = Find_Str_Locs(df_in,string)
-    Summary=pd.DataFrame([],index=range(0,30),columns=StringLocs.Title)
-    for item in StringLocs.Title:        
+    Summary = pd.DataFrame([], index=range(30), columns=StringLocs.Title)
+    for item in StringLocs.Title:    
         colrow=StringLocs.loc[StringLocs.Title==item,['Columns','Rows',]].values.tolist()[0]
         itemlist = []
         for c in colrow[0]:
-            for r in colrow[1]:
-                itemlist.append(df_in.iloc[c,r+1])
-            #itemlist=list(dict.fromkeys(itemlist))
+            itemlist.extend(df_in.iloc[c,r+1] for r in colrow[1])
+                    #itemlist=list(dict.fromkeys(itemlist))
         try:
             itemlist=itemlist.remove('')
         except: None
@@ -181,13 +178,15 @@ def Summarize_Page(df_in,string):
         Summary.loc[:len(itemlist)-1,item]=itemlist
 
     Summary=Summary.dropna(axis=0,how='all')
-    
+
     for item in StringLocs.Title:
         if len(Summary[item].dropna())==1:
             if ('LAT/LON' in item.upper()):
                 pattern = re.compile('[a-zA-Z:]+')
                 Summary.loc[0,item]=pattern.sub('',Summary[item].dropna().values[0])
-            if ('DATE' in item.upper()) & (isinstance(Summary.loc[0,item],datetime.date)==False):
+            if ('DATE' in item.upper()) & (
+                not isinstance(Summary.loc[0, item], datetime.date)
+            ):
                 pattern = re.compile('[a-zA-Z:]+')
                 Summary.loc[0,item]=pd.to_datetime(pattern.sub('',Summary[item].dropna().values[0]),infer_datetime_format=True,errors='coerce')
             if pd.isna(Summary.loc[0,item]):
@@ -211,17 +210,17 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     # Define CRS from EPSG reference frame number
     EPSG_OLD= int(EPSG_OLD)
     EPSG_NEW=int(EPSG_NEW)
-    
+
     crs_old = CRS.from_user_input(EPSG_OLD)
     crs_new = CRS.from_user_input(EPSG_NEW)
 
     #read shapefile
     r = shp.Reader(SHP_File)   # THIS IS IN X Y COORDINATES!!!
 
-    
+
     #define output filename
     out_fname = re.sub(r'(.*)(\.shp)',r'\1_EPSG'+str(EPSG_NEW)+Label+r'\2',SHP_File,flags=re.IGNORECASE)
-    
+
     #if FilterFile != None:
     #    FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
     #    pdf = read_shapefile(r)
@@ -231,7 +230,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     #    SUBSET = np.arange(0,len(r.shapes()))
 
     # Speed, get subset of records
-    if FilterFile == None:
+    if FilterFile is None:
         SUBSET=np.arange(0,len(r.shapes()))
     else:
         FILTERUWI=pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
@@ -240,21 +239,18 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
         SUBSET=pdf[pdf.isin(FILTERUWI)].index.tolist()
 
     total = len(SUBSET)
-    #compile converted output file    
+    #compile converted output file
     with shp.Writer(out_fname, shapeType=r.shapeType) as w:
         w.fields = list(r.fields)
-        ct=0
         outpoints = []
-        for i in SUBSET:
-        #for shaperec in r.iterShapeRecords(): if 1==1:
-            ct+=1
+        for ct, i in enumerate(SUBSET, start=1):
             if (math.floor(ct/20)*20) == ct:
-                 print(str(ct)+" of "+str(total))
+                print(f"{ct} of {total}")
             shaperec=r.shapeRecord(i)
-            Xshaperec=shaperec.shape            
+            Xshaperec=shaperec.shape
             points = np.array(shaperec.shape.points).T
             points_t= transform(crs_old, crs_new, points[0],points[1],always_xy=True)
-            points[0:2]=points_t[0:2]
+            points[:2] = points_t[:2]
             #Xshaperec.points = list(map(tuple, points.T))
             json_shape = shaperec.shape.__geo_interface__
             json_shape['coordinates']=tuple(map(tuple, points.T))
@@ -275,8 +271,8 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
 ##                w.null()
             w.record(*shaperec.record)
             w.shape(json_shape)
-            #w.shape(Xshaperec)
-            #del(Xshaperec)
+                    #w.shape(Xshaperec)
+                    #del(Xshaperec)
     prjfile = re.sub(r'\.shp','.prj',out_fname,flags=re.IGNORECASE)
     tocrs = pycrs.parse.from_epsg_code(EPSG_NEW)
     with open(prjfile, "w") as writer:    
@@ -307,24 +303,21 @@ def check_2EPSG(epsg1,epsg2):
     try:
         CRS2 = CRS.from_user_input(int(epsg2))
     except: pass
-    if CRS1==None:
+    if CRS1 is None:
         MESSAGE = 'Invalid input EPSG code'
         OUTPUT = False
-    if CRS2 == None:
+    if CRS2 is None:
         MESSAGE = 'Invalid output EPSG code'
         OUTPUT = False
     return(OUTPUT,MESSAGE)
 
 def check_EPSG(epsg1):
     CRS1=None
-    OUTPUT = 'Validated EPSG code'
     CHECK = 1
     try:
         CRS1 = CRS.from_user_input(int(epsg1))
     except: pass
-    if CRS1==None:
-        OUTPUT = 'Invalid'
-    return(OUTPUT)
+    return 'Invalid' if CRS1 is None else 'Validated EPSG code'
 
 def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     #if 1==1:

@@ -33,20 +33,20 @@ class WELLAPI:
 
     def API2INT(self,length = 10):
         val_in = self.str
-        
+
         if str(val_in).upper() == 'NONE':
             return 0
-        
+
         try:
             if math.isnan(val_in):
                 return 0
         except:
             pass
         val = self.str2num()
-        
-        if (val == None) or (val == 0):
+
+        if val is None or val == 0:
             return 0
-        
+
         lim = 10**length-1
         highlim = 10**length-1 #length digits
         lowlim =10**(length-2) #length -1 digits
@@ -60,25 +60,25 @@ class WELLAPI:
     def STRING(self,length = 10, dashed = False):
         #val_in = self.str
         val_in = self.API2INT(length)
-        if val_in == None:
+        if val_in is None:
             return None
         val = str(val_in)
         val = val.zfill(length)
         if dashed:
-            val = val[0:2]+'-'+val[2:5]+'-'+val[5:length]
+            val = f'{val[:2]}-{val[2:5]}-{val[5:length]}'
             if length > 10:
-                val2 = val[0:12] + '-' + '-'.join(val[i:i+2] for i in range(10+2, length+2, 2))
+                val2 = f'{val[:12]}-' + '-'.join(val[i:i+2] for i in range(10+2, length+2, 2))
                 val = val2
         return(val)
     
     def __init__(self, str_name):
         self.str = str(str_name)
         self.int = None  
-    
-        if (self.str.upper() == 'NAN') or (self.str.upper() == 'NONE'):
+
+        if self.str.upper() in {'NAN', 'NONE'}:
             self.str = 'None'
-            self.int = None  
-        elif isinstance(self,(int,float)) == True:
+            self.int = None
+        elif isinstance(self,(int,float)):
             self.int = int(np.floor(str_name))
         else:
             self.int = int(self.str2num())

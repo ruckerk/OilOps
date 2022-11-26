@@ -24,8 +24,8 @@ def STAIR_PLOT(ULIST):
     CVAL_RANGE = range(int(np.ceil(CVALS.min()/CVAL_STEP)*CVAL_STEP),
                        int(np.ceil(CVALS.max()/CVAL_STEP)*CVAL_STEP),
                        int(CVAL_STEP))
-    
-    
+
+
     #plot gunbarrel and stairs
     fig, ax = plt.subplots(1, sharex = True, squeeze = True)
 
@@ -67,7 +67,7 @@ def STAIR_PLOT(ULIST):
     Y = (df.loc[m,'MeanTVD'].iloc[:-1]).values
     LAB = df.loc[m,'MeanX'].diff().dropna().abs().apply(np.floor).values.astype(int)
 
-    for i in range(0,len(X)):
+    for i in range(len(X)):
         plt.text(X[i],Y[i],LAB[i],
                  color = 'royalblue',
                  fontweight = 550,
@@ -80,7 +80,7 @@ def STAIR_PLOT(ULIST):
     Y = (df.loc[m,'MeanTVD'].iloc[1:]-df.loc[m,'MeanTVD'].diff().dropna()/2).values
     LAB = df.loc[m,'MeanTVD'].diff().dropna().abs().apply(np.floor).values.astype(int)
 
-    for i in range(0,len(X)):
+    for i in range(len(X)):
         plt.text(X[i],Y[i],LAB[i],
                  color = 'royalblue',
                  fontweight = 550,
@@ -91,10 +91,10 @@ def STAIR_PLOT(ULIST):
 
     # Plot well data labels (add regex to determine EUR or X mo Oil/Gas/Water
     LABELFORM = "API:_API_ DATE:_DATE_\nNAME:_NAME_\nOPER:_OPER_\nFI:_FI_   PI:_PI_\nLL:_LATLEN_   PROD:_PROD_"
-    
+
     for i in m:
         if i == m[0]:
-            LABELS = list()
+            LABELS = []
         LABEL_TEXT = LABELFORM.replace('_API_',str(df.loc[i,'UWI10']))
         WELLDATE = pd.to_datetime(df.loc[i,['FirstProduction_Date','TreatmentDate','LastStimDate','JOB_END_DATE','1ST_PRODUCTION_DATE','Month1_Date']],errors='coerce').dropna().min().strftime('%m-%d-%Y')
         LABEL_TEXT = LABEL_TEXT.replace('_DATE_',WELLDATE.strip())
@@ -103,16 +103,20 @@ def STAIR_PLOT(ULIST):
         LABEL_TEXT = LABEL_TEXT.replace('_FI_',df.loc[i,'STIM_FLUID_INTENSITY'].astype(int).astype(str).strip()+' BBL/FT')
         LABEL_TEXT = LABEL_TEXT.replace('_PI_',df.loc[i,'STIM_PROPPANT_INTENSITY'].astype(int).astype(str).strip()+' #/FT')
         LABEL_TEXT = LABEL_TEXT.replace('_LATLEN_',df.loc[i,'Lateral_Length'].astype(int).astype(str).strip()+' FT')
-        LABEL_TEXT = LABEL_TEXT.replace('_PROD_',df.loc[i,ProdKey].astype(int).astype(str).strip()+'MBBL')
+        LABEL_TEXT = LABEL_TEXT.replace(
+            '_PROD_',
+            f'{df.loc[i, ProdKey].astype(int).astype(str).strip()}MBBL',
+        )
+
         LABELS.append(LABEL_TEXT)
-        
+
     # manage overposting
     texts = [ax.text((df.loc[m[j],'MeanX'] - minX),
-                     df.loc[m[j],'MeanTVD'],
-                     LABELS[j].strip(),
-		     fontsize = 9,
-		     bbox = dict(facecolor='w', edgecolor = 'none', alpha = 0.6)) for j in range(len(LABELS))]
-    
+    df.loc[m[j],'MeanTVD'],
+    LABELS[j].strip(),
+    fontsize = 9,
+    bbox = dict(facecolor='w', edgecolor = 'none', alpha = 0.6)) for j in range(len(LABELS))]
+
     adjust_text(texts,
                 ha = 'left',
                 va = 'top',
@@ -125,7 +129,7 @@ def STAIR_PLOT(ULIST):
     plt.ylabel("Vertical Distance [feet]")
     cbar = plt.colorbar(sc, ticks = CVAL_RANGE, label = 'EUR [MBBL]')
     #cbar.set_label('EUR [MBBL]', rotation=270)
-    
+
     pylab.tight_layout()
-    plt.save('STAIRPLOT_'+str(ULIST[0])+'_'+str(ULIST[-1])+'.PNG')
+    plt.save(f'STAIRPLOT_{str(ULIST[0])}_{str(ULIST[-1])}.PNG')
     plt.close()

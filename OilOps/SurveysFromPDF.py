@@ -12,11 +12,7 @@ def GetKeyRow(df_in,keys,regexparam = False):
     df_in = df_in.astype(str).apply(' '.join,axis=1)
     for k in keys:
         df_in=df_in.loc[df_in.str.contains(k,case=False,regex=regexparam)]
-    if df_in.empty:
-        out = None
-    else:
-        out = df_in.index.to_list()
-    return out
+    return None if df_in.empty else df_in.index.to_list()
 
 def SurveyCols(df_in):
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*',
@@ -60,18 +56,17 @@ def SurveysFromPDF():
 
     pathname = path.dirname(sys.argv[0])
 
-    pdf_list = []
-    for file in listdir(pathname):
-        if file.lower().endswith(".pdf"):
-            pdf_list.append(file)
+    pdf_list = [
+        file for file in listdir(pathname) if file.lower().endswith(".pdf")
+    ]
 
     SUMMARY = pd.DataFrame()
+    rtxt = r'[0-9]{2}[-]*[0-9]{3}[-]*[0-9]{5}'
+
     for f in pdf_list:
         print(f)
         with suppress(Exception):
             df = read_pdf(f,pages='all')
-
-        rtxt = r'[0-9]{2}[-]*[0-9]{3}[-]*[0-9]{5}'
 
         try:
             r=GetKeyRow(df[0],[rtxt],True)
@@ -87,7 +82,7 @@ def SurveysFromPDF():
                 continue
             r = GetKeyRow(idf,skeys)
 
-            if r == None:
+            if r is None:
                 continue
             r=r[0]
             idf = idf.loc[r:,:]
@@ -103,7 +98,7 @@ def SurveysFromPDF():
             SUMMARY=pd.concat([SUMMARY,idf],axis = 0, join='outer',ignore_index=True)
             SUMMARY.sort_values('MD',ignore_index=True).dropna(how='all',axis=0)
 
-            #SUMMARY['API']=API
+                    #SUMMARY['API']=API
     #SUMMARY.to_parquet('Summary.parquet')
     return(SUMMARY)
 

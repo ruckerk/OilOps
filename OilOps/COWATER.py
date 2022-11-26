@@ -28,9 +28,9 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'latitude',
         'longitude',
         'elevation']
-        
+
     COUNTY = county_from_LatLon(LAT,LON)
-    
+
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/geophysicallogs/wells/'
     QUERY = {'format':'jsonnforced',
             'county':COUNTY,
@@ -46,8 +46,8 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         for k in QTERMS:
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
-    
-    
+
+
     return(df)
 
 
@@ -59,7 +59,7 @@ def DWR_GEOPHYSTOPS(WELLIDS):
         'gLogBaseDepth',
         'gLogTopElev',
         'gLogBaseElev']
-    
+
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/geophysicallogs/geoplogpicks/'
 
     if not isinstance(WELLIDS, collections.Iterable) or isinstance(WELLIDS,str):
@@ -96,9 +96,9 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'staticWaterLevelDate',
         'wdid',
         'moreInformation']
-        
+
     COUNTY = county_from_LatLon(LAT,LON)
-    
+
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/wellpermits/wellpermit/'
     QUERY = {'format':'jsonforced',
             'county':COUNTY,
@@ -106,7 +106,7 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             'longitude':LON,
             'radius':RADIUS,
             'units':RADIUS_UNIT}
-    
+
     RESULT = requests.get(url = URL_ROUTE, params = QUERY)
 
     df = pd.DataFrame(columns = QTERMS)
@@ -115,14 +115,14 @@ def DWR_WATERPERMITS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         for k in QTERMS:
             df.loc[i,k] = r[k]
     df.columns = df.keys().get_level_values(0)
-    
+
     df['elevation'] = df.apply(lambda r:elevation_function(r.latitude,r.longitude), axis=1)
-    
+
     m = df.index[df['elevation'].isna()]
     df.loc[m,'elevation'] = df.loc[m,:].apply(lambda r:get_openelevation(r.latitude,r.longitude,epsg_in = 4326), axis=1)
-       
+
     df['moreInformation'] = df['moreInformation'].str.strip()
-       
+
     return(df)
 
 def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
@@ -140,9 +140,9 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
         'latitude',
         'longitude',
         'moreInformation']
-        
+
     COUNTY = county_from_LatLon(LAT,LON)
-    
+
     URL_ROUTE = 'https://dwr.state.co.us/Rest/GET/api/v2/groundwater/waterlevels/wells/'
     QUERY = {'format':'jsonforced',
             'county':COUNTY,
@@ -150,7 +150,7 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
             'longitude':LON,
             'radius':RADIUS,
             'units':RADIUS_UNIT}
-    
+
     RESULT = requests.get(url = URL_ROUTE, params = QUERY)
 
     df = pd.DataFrame(columns = QTERMS)
@@ -166,7 +166,7 @@ def DWR_WATERWELLLEVELS(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
 def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     # Lat/Lon as WGS84
     # RADIUS in miles
-    
+
     headers = {
         'Accept': 'application/zip',
     }
@@ -219,13 +219,16 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     r_data = requests.post('https://www.waterqualitydata.us/data/Result/search', headers=headers, params=params, json=json_data)
     #r_station = requests.post('https://www.waterqualitydata.us/data/Station/search', headers=headers, params=params, json=json_data)
 
-    r_station = requests.get("https://www.waterqualitydata.us/data/Station/search?within=" + str(RADIUS) + "&lat=" +  str(LAT)+'&long=' + str(LON) + "&siteType=Well&siteType=Subsurface&siteType=Facility&siteType=Aggregate%20groundwater%20use&siteType=Not%20Assigned&sampleMedia=Water&sampleMedia=water&sampleMedia=Other&sampleMedia=No%20media&characteristicName=Total%20dissolved%20solids&characteristicName=Dissolved%20solids&characteristicName=Total%20solids&characteristicName=Total%20suspended%20solids&characteristicName=Fixed%20dissolved%20solids&characteristicName=Fixed%20suspended%20solids&characteristicName=Solids&characteristicName=Percent%20Solids&characteristicName=Total%20fixed%20solids&characteristicName=Salinity&startDateLo=01-01-1900&startDateHi=01-01-2030&mimeType=xlsx&zip=yes&providers=NWIS&providers=STEWARDS&providers=STORET")
-    
+    r_station = requests.get(
+        f"https://www.waterqualitydata.us/data/Station/search?within={str(RADIUS)}&lat={str(LAT)}&long={str(LON)}&siteType=Well&siteType=Subsurface&siteType=Facility&siteType=Aggregate%20groundwater%20use&siteType=Not%20Assigned&sampleMedia=Water&sampleMedia=water&sampleMedia=Other&sampleMedia=No%20media&characteristicName=Total%20dissolved%20solids&characteristicName=Dissolved%20solids&characteristicName=Total%20solids&characteristicName=Total%20suspended%20solids&characteristicName=Fixed%20dissolved%20solids&characteristicName=Fixed%20suspended%20solids&characteristicName=Solids&characteristicName=Percent%20Solids&characteristicName=Total%20fixed%20solids&characteristicName=Salinity&startDateLo=01-01-1900&startDateHi=01-01-2030&mimeType=xlsx&zip=yes&providers=NWIS&providers=STEWARDS&providers=STORET"
+    )
+
+
     #zipfile = ZipFile(BytesIO(r.content))
     #f = zipfile.namelist()[0]
     #pd.read_excel(zipfile.open(f,mode = 'r')).keys()
-    
-    
+
+
     # Note: original query string below. It seems impossible to parse and
     # reproduce query strings 100% accurately so the one below is given
     # in case the reproduced version is not "correct".
@@ -234,7 +237,7 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
 
 def Summarize_WaterChem(r1,r2, LAT, LON):
     # ASSUMES NAD87 EPSG 4269 COORDINATES FOR USGS
-    
+
     zf = ZipFile(BytesIO(r1.content))
     f = zf.namelist()[0]
     df = pd.read_excel(zf.open(f,mode = 'r'))
@@ -244,14 +247,14 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
     df2 = pd.read_excel(zf.open(f,mode = 'r'))
 
     LOCATIONS = df2['MonitoringLocationIdentifier'].unique()
-    
+
     df = df.loc[(df.CharacteristicName.str.contains('solid',case=False)) & (df.CharacteristicName.str.contains('dissolve',case=False))]
     df = df.loc[df['ResultMeasure/MeasureUnitCode'].str.contains('mg')==True]
     df = df.loc[df['ActivityMediaSubdivisionName'].str.contains('Ground',case=False)==True]
 
     LONG_KEYS = df.keys()[df.keys().str.contains('longitude',case=False)].to_list()
     LAT_KEYS = df.keys()[df.keys().str.contains('latitude',case=False)].to_list()
-    
+
     df2['PTS']=list(df2[['LongitudeMeasure','LatitudeMeasure']].to_records(index=False))
 
     df2['Distance'] = df2['PTS'].apply(Pt_Distance,pt2=(LON,LAT))
@@ -268,7 +271,7 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
     #DATA = df2.loc[DATA,'Distance'].nsmallest(50).index
     DATA = df2.loc[DATA].groupby(by='MonitoringLocationIdentifier')['Distance'].min().nsmallest(1000).index
     DATA = list(DATA)
-   
+
     #DATA = df2.loc[DATA,'MonitoringLocationIdentifier'].unique()
     DATA_LOCS = df2.loc[df2['MonitoringLocationIdentifier'].isin(DATA) & df2['Distance']>0,['MonitoringLocationIdentifier','Distance','Bearing']]
 
@@ -277,7 +280,7 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
                ,'CharacteristicName'
                ,'ResultMeasureValue'
                ,'ResultMeasure/MeasureUnitCode']
-    OUTCOLS = OUTCOLS + GetKey(df3,'depth.*value')
+    OUTCOLS += GetKey(df3,'depth.*value')
 
     RESULT = df3.loc[(df3['MonitoringLocationIdentifier'].isin(DATA)),OUTCOLS]
     #RESULT = RESULT.drop(['Distance', 'Bearing'],axis=1)
@@ -285,12 +288,11 @@ def Summarize_WaterChem(r1,r2, LAT, LON):
     return(RESULT)
 
 def COWATER_QUALITY(LAT=40.5832238,LON=-104.0990673,RADIUS=10, EPSG_IN = 4269):
-    T = Transformer.from_crs('EPSG:'+str(EPSG_IN), 'EPSG:4269',always_xy =True)
+    T = Transformer.from_crs(f'EPSG:{str(EPSG_IN)}', 'EPSG:4269', always_xy =True)
     LLON2,LAT2 = T.transform(LON,LAT)
-    
+
     r1,r2 = WaterDataPull(LAT2 ,LLON2 ,RADIUS)
-    df_OUT = Summarize_WaterChem(r1,r2,LAT2,LLON2)    
-    return(df_OUT)
+    return Summarize_WaterChem(r1,r2,LAT2,LLON2)
 
 def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DATA = False):
 
