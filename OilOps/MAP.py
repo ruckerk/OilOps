@@ -267,9 +267,9 @@ def GROUP_IN_TC_AREA(tc,wells):
     return(out)
 
 def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
-    pyproj.CRS0 = pyproj.CRS.from_epsg(EPSG_OLD)
-    pyproj.CRS1 = pyproj.CRS.from_epsg(EPSG_NEW)
-    transformer = pyproj.Transformer.from_crs(pyproj.CRS0,pyproj.CRS1,always_xy =True)
+    CRS0 = pyproj.CRS.from_epsg(EPSG_OLD)
+    CRS1 = pyproj.CRS.from_epsg(EPSG_NEW)
+    transformer = pyproj.Transformer.from_crs(CRS0,CRS1,always_xy =True)
     X2, Y2 = None, None
     if isinstance(X_LON,(float, int, str)) or isinstance(Y_LAT,(float, int, str)):
         X2, Y2 =transformer.transform(X_LON,Y_LAT)
