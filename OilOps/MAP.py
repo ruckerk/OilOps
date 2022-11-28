@@ -27,6 +27,7 @@ __all__ = ['EPSG_CODES',
 def EPSG_CODES():
     print('''COMMON EPSG CODES
       NAD83 GRS 80: 4269
+      NAD 83 HARN GRS 80: 3743
       NAD27 CLARK 66: 4267
       WGS84 WGS84: 4326
       UTM CO 13N: 26913
