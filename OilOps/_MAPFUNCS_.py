@@ -176,7 +176,7 @@ def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     #2876
     df_in=df_in.copy()
     transformer = pyproj.Transformer.from_crs(epsg1, epsg2,always_xy =True)
-    df_in[['X','Y']]=df_in.apply(lambda x: transformer.transform(x.iloc[2],x.iloc[1]), axis=1).apply(_FUNCS_.pd.Series)
+    df_in[['X','Y']]=df_in.apply(lambda x: transformer.transform(x.iloc[2],x.iloc[1]), axis=1).apply(pd.Series)
     #df_in[['X','Y']]=df_in.apply(lambda x: transform(epsg1,epsg2,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(_FUNCS_.pd.Series)
     return df_in
 
