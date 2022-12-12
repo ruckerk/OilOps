@@ -166,9 +166,9 @@ def SurveyCols(df_in):
              'EAST_X':r'.*EAST.*|.*\+E.*|.*EW.*FT.*|.*E\+.*'
         }
 
-    if df_in.keys().str.contains(r'XPATH|EAST_X',regex=True,case=False,na=False).max():
-        sterms['NORTH_Y'] = r'YPATH|NORTH_Y'
-        sterms['EAST_X'] = r'XPATH|EAST_X'
+    if df_in.keys().str.contains(r'X[ _]*PATH|EAST_X',regex=True,case=False,na=False).max():
+        sterms['NORTH_Y'] = r'Y[ _]*PATH|NORTH_Y'
+        sterms['EAST_X'] = r'X[ _]*PATH|EAST_X'
 
     if isinstance(df_in,pd.Series):
         df_in=list(df_in)
