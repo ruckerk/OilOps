@@ -157,7 +157,7 @@ def GetKeyRow(df_in,keys,regexparam = False):
         out = df_in.index.to_list()
     return out
   
-def SurveyCols(df_in):
+def REMOVESurveyCols(df_in):
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*',
              'INC':r'.*INC.*|.*DIP.*',
              'AZI':r'.*AZI.*|.*AZM.*',
