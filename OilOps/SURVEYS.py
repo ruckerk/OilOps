@@ -656,10 +656,10 @@ def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
     if isinstance(UWIS,(str, float, int)):
         UWIS=[UWIS]
 
-    UWI10S = [WELLAPI(X).API2INT(10) for X in UWIS]     
-    sqldb = path.join(path.dirname(adir),'CO_3_2.1.sqlite')
+    UWI10S = [WELLAPI(X).API2INT(10) for X in UWIS]
+    #sqldb = path.join(path.dirname(adir),'CO_3_2.1.sqlite')
           
-    with sqlite3.connect(sqldb) as conn:
+    with sqlite3.connect(SQLDB) as conn:
         df = pd.read_sql_query('SELECT API,Latitude,Longitude FROM WELL',conn)
     
     df['UWI10'] = df.API.apply(lambda x: WELLAPI(x).API2INT(10)) 
