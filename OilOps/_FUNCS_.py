@@ -175,7 +175,11 @@ def SurveyCols(df_in):
     for s in sterms:
         #print(sterms[s])
         if isinstance(df_in,pd.DataFrame):
-            sterms[s]=df_in.iloc[0,df_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()[0]
+            terms = df_in.iloc[0,df_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys().tolist()
+            if len(terms)==0:
+                sterms[s] = None
+            else:
+                sterms[s]=df_in.iloc[0,df_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()[0]
         if isinstance(df_in,list):
             sterms[s]= list(filter(re.compile('(?i)'+sterms[s]).match,df_in))[0]
     # sterms=dict((v, k) for k, v in sterms.iteritems())
