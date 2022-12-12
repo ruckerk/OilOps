@@ -6,7 +6,7 @@ from adjustText import adjust_text
 __all__ = ['STAIR_PLOT']
 
 
-def STAIR_PLOT(ULIST):
+def STAIR_PLOT(ULIST,df):
     ProdKey = 'EconOilEUR_MBO'
 
     # subset or wells in plotting order
