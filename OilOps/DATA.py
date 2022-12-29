@@ -25,7 +25,6 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
            # Extract all the contents of zip file in current directory
            zipObj.extractall('FRAC_FOCUS')
 
-
     # COGCC SQLITE
     # https://dnrftp.state.co.us/
     if COGCC_SQL:
@@ -36,7 +35,10 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
-           zipObj.extractall('COOGC_SQL')
+           try:
+               zipObj.extractall('COOGC_SQL')
+           except BadZipfile:
+               pass
 
         files = []
         start_dir = path.join(adir,'COOGC_SQL')
