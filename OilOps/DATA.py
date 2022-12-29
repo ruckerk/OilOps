@@ -20,6 +20,9 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     if FRACFOCUS:
         #https://www.fracfocus.org/index.php?p=data-download
         url = 'https://fracfocusdata.org/digitaldownload/FracFocusCSV.zip'
+        if path.exists(path.split(url)[-1]):
+            remove(path.split(url)[-1])    
+           
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
