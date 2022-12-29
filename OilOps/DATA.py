@@ -30,6 +30,9 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     # https://dnrftp.state.co.us/
     if COGCC_SQL:
         url = 'https://dnrftp.state.co.us/COGCC/Temp/Gateway/CO_3_2.1.zip'
+        if os.path.exists(os.path.split(url)[-1]):
+            os.remove(os.path.split(url)[-1]) 
+           
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
@@ -47,6 +50,8 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     # COGCC shapefiles
     if COGCC_SHP:
         url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP'
+        if os.path.exists(os.path.split(url)[-1]):
+            os.remove(os.path.split(url)[-1]) 
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
@@ -54,6 +59,8 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         remove(filename)
 
         url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP'
+        if os.path.exists(os.path.split(url)[-1]):
+            os.remove(os.path.split(url)[-1])            
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
@@ -61,6 +68,8 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         remove(filename)
 
         url = 'https://cogcc.state.co.us/documents/data/downloads/gis/WELLS_SHP.ZIP'
+        if os.path.exists(os.path.split(url)[-1]):
+            os.remove(os.path.split(url)[-1]) 
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
