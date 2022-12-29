@@ -16,7 +16,7 @@ from selenium.webdriver.firefox.options import Options
 from sys import argv
 from time import perf_counter, sleep
 from tkinter import filedialog
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipfile
 import concurrent.futures
 import futures3 as cfutures
 import csv
