@@ -270,7 +270,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             RUNERROR = True
         
     if len(xl)==0:
-        print('FILE XL READ ERROR IN: '+ file)
+        #print('FILE XL READ ERROR IN: '+ file)
         outdf = 'FILE XL READ ERROR IN: '+ file
         if ERRORS == True:
             shutil.move(file, ERR_FOLDER)
