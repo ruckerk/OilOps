@@ -266,7 +266,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
         try:
             xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl')
         except:
-            print(file+': ERROR')
+            #print(file+': ERROR')
             RUNERROR = True
         
     if len(xl)==0:
