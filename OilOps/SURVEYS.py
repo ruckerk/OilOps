@@ -131,7 +131,7 @@ def ExtractSurveyWrapper(df_in):
         try:
             df_in = COGCC_SURVEY_CLEANUP(adf)
             df_in = pd.DataFrame(df_in)
-            if not df_in.empty:
+            if df_in.empty:
                 raise Exception('No survey found in dataframe')
             else:
                 OUT = ExtractSurvey(df_in)
