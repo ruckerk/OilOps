@@ -80,6 +80,9 @@ class WELLAPI:
             self.int = None  
         elif isinstance(self,(int,float)) == True:
             self.int = int(np.floor(str_name))
+        elif len(re.sub(r'[^\d]','',self.str)) < 4:
+            self.str = 'None'
+            self.int = None              
         else:
             self.int = int(self.str2num())
 
