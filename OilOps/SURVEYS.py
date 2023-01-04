@@ -171,7 +171,9 @@ def ExtractSurvey(df_in):
 ##                        outdf_in['UWI'] = ReadUWI
                 
             #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
+            outdf_in = outdf_in.applymap(lambda x:str2num(x))
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
+                    
             outdf_in = outdf_in.dropna(how='all',axis = 1)
             outdf_in = outdf_in.dropna(how='all',axis = 0)
             if ('UWI' in outdf_in.keys()) == False:
@@ -219,7 +221,9 @@ def ExtractSurvey(df_in):
                         
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
+                        outdf_in = outdf_in.applymap(lambda x:str2num(x))
                         outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
+                              
                               
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
                         test = outdf_in.loc[:10,cols].dropna(how='any').shape[0]
