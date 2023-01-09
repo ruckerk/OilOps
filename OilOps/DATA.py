@@ -696,8 +696,9 @@ def Merge_Frac_Focus(DIR = None, SAVE=False):
         #freg_df = freg_df.drop_duplicates()
         FracFocus = pd.concat([FracFocus,freg_df],axis=0,join='outer',ignore_index=True)
     FracFocus = FracFocus.drop_duplicates()
-
-    FracFocus.APINumber = FracFocus.APINumber.astype(str).str.replace(' ','').astype(int)
+                      
+    APILEN = int(((FracFocus.APINumber.astype(str).replace(r'~\d','',regex=True).apply(len)/2).apply(np.ceil)*2).max())             
+    FracFocus.APINumber = FracFocus.APINumber.apply(lambda x:WELLAPI(x).str2num(APILEN), axis=1)                                                    
     
     if SAVE:
         FracFocus.to_json('FracFocusTables.JSON')
