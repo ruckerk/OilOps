@@ -682,11 +682,12 @@ def Get_Scouts(UWIs,db=None):
 
     return(OUTPUT)
 
-def Merge_Frac_Focus():
+def Merge_Frac_Focus(DIR = None, SAVE=False):
     pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
+    adir = path.abspath(pathname) 
+           
     #if 1==1:
-    FLIST = filelist(EXT='.csv',BEGIN = 'frac')
+    FLIST = filelist(SUBDIR = DIR, EXT='.csv',BEGIN = 'frac')
     FracFocus = pd.DataFrame()
     for f in FLIST:
         freg_df = pd.read_csv(f,low_memory=False)
@@ -696,9 +697,11 @@ def Merge_Frac_Focus():
 
     FracFocus.APINumber = FracFocus.APINumber.astype(str).str.replace(' ','').astype(int)
     
-    FracFocus.to_json('FracFocusTables.JSON')
-    FracFocus.to_parquet('FracFocusTables.PARQUET')
-    return('FracFocusTables.PARQUET')
+    if SAVE:
+        FracFocus.to_json('FracFocusTables.JSON')
+        FracFocus.to_parquet('FracFocusTables.PARQUET')
+          
+    return(FracFocus)
    
 def SUMMARIZE_COGCC():
     # SQLite COMMMANDS
