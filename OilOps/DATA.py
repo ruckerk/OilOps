@@ -690,6 +690,8 @@ def Merge_Frac_Focus(DIR = None, SAVE=False):
     FLIST = filelist(SUBDIR = DIR, EXT='.csv',BEGIN = 'frac')
     FracFocus = pd.DataFrame()
     for f in FLIST:
+        if DIR!= None:
+           f = path.join(DIR,f)
         freg_df = pd.read_csv(f,low_memory=False)
         #freg_df = freg_df.drop_duplicates()
         FracFocus = pd.concat([FracFocus,freg_df],axis=0,join='outer',ignore_index=True)
