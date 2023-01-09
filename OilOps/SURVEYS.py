@@ -858,8 +858,11 @@ def Condense_Surveys(xdf):
           
 # Define function for nearest neighbors
 def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10, SAVE = False):
-    # SURVEYS in xxdf
+    # condensed SURVEYS in xxdf
     # WELL DATA in df_UWI
+    # xxUWI10 is list of UWI's to calc
+    # DATELIMIT is number of days well 2 can be completed after well 1 and still treated as neighbor
+          
     # if 1==1:
     xxdf = xxdf.copy(deep=True)
     
