@@ -1811,3 +1811,163 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         return OUTPUT, pdf
     else:
         return OUTPUT
+
+
+def CO_Get_Surveys(UWIx):
+           
+    if isinstance(UWIx,(str,int,float)):
+        UWIx=[UWIx]
+    if isinstance(UWIx,(np.ndarray,pd.Series,pd.DataFrame)):
+        UWIx=pd.DataFrame(UWIx).iloc[:,0].tolist()
+
+    with get_driver() as browser:
+        for UWI in UWIx:
+            print(UWI)
+            UWI = OilOps.WELLAPI(UWI).STRING(10)
+            #warnings.simplefilter("ignore")
+            SUCCESS=TRYCOUNT=PAGEERROR=ERROR=0
+            while ERROR == 0:
+                while (ERROR==0) & (TRYCOUNT<6):
+                    TRYCOUNT+=1
+                    print(TRYCOUNT)
+                    if TRYCOUNT>1:
+                        time.sleep(10)
+                    #Screen for Colorado wells
+                    surveyrows=pd.DataFrame()
+                    if UWI[0:2] != '05':
+                        ERROR = 1
+                    #Reduce well to county and well numbers
+                    COWELL=UWI[2:10]
+                    docurl=re.sub('XNUMBERX',COWELL,URL_BASE)
+                    #page = requests.get(docurl)
+                    #if str(page.status_code)[0] == '2':
+                    #ADD# APPEND ERROR CODE TO LOG FILE
+                    #service = service.Service('\\\Server5\\Users\\KRucker\\chromedriver.exe')
+                    #service.start()
+                    #capabilities = {'chrome.binary': "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"}
+                    #options = Options();
+                    #options.setBinary("C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")
+                    
+                    #options.setBinary("C:/Program Files (x86)/Google/Chrome/Application/chrome.exe")
+                    #option.add_argument(' — incognito')
+                    #browser = webdriver.Chrome('\\\Server5\\Users\\KRucker\\chromedriver.exe')
+                    
+                    try:
+                        browser.get(docurl)
+                    except Exception as ex:
+                        continue
+                        print(f'Error connecting to {docurl}.')
+                        ERROR=1
+                    browser.find_element_by_link_text('Document Name').click()
+
+                    soup = BS(browser.page_source, 'lxml')
+                    
+                    try:
+                        parsed_table = soup.find_all('table')[0]
+                    except:
+                        continue
+                
+                    pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
+                    links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
+                    pdf['LINK']=None
+                    pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
+
+                    surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY')==True)]
+
+                    # If another page, scan it too
+                    # select next largest number
+                    tables=len(soup.find_all('table'))
+                    parsed_table = soup.find_all('table')[tables-1]
+                    data = [[td.a['href'] if td.find('a') else
+                             '\n'.join(td.stripped_strings)
+                            for td in row.find_all('td')]
+                            for row in parsed_table.find_all('tr')]
+                    pages=len(data[0])
+
+                    if pages>0:
+                        for p in range(1,pages):
+                            browser.find_element_by_link_text(str(1+p)).click()
+                            browser.page_source
+                            soup = BS(browser.page_source, 'lxml')
+                            #check COGCC site didn't glitch
+                            tables=len(soup.find_all('table'))
+                            parsed_table = soup.find_all('table')[tables-1]
+                            data = [[td.a['href'] if td.find('a') else
+                                 '\n'.join(td.stripped_strings)
+                                for td in row.find_all('td')]
+                                for row in parsed_table.find_all('tr')]
+                            newpages=len(data[0])
+                            if newpages>pages:
+                                PAGEERROR=1
+                                break
+                            parsed_table = soup.find_all('table')[0]
+                            pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
+                            links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
+                            pdf['LINK']=None
+                            pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
+                            #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
+                            #surveyrows.append(dirdata)
+                            surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA')==True])
+                    elif (pages == 0) and (sum([len(i) for i in data]) > 10):
+                        parsed_table = soup.find_all('table')[0]
+                        pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
+                        links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
+                        pdf['LINK']=None
+                        pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
+                        #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
+                        #surveyrows.append(dirdata)
+                        surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA')==True])
+                    else:
+                        print(f'No Tables for {UWI}')
+                        PAGEERROR=ERROR=1
+                        break
+                    
+                    surveyrows=pd.DataFrame(surveyrows)
+                    if len(surveyrows)==0:
+                        ERROR=1
+                        break
+                    surveyrows.loc[:,'DateString']=None
+                    surveyrows.loc[:,'DateString']=surveyrows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')
+                    LINKCOL=surveyrows.columns.get_loc('LINK')
+                    for i in range(0,surveyrows.shape[0]):
+                        #dl_url= re.sub('XLINKX', str(surveyrows.loc[surveyrows['Date'].astype('datetime64').idxmax(),'LINK']),DL_BASE)
+                        #DocDate=str(surveyrows.loc[surveyrows['Date'].astype('datetime64').idxmax(),'DateString'])
+                        dl_url= re.sub('XLINKX', str(surveyrows.iloc[i,LINKCOL]),DL_BASE)
+                        DocDate=str(surveyrows.iloc[i,surveyrows.columns.get_loc('DateString')])
+                        DocID = re.findall('DocumentId=(.*)',str(surveyrows.iloc[i,LINKCOL]))[-1]
+                        #df=pd.DataFrame(surveyrows[0]).transpose()
+                        #daterow=df[0].str.contains("DocDate")
+                        ##df.loc[df[0].str.contains("DocDate"),:]
+                        #df.loc[df[0].str.contains("DocDate"),:].replace({r'.*([0-9]{2}/[0-9]{2}/[0-9]{2,4}).*':r'\1'},regex=True).astype('datetime64')          
+                        #with requests.get(dl_url) as r:
+                        #    soup = BS(r.content, 'lxml')
+                        #    parsed_table = soup.find_all('table')[0]
+                        #    data = [[td.a['href'] if td.find('a') else
+                        #             ''.join(td.stripped_strings)
+                        #            for td in row.find_all('td')]
+                        #            for row in parsed_table.find_all('tr')]
+                        #    dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
+                        #    surveyrows.append(dirdata)
+                        #    df = pd.DataFrame(data[1:], columns=data[0])
+                        #    # If another page, scan it too
+                        #    parsed_table = soup.find_all('table')[0]
+                        #Select most recent survey data and download   
+                        #XX=df.loc[df[0].str.contains("DocDate"),:].replace({r'.*([0-9]{2}/[0-9]{2}/[0-9]{2,4}).*':r'\1'},regex=True).astype('datetime64').transpose().idxmax()
+                        #dl_url=re.sub('XLINKX',df.loc[df[0].str.contains("Download"),int(XX)].to_string(index=False),DL_BASE)
+                        r=requests.get(dl_url, allow_redirects=True)
+                        filetype=path.splitext(re.sub(r'.*filename=\"(.*)\"',r'\1',r.headers['content-disposition']))[1]
+                        filename=path.join(dir_add,'SURVEYDATA_'+DocDate+'_DOCID'+str(DocID)+'_UWI'+str(UWI)+filetype)
+                        if not path.exists(filename):
+                            #remove(filename)
+                        #    filename=dir_add+'\\SURVEYDATA_'+DocDate+'_'+str(UWI)+'_1'+filetype
+                            urllib.request.urlretrieve(dl_url, filename)
+                    SUCCESS=1
+                    if PAGEERROR==1:
+                         #TRYCOUNT+=1
+                         PAGEERROR=0
+                    if SUCCESS==1:
+                        ERROR = 1
+    try: browser.quit()
+    except Exception:
+        None
+
