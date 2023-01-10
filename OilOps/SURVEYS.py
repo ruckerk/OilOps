@@ -974,7 +974,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10, SAVE = False):
         pca = PCA(n_components=2)
         # add comp date filter at step 1
         try: 
-            datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+DATELIMIT).values[0]
+            datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+datetime.timedelta(days =DATELIMIT)).values[0]
         except:
             continue
 
