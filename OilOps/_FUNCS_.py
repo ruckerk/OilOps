@@ -744,6 +744,22 @@ def findfiles(which, where='.',latest = True):
     else:
         return list_of_files
 
+def SQL_UNDUPLICATE(CONN, TABLENAME):
+    c = CONN.cursor()
+    QRY = 'SELECT COUNT(*) FROM {}'.format(TABLENAME)
+    OLDROWS = c.execute(QRY).fetchall()[0][0]
+
+    QRY = 'delete from {} where rowid not in (select  min(rowid) from {} group by MD,FILE,UWI)'.format(TABLENAME,TABLENAME)
+    c.execute(QRY)
+
+    QRY = 'SELECT COUNT(*) FROM {}'.format(TABLENAME)
+    NEWROWS = c.execute(QRY).fetchall()[0][0]
+
+    print('{} DUPLICATES DROPPED'.format(OLDROWS-NEWROWS))
+    CONN.commit()
+          
+    return(NEWROWS)
+
 def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
     if FIELD_DICT == None:
         FIELD_DICT = {}
