@@ -857,7 +857,7 @@ def Condense_Surveys(xdf):
     return RESULT
           
 # Define function for nearest neighbors
-def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10, SAVE = False):
+def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     # condensed SURVEYS in xxdf
     # WELL DATA in df_UWI
     # xxUWI10 is list of UWI's to calc
