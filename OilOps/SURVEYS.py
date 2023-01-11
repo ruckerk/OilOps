@@ -1075,7 +1075,7 @@ def XYZSpacing(xxdf,df_UWI,DATELIMIT,xxUWI10, SAVE = False):
         OUTPUT.loc[ix,'XYZFILE'] = xFILE
         
         m =refXYZ.index
-        OUTPUT.loc[ix,'MeanAZI']   = circmean(xxdf.loc[m,df.keys()[AZI]]*pi/180) * 180/pi
+        OUTPUT.loc[ix,'MeanAZI']   = circmean(xxdf.loc[m,refXYZ.keys()[AZI]]*pi/180) * 180/pi
         if OUTPUT.loc[ix,'MeanAZI'] >= 180:
             OUTPUT.loc[ix,'MeanAZI180'] = OUTPUT.loc[ix,'MeanAZI'] - 180
         else:
