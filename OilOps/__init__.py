@@ -6,6 +6,7 @@ from .LOGS import *
 from .COWATER import *
 from .SURVEYS import *
 from .GUNBARREL import *
+from .DATABASE import *
 
 __version__ = '0.0.209'
 
