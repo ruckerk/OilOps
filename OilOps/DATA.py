@@ -8,7 +8,8 @@ __all__ = ['CO_BASEDATA',
            'Merge_Frac_Focus',
            'SUMMARIZE_COGCC',
            'SUMMARIZE_PROD_DATA', 
-           'SUMMARIZE_PROD_DATA2']
+           'SUMMARIZE_PROD_DATA2',
+           'CO_Get_Surveys']
 
 #Define Functions for multiprocessing iteration
 
