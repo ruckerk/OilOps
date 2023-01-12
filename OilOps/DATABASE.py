@@ -1,5 +1,8 @@
 from ._FUNCS_ import *
 from .WELLAPI import *
+from .DATA import *
+from .SURVEYS import *
+from .MAP import convert_XY
 
 __all__ = ['CONSTRUCT_DB',
           'UPDATE_SURVEYS']
@@ -79,7 +82,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
                 continue
 
             try:
-                dd = SURVEYS.survey_from_excel(tuple(D),ERRORS = False)
+                dd = survey_from_excel(tuple(D),ERRORS = False)
             except Exception as e:
                 print(f'EXCEPTION:{FILE} :: {e}')
             if isinstance(dd,pd.DataFrame):
@@ -98,7 +101,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     ALL_SURVEYS = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj)
     ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
     
-    #ddf = SURVEYS.CO_ABS_LOC(ALL_SURVEYS.UWI10,'CO_3_2.1.sqlite')
+    #ddf = CO_ABS_LOC(ALL_SURVEYS.UWI10,'CO_3_2.1.sqlite')
     
     # DROP OR FIX UWIS IN CO_ABS_LOC, NOT USED CURRENTLY
     #ALL_SURVEYS = pd.merge(ALL_SURVEYS, ddf,how = 'left',on='UWI10',left_index = False, right_index = False)
@@ -159,7 +162,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     LOC_DF = pd.concat([LOC_DF,WELL_LOC.loc[m,LOC_COLS].drop_duplicates()])
     LOC_DF.UWI10.shape[0]-len(LOC_DF.UWI10.unique())
     
-    LOC_DF[['XFEET','YFEET']] = pd.DataFrame(MAP.convert_XY(LOC_DF.X,LOC_DF.Y,26913,2231)).T.values
+    LOC_DF[['XFEET','YFEET']] = pd.DataFrame(convert_XY(LOC_DF.X,LOC_DF.Y,26913,2231)).T.values
 
     LOC_COLS = {'UWI10': 'INTEGER',
                 'X': 'REAL',
@@ -213,7 +216,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     #processors = max(processors,batch)
     data=np.array_split(UWIlist,batch)
     #print (f'batch = {batch}')
-    func = partial(SURVEYS.XYZSpacing,
+    func = partial(XYZSpacing,
             xxdf= ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH', 'EAST']],
             df_UWI = WELL_DF,
             DATELIMIT = 360,
@@ -231,7 +234,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     
     XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
     connection_obj.commit()
-    quit()
+          
     ###################
     # PRODUCTION DATA #
     ###################
@@ -323,6 +326,6 @@ def UPDATE_SURVEYS():
     #print (f'batch = {batch}')
 
     with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-        f = {executor.submit(DATA.CO_Get_Surveys,a): a for a in data}
+        f = {executor.submit(CO_Get_Surveys,a): a for a in data}
     
     
