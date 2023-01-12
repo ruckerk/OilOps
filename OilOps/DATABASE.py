@@ -1,8 +1,5 @@
 from ._FUNCS_ import *
 from .WELLAPI import *
-import .SURVEYS
-import .MAP
-import .DATA
 
 __all__ = ['CONSTRUCT_DB',
           'UPDATE_SURVEYS']
