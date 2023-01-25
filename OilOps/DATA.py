@@ -539,7 +539,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         conn = sqlite3.connect(file)
         c = conn.cursor()      
         INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, SQL_COLS)
-        
+
         for x in range(0, 30000):
             try:
                 #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
@@ -578,20 +578,20 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
             c.execute(SQL_CMD)
             conn.commit()            
         
-       #LOAD PRODUCTION DATA
-       for x in range(0, 30000):
-           try:
-               tmp = str(PRODDATA.index.max()) 
-               PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)   
-               SQL_CMD = 'DELETE FROM \'{0}\' WHERE rowid IN (SELECT A.rowid FROM \'{0}\' A INNER JOIN \'{1}\' B ON A.API_Sequence=B.API_Sequence AND A.First_of_Month = B.First_of_Month AND A.Formation = B.Formation);'.format(PROD_DATA_TABLE, tmp)
-               c.execute(SQL_CMD)
-               SQL_CMD ='INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_DATA_TABLE,tmp)
-               c.execute(SQL_CMD)
-               SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
-               conn.commit()  
-               break
-           except:
-               time.sleep(10)     
+        #LOAD PRODUCTION DATA
+        for x in range(0, 30000):
+            try:
+                tmp = str(PRODDATA.index.max()) 
+                PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)   
+                SQL_CMD = 'DELETE FROM \'{0}\' WHERE rowid IN (SELECT A.rowid FROM \'{0}\' A INNER JOIN \'{1}\' B ON A.API_Sequence=B.API_Sequence AND A.First_of_Month = B.First_of_Month AND A.Formation = B.Formation);'.format(PROD_DATA_TABLE, tmp)
+                c.execute(SQL_CMD)
+                SQL_CMD ='INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_DATA_TABLE,tmp)
+                c.execute(SQL_CMD)
+                SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
+                conn.commit()  
+                break
+            except:
+                time.sleep(10)     
     try:
         conn.close()
     except:
