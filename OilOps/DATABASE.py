@@ -332,9 +332,6 @@ def UPDATE_SURVEYS():
 def UPDATE_PROD(FULL_UPDATE = False):
           
     connection_obj = sqlite3.connect('FIELD_DATA.db')
-    prod_df = pd.read_sql("SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA WHERE RANK_NO = 1", connection_obj)
-   
-    UWIPROD = UWIPROD.UWI10.tolist()
     
     QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
     df_prod = pd.read_sql(QRY, connection_obj)  
