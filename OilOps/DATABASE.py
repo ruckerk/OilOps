@@ -373,7 +373,7 @@ def UPDATE_PROD(FULL_UPDATE = False):
    
     connection_obj.close()
                     
-    df_prod = DF_UNSTRING(df)
+    df_prod = DF_UNSTRING(df_prod)
     df_prod['DAYS_SINCE_LAST_PROD'] = (datetime.datetime.now()-df_prod.First_of_Month).dt.days
           
     if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
