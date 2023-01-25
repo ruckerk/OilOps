@@ -5,7 +5,8 @@ from .SURVEYS import *
 from .MAP import convert_XY
 
 __all__ = ['CONSTRUCT_DB',
-          'UPDATE_SURVEYS']
+          'UPDATE_SURVEYS',
+          'UPDATE_PROD']
 
 def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     pathname = path.dirname(argv[0])
@@ -294,6 +295,74 @@ def UPDATE_SURVEYS():
     UWIPROD = UWIPROD.UWI10.tolist()
 
     df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
+    connection_obj.close()
+    
+    df = DF_UNSTRING(df)
+    OLD_UWI = df.loc[df.Month1.dt.year<2020, 'UWI10'].tolist()
+    NEW_UWI = df.loc[df.Month1.dt.year>2020, 'UWI10'].tolist()
+    
+    FLIST = list()
+    for file in listdir(dir_add):
+        if file.lower().endswith(('.xls','xlsx','xlsm')):
+            FLIST.append(file)
+
+ 
+    SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
+    UWIlist = list(set(OLD_UWI) - set(SURVEYED_UWIS))
+    UWIlist.sort(reverse=True)
+    
+    #UWIlist = list(set(UWIPROD) - set(OLD_UWI))
+
+    # Create download folder
+    if not path.exists(dir_add):
+            makedirs(dir_add)
+    # Parallel Execution if 1==1:
+    processors = min(1,floor(multiprocessing.cpu_count()/2))
+        
+    chunksize = int(len(UWIlist)/processors)
+    chunksize = 1000
+    batch = int(len(UWIlist)/chunksize)
+    #processors = max(processors,batch)
+    data=np.array_split(UWIlist,batch)
+    #print (f'batch = {batch}')
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+        f = {executor.submit(CO_Get_Surveys,a): a for a in data}
+    
+def UPDATE_PROD():
+    ###############
+    # GET SURVEYS #
+    ###############
+    # Initialize constants
+    global URL_BASE
+    URL_BASE = 'https://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
+    global DL_BASE 
+    DL_BASE = 'https://cogcc.state.co.us/weblink/XLINKX'
+    global pathname
+    pathname = path.dirname(argv[0])
+    global adir
+    adir = path.abspath(pathname)
+    global dir_add
+    dir_add = path.abspath(path.dirname(argv[0]))+"\\SURVEYFOLDER"
+
+    #Read UWI files and form UWI list
+    WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
+    WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
+    WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
+
+    WELL_LOC['UWI10'] = WELL_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLPLAN_LOC['UWI10'] = WELLPLAN_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+
+    SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
+
+    connection_obj = sqlite3.connect('FIELD_DATA.db')
+    prod_df = pd.read_sql("SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA WHERE P1.RANK_NO = 1", connection_obj)
+   
+    UWIPROD = UWIPROD.UWI10.tolist()
+    
+    QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
+    df = pd.read_sql(QRY, connection_obj)
     connection_obj.close()
     
     df = DF_UNSTRING(df)
