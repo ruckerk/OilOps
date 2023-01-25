@@ -329,58 +329,64 @@ def UPDATE_SURVEYS():
     with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
         f = {executor.submit(CO_Get_Surveys,a): a for a in data}
     
-def UPDATE_PROD():
-    ###############
-    # GET SURVEYS #
-    ###############
-    # Initialize constants
-    global URL_BASE
-    URL_BASE = 'https://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
-    global DL_BASE 
-    DL_BASE = 'https://cogcc.state.co.us/weblink/XLINKX'
-    global pathname
-    pathname = path.dirname(argv[0])
-    global adir
-    adir = path.abspath(pathname)
-    global dir_add
-    dir_add = path.abspath(path.dirname(argv[0]))+"\\SURVEYFOLDER"
-
-    #Read UWI files and form UWI list
-    WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
-    WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
-    WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
-
-    WELL_LOC['UWI10'] = WELL_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
-    WELLPLAN_LOC['UWI10'] = WELLPLAN_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
-    WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
-
-    SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
-
+def UPDATE_PROD(FULL_UPDATE = False):
+          
     connection_obj = sqlite3.connect('FIELD_DATA.db')
     prod_df = pd.read_sql("SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA WHERE P1.RANK_NO = 1", connection_obj)
    
     UWIPROD = UWIPROD.UWI10.tolist()
     
     QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
-    df = pd.read_sql(QRY, connection_obj)
-    connection_obj.close()
-    
-    df = DF_UNSTRING(df)
-    OLD_UWI = df.loc[df.Month1.dt.year<2020, 'UWI10'].tolist()
-    NEW_UWI = df.loc[df.Month1.dt.year>2020, 'UWI10'].tolist()
-    
-    FLIST = list()
-    for file in listdir(dir_add):
-        if file.lower().endswith(('.xls','xlsx','xlsm')):
-            FLIST.append(file)
+    df_prod = pd.read_sql(QRY, connection_obj)  
 
- 
-    SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
-    UWIlist = list(set(OLD_UWI) - set(SURVEYED_UWIS))
+    QRY = '''SELECT DISTINCT printf('%014d',APINumber) as API14 FROM FRAC_FOCUS WHERE SUBSTR(API14,1,2)='05' '''
+    FF_LIST = pd.read_sql(QRY,connection_obj)
+    FF_LIST = FF_LIST.API14.tolist()
+
+    QRY = '''SELECT UWI10,
+                    FIRST_PRODUCTION_DATE,
+                    BBLS_H2O,
+                    BBLS_OIL,
+                    BTU_GAS,
+                    CALC_GOR,
+                    GRAVITY_OIL,
+                    JOB_DATE,
+                    JOB_END_DATE,
+                    MAX_PRESSURE,
+                    MIN_FRAC_GRADIENT,
+                    PRODUCED_WATER_USED,
+                    RECYCLED_WATER_USED,
+                    SPUD_DATE,
+                    STATUS_DATE,
+                    STIM_FLUID,
+                    STIM_PROPPANT,
+                    TOTAL_FLUID_USED
+                    TOTAL_PROPPANT_USED,
+                    TREATMENT_SUMMARY,
+                    TREAT_FLUID,
+                    TREAT_PROPPANT,
+                    TREAT_PRESSURE
+              FROM SCOUTDATA
+              WHERE (JULIANDAY('now') - JULIANDAY(STATUS_DATE)) < 600 '''
+          
+    SCOUT_LIST = pd.read_sql(QRY,connection_obj)
+    m = SCOUT_LIST.loc[SCOUT_LIST.isna().sum(axis=1) < 19].index
+    SCOUT_LIST = SCOUT_LIST.loc[m,'UWI10']  
+    SCOUT_LIST = list(set(SCOUT_LIST))
+   
+    connection_obj.close()
+                    
+    df_prod = DF_UNSTRING(df)
+    df_prod['DAYS_SINCE_LAST_PROD'] = (datetime.datetime.now()-df_prod.First_of_Month).dt.days
+          
+    if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
+          FULL_UPDATE = True
+    
+    NONPRODUCERS = df_prod.loc[(df.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
+    
+    UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
     UWIlist.sort(reverse=True)
     
-    #UWIlist = list(set(UWIPROD) - set(OLD_UWI))
-
     # Create download folder
     if not path.exists(dir_add):
             makedirs(dir_add)
@@ -393,8 +399,8 @@ def UPDATE_PROD():
     #processors = max(processors,batch)
     data=np.array_split(UWIlist,batch)
     #print (f'batch = {batch}')
-
+    func = partial(Get_ProdData,file='FIELD_DATA.db',SQLFLAG=1, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY')
     with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-        f = {executor.submit(CO_Get_Surveys,a): a for a in data}
+        f = {executor.submit(func,a): a for a in data}
     
     
