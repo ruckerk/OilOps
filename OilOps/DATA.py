@@ -188,7 +188,7 @@ def Get_LAS(UWIS):
                                 
                 ERROR = 1
  
-def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
+def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY'):
     #if 1==1:
     #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
@@ -420,7 +420,10 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
                                         OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
                                     if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
                                         OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
-
+                    OUTPUT.at[UWI,'CUM_OIL'] = pdf[OIL].sum()
+                    OUTPUT.at[UWI,'CUM_GAS'] = pdf[GAS].sum()
+                    OUTPUT.at[UWI,'CUM_WATER'] = pdf[WTR].sum()
+                    
             OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
 
             pdf['UWI'] = UWI
@@ -519,11 +522,14 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
          ,[42Mo_CumWtr] REAL
          ,[45Mo_CumWtr] REAL
          ,[48Mo_CumWtr] REAL
-         )
+         ,[CUM_OIL] REAL
+         ,[CUM_GAS] REAL
+         ,[CUM_WATER] REAL)
          '''
 
-    TABLE_NAME = "PROD_SUMMARY"
-
+    #PROD_DATA_TABLE = 'PRODDATA', 
+    #PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY'    
+    
     print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
     PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
@@ -532,45 +538,64 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0):
     if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
         conn = sqlite3.connect(file)
         c = conn.cursor()      
+        INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, SQL_COLS)
+        
         for x in range(0, 30000):
             try:
-                with conn:
-                    c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ' + SQL_COLS)
-                    tmp = str(OUTPUT.index.max())
-                    OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
-                    SQL_CMD='DELETE FROM '+TABLE_NAME+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
-                    c.execute(SQL_CMD)
-                    SQL_CMD ='INSERT INTO '+TABLE_NAME+' SELECT * FROM \''+tmp+'\';'
-                    c.execute(SQL_CMD)
-                    conn.commit()
+                #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
+                tmp = str(OUTPUT.index.max())
+                OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+                SQL_CMD='DELETE FROM {0} WHERE [UWI] IN (SELECT [UWI] FROM \'{1}\');'.format(PROD_SUMMARY_TABLE,tmp)
+                c.execute(SQL_CMD)
+                
+                SQL_CMD = 'DELETE FROM {0} WHERE UWI IN ({1})'.format(PROD_SUMMARY_TABLE,str(OUTPUT.UWI.tolist())[1:-1])
+                c.execute(SQL_CMD)
+                conn.commit()                
+                
+                SQL_CMD = 'INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_SUMMARY_TABLE,tmp)
+                c.execute(SQL_CMD)
 
-                    SQL_CMD = 'DROP TABLE \''+tmp+'\';'
-                    c.execute(SQL_CMD)
-                    conn.commit()
+                SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
+                c.execute(SQL_CMD)
+                conn.commit()
+                break
             except:
                 time.sleep(10)
                 pass
-            finally:
-                break
+            
+                
         else:
-             with conn:
-                c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ' + SQL_COLS)
-                tmp = str(OUTPUT.index.max())
-                OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
-                SQL_CMD='DELETE FROM '+TABLE_NAME+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
-                c.execute(SQL_CMD)
-                SQL_CMD ='INSERT INTO '+TABLE_NAME+' SELECT * FROM \''+tmp+'\';'
-                c.execute(SQL_CMD)
-                conn.commit()
+            #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
+            tmp = str(OUTPUT.index.max())
+            OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+            SQL_CMD='DELETE FROM '+PROD_SUMMARY_TABLE+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
+            c.execute(SQL_CMD)
+            SQL_CMD ='INSERT INTO '+PROD_SUMMARY_TABLE+' SELECT * FROM \''+tmp+'\';'
+            c.execute(SQL_CMD)
+            conn.commit()
 
-                SQL_CMD = 'DROP TABLE \''+tmp+'\';'
-                c.execute(SQL_CMD)
-                conn.commit()        
-
-        try:
-            conn.close()
-        except:
-            pass
+            SQL_CMD = 'DROP TABLE \''+tmp+'\';'
+            c.execute(SQL_CMD)
+            conn.commit()            
+        
+       #LOAD PRODUCTION DATA
+       for x in range(0, 30000):
+           try:
+               tmp = str(PRODDATA.index.max()) 
+               PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)   
+               SQL_CMD = 'DELETE FROM \'{0}\' WHERE rowid IN (SELECT A.rowid FROM \'{0}\' A INNER JOIN \'{1}\' B ON A.API_Sequence=B.API_Sequence AND A.First_of_Month = B.First_of_Month AND A.Formation = B.Formation);'.format(PROD_DATA_TABLE, tmp)
+               c.execute(SQL_CMD)
+               SQL_CMD ='INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_DATA_TABLE,tmp)
+               c.execute(SQL_CMD)
+               SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
+               conn.commit()  
+               break
+           except:
+               time.sleep(10)     
+    try:
+        conn.close()
+    except:
+        pass
     return(OUTPUT)
 
 def Get_Scouts(UWIs,db=None):
