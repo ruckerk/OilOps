@@ -379,7 +379,7 @@ def UPDATE_PROD(FULL_UPDATE = False):
     if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
           FULL_UPDATE = True
     
-    NONPRODUCERS = df_prod.loc[(df.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
+    NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
     
     UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
     UWIlist.sort(reverse=True)
