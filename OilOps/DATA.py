@@ -537,8 +537,10 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
 
     if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
         conn = sqlite3.connect(file)
-        c = conn.cursor()      
-        INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, SQL_COLS)
+        c = conn.cursor()    
+           
+        COLTYPES = FRAME_TO_SQL_TYPES(OUTPUT)
+        INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
 
         for x in range(0, 30000):
             try:
