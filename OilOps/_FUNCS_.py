@@ -777,9 +777,9 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_TEXT = ''
         for k in FIELD_DICT.keys():
             if isinstance(FIELD_DICT[k], (list, tuple)):
-                FIELD_TEXT = FIELD_TEXT + k + ' ' + ' '.join(FIELD_DICT[k])+', \n'
+                FIELD_TEXT = FIELD_TEXT + k + ' ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
             else:
-                FIELD_TEXT = FIELD_TEXT + k + ' ' + FIELD_DICT[k]+', \n '
+                FIELD_TEXT = FIELD_TEXT + k + ' \'' + FIELD_DICT[k]+'\', \n '
         FIELD_TEXT = FIELD_TEXT[:-4]
         QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
         c.execute(QRY)
@@ -798,7 +798,7 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
                 else:
                     FIELD_TEXT = k + ' ' + FIELD_DICT[k]
                 
-            QRY = 'ALTER TABLE _TABLENAME_ ADD COLUMN _FIELDS_'
+            QRY = 'ALTER TABLE _TABLENAME_ ADD COLUMN \'_FIELDS_\' '
             QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
             QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
             
