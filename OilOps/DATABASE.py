@@ -330,6 +330,9 @@ def UPDATE_SURVEYS():
         f = {executor.submit(CO_Get_Surveys,a): a for a in data}
     
 def UPDATE_PROD(FULL_UPDATE = False):
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+    dir_add = path.join(adir,'PRODFOLDER')
           
     connection_obj = sqlite3.connect('FIELD_DATA.db')
     
@@ -377,7 +380,7 @@ def UPDATE_PROD(FULL_UPDATE = False):
     df_prod['DAYS_SINCE_LAST_PROD'] = (datetime.datetime.now()-df_prod.First_of_Month).dt.days
           
     if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
-          FULL_UPDATE = True
+        FULL_UPDATE = True
     
     NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
     
@@ -386,7 +389,7 @@ def UPDATE_PROD(FULL_UPDATE = False):
     
     # Create download folder
     if not path.exists(dir_add):
-            makedirs(dir_add)
+        makedirs(dir_add)
     # Parallel Execution if 1==1:
     processors = min(1,floor(multiprocessing.cpu_count()/2))
         
