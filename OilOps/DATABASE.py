@@ -386,12 +386,13 @@ def UPDATE_PROD(FULL_UPDATE = False):
     
     UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
     UWIlist.sort(reverse=True)
+    UWIlist = [WELLAPI(x).STRING(10) for x in UWIlist]
     
     # Create download folder
     if not path.exists(dir_add):
         makedirs(dir_add)
     # Parallel Execution if 1==1:
-    processors = min(1,floor(multiprocessing.cpu_count()/2))
+    processors = max(1,floor(1+multiprocessing.cpu_count()/2))
         
     chunksize = int(len(UWIlist)/processors)
     chunksize = 1000
