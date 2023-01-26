@@ -563,6 +563,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 c.execute(SQL_CMD)
                 conn.commit()
                 SUCCESS = 1
+                print('PROD SUMMARY SAVED')
                 break
             except:
                 time.sleep(10)
@@ -582,6 +583,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                     SQL_CMD = 'DROP TABLE \''+tmp+'\';'
                     c.execute(SQL_CMD)
                     conn.commit()
+                    print('PROD SUMMARY SAVED')
                     SUCCESS = 1
                     break
                 except:
@@ -598,6 +600,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 c.execute(SQL_CMD)
                 SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
                 conn.commit()  
+                print('PROD DATA SAVED')
                 break
             except:
                 time.sleep(10)     
