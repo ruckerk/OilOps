@@ -541,7 +541,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
            
         COLTYPES = FRAME_TO_SQL_TYPES(OUTPUT)
         INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
-
+        
+        SUCCESS = 0
+        
         for x in range(0, 30000):
             try:
                 #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
@@ -560,26 +562,31 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
                 c.execute(SQL_CMD)
                 conn.commit()
+                SUCCESS = 1
                 break
             except:
                 time.sleep(10)
                 pass
-            
-                
-        else:
-            #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
-            tmp = str(OUTPUT.index.max())
-            OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
-            SQL_CMD='DELETE FROM '+PROD_SUMMARY_TABLE+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
-            c.execute(SQL_CMD)
-            SQL_CMD ='INSERT INTO '+PROD_SUMMARY_TABLE+' SELECT * FROM \''+tmp+'\';'
-            c.execute(SQL_CMD)
-            conn.commit()
+           
+            if SUCCESS == 0:
+                try:
+                    #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
+                    tmp = str(OUTPUT.index.max())
+                    OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+                    SQL_CMD='DELETE FROM '+PROD_SUMMARY_TABLE+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
+                    c.execute(SQL_CMD)
+                    SQL_CMD ='INSERT INTO '+PROD_SUMMARY_TABLE+' SELECT * FROM \''+tmp+'\';'
+                    c.execute(SQL_CMD)
+                    conn.commit()
 
-            SQL_CMD = 'DROP TABLE \''+tmp+'\';'
-            c.execute(SQL_CMD)
-            conn.commit()            
-        
+                    SQL_CMD = 'DROP TABLE \''+tmp+'\';'
+                    c.execute(SQL_CMD)
+                    conn.commit()
+                    SUCCESS = 1
+                    break
+                except:
+                    pass
+
         #LOAD PRODUCTION DATA
         for x in range(0, 30000):
             try:
