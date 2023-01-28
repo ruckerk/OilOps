@@ -204,8 +204,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                                  ,'WOC_PostPeakOil','WOC_PostPeakGas'
                                  ,'GOR_Final','OWC_Final'
                                  ,'Month1'
-                                 ,'GOR_MO2-4','GOR_MO5-7','GOR_MO11-13','GOR_MO23-25','GOR_MO35-37','GOR_MO47-49'
-                                 ,'OWR_MO2-4','OWR_MO5-7','OWR_MO11-13','OWR_MO23-25','OWR_MO35-37','OWR_MO47-49'
+                                 ,'GOR_MO2to4','GOR_MO5to7','GOR_MO11to13','GOR_MO23to25','GOR_MO35to37','GOR_MO47to49'
+                                 ,'OWR_MO2to4','OWR_MO5to7','OWR_MO11to13','OWR_MO23to25','OWR_MO35to37','OWR_MO47to49'
                                  ,'Production_Formation'])
     MonthArray = np.arange(3,49,3)
     for i in MonthArray:
@@ -415,11 +415,11 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                                     OUTPUT[str(i)+'Mo_CumWtr'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),WTR].sum()
                                             
                                     if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() > 0:
-                                        OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
+                                        OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'to'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
                                     if (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum()) >=1:   
                                         OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
                                     if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
-                                        OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'-'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
+                                        OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'to'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
                     OUTPUT.at[UWI,'CUM_OIL'] = pdf[OIL].sum()
                     OUTPUT.at[UWI,'CUM_GAS'] = pdf[GAS].sum()
                     OUTPUT.at[UWI,'CUM_WATER'] = pdf[WTR].sum()
@@ -455,18 +455,18 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
          ,[Peak_Oil_CumWtr] REAL
          ,[Peak_Gas_CumWtr] REAL
          ,[Month1] DATE
-         ,[GOR_MO2-4] REAL
-         ,[GOR_MO5-7] REAL
-         ,[GOR_MO11-13] REAL
-         ,[GOR_MO23-25] REAL
-         ,[GOR_MO35-37] REAL
-         ,[GOR_MO47-49] REAL
-         ,[OWR_MO2-4] REAL
-         ,[OWR_MO5-7] REAL
-         ,[OWR_MO11-13] REAL
-         ,[OWR_MO23-25] REAL
-         ,[OWR_MO35-37] REAL
-         ,[OWR_MO47-49] REAL
+         ,[GOR_MO2to4] REAL
+         ,[GOR_MO5to7] REAL
+         ,[GOR_MO11to13] REAL
+         ,[GOR_MO23to25] REAL
+         ,[GOR_MO35to37] REAL
+         ,[GOR_MO47to49] REAL
+         ,[OWR_MO2to4] REAL
+         ,[OWR_MO5to7] REAL
+         ,[OWR_MO11to13] REAL
+         ,[OWR_MO23to25] REAL
+         ,[OWR_MO35to37] REAL
+         ,[OWR_MO47to49] REAL
          ,[OWC_MO3] REAL
          ,[OWC_MO6] REAL
          ,[OWC_MO12] REAL
