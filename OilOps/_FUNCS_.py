@@ -765,10 +765,11 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_DICT = {}
     QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '_TABLENAME_' '''
     QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
-    
+    print(QRY)
+
     c = CONN.cursor()
     c.execute(QRY)
-   
+
     if c.fetchone()[0]==0 :
         QRY = """ CREATE TABLE _TABLENAME_ (
                 _FIELDS_
@@ -777,13 +778,14 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_TEXT = ''
         for k in FIELD_DICT.keys():
             if isinstance(FIELD_DICT[k], (list, tuple)):
-                FIELD_TEXT = FIELD_TEXT + k + ' ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
+                FIELD_TEXT = FIELD_TEXT + '' + k + ' ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
             else:
-                FIELD_TEXT = FIELD_TEXT + k + ' \'' + FIELD_DICT[k]+'\', \n '
+                FIELD_TEXT = FIELD_TEXT + ''+ k + ' \'' + FIELD_DICT[k]+'\', \n '
         FIELD_TEXT = FIELD_TEXT[:-4]
         QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
+        print('1: '+QRY)
         c.execute(QRY)
-        
+
     else:
         QRY = 'PRAGMA table_info('+TABLENAME+');'
         c.execute(QRY)
@@ -794,14 +796,14 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
                 continue
             else:
                 if isinstance(FIELD_DICT[k], (list, tuple)):
-                    FIELD_TEXT = k + ' ' + ' '.join(FIELD_DICT[k])
+                    FIELD_TEXT = '' + k + ' ' + ' '.join(FIELD_DICT[k])
                 else:
-                    FIELD_TEXT = k + ' ' + FIELD_DICT[k]
-                
+                    FIELD_TEXT = '' + k + ' ' + FIELD_DICT[k]
+            print('FT: '+FIELD_TEXT)
             QRY = 'ALTER TABLE _TABLENAME_ ADD COLUMN \'_FIELDS_\' '
             QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
             QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
-            
+            print('2: '+QRY)
             c.execute(QRY)
     CONN.commit()
     return None
