@@ -336,8 +336,12 @@ def UPDATE_PROD(FULL_UPDATE = False):
           
     connection_obj = sqlite3.connect('FIELD_DATA.db')
     
-    QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
-    df_prod = pd.read_sql(QRY, connection_obj)  
+    if NOT 'PRODDATA' in LIST_SQL_TABLES(connection_obj):
+          FULL_UPDATE = True
+          
+    if NOT FULL_UPDATE:
+        QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
+        df_prod = pd.read_sql(QRY, connection_obj)  
 
     QRY = '''SELECT DISTINCT printf('%014d',APINumber) as API14 FROM FRAC_FOCUS WHERE SUBSTR(API14,1,2)='05' '''
     FF_LIST = pd.read_sql(QRY,connection_obj)
@@ -377,15 +381,16 @@ def UPDATE_PROD(FULL_UPDATE = False):
     FULL_SCOUT_LIST = pd.read_sql('SELECT DISTINCT UWI10 FROM SCOUTDATA', connection_obj).iloc[:,0].tolist()
    
     connection_obj.close()
-                    
-    df_prod = DF_UNSTRING(df_prod)
-    df_prod['DAYS_SINCE_LAST_PROD'] = (datetime.datetime.now()-df_prod.First_of_Month).dt.days
-          
-    if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
-        FULL_UPDATE = True
-    
-    NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
-    
+
+    if NOT FULL_UPDATE:                    
+        df_prod = DF_UNSTRING(df_prod)
+        df_prod['DAYS_SINCE_LAST_PROD'] = (datetime.datetime.now()-df_prod.First_of_Month).dt.days
+
+        if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
+            FULL_UPDATE = True
+
+        NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
+
     if FULL_UPDATE:
         UWIlist = FULL_SCOUT_LIST
     else:
