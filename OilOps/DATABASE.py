@@ -373,6 +373,8 @@ def UPDATE_PROD(FULL_UPDATE = False):
     m = SCOUT_LIST.loc[SCOUT_LIST.isna().sum(axis=1) < 19].index
     SCOUT_LIST = SCOUT_LIST.loc[m,'UWI10']  
     SCOUT_LIST = list(set(SCOUT_LIST))
+          
+    FULL_SCOUT_LIST = pd.read_sql('SELECT DISTINCT UWI10 FROM SCOUTDATA', connection_obj).iloc[:,0].tolist()
    
     connection_obj.close()
                     
@@ -384,9 +386,13 @@ def UPDATE_PROD(FULL_UPDATE = False):
     
     NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
     
-    UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
-    UWIlist.sort(reverse=True)
+    if FULL_UPDATE:
+        UWIlist = FULL_SCOUT_LIST
+    else:
+        UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
+
     UWIlist = [WELLAPI(x).STRING(10) for x in UWIlist]
+    UWIlist.sort(reverse=True)
     
     # Create download folder
     if not path.exists(dir_add):
