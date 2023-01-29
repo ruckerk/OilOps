@@ -556,7 +556,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 c.execute(SQL_CMD)
                 conn.commit()                
                 
-                SQL_CMD = 'INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_SUMMARY_TABLE,tmp)
+                SQL_CMD = 'INSERT INTO {0} SELECT * FROM \'{1}\';'.dformat(PROD_SUMMARY_TABLE,tmp)
                 c.execute(SQL_CMD)
 
                 SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
@@ -609,6 +609,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     except:
         pass
     return(OUTPUT)
+
 
 def Get_Scouts(UWIs,db=None):
 
