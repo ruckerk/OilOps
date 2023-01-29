@@ -566,7 +566,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 print('PROD SUMMARY SAVED')
                 break
             except:
-                time.sleep(10)
+                sleep(10)
                 pass
            
             if SUCCESS == 0:
@@ -603,7 +603,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 print('PROD DATA SAVED')
                 break
             except:
-                time.sleep(10)     
+                sleep(10)     
     try:
         conn.close()
     except:
@@ -1870,7 +1870,7 @@ def CO_Get_Surveys(UWIx):
                     TRYCOUNT+=1
                     print(TRYCOUNT)
                     if TRYCOUNT>1:
-                        time.sleep(10)
+                        sleep(10)
                     #Screen for Colorado wells
                     surveyrows=pd.DataFrame()
                     if UWI[0:2] != '05':
