@@ -745,6 +745,8 @@ def findfiles(which, where='.',latest = True):
         return list_of_files
 
 def SQL_UNDUPLICATE(CONN, TABLENAME):
+    # THIS IS VERY SLOW
+    
     c = CONN.cursor()
     QRY = 'SELECT COUNT(*) FROM {}'.format(TABLENAME)
     OLDROWS = c.execute(QRY).fetchall()[0][0]
