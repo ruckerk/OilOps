@@ -80,6 +80,9 @@ from .WELLAPI import WELLAPI as WELLAPI
 warnings.filterwarnings('ignore')
 
 def DF_UNSTRING(df_IN):
+    if df_IN.empty:
+        return df_IN
+    
     df_IN=df_IN.copy()
     df_IN=df_IN.replace('',np.nan)
     #df_IN=df_IN.loc[:,~df_IN.columns.duplicated()]
