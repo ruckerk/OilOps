@@ -297,10 +297,13 @@ def UPDATE_SURVEYS():
     df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
     connection_obj.close()
     
-    df = DF_UNSTRING(df)
-    OLD_UWI = df.loc[df.Month1.dt.year<2020, 'UWI10'].tolist()
-    NEW_UWI = df.loc[df.Month1.dt.year>2020, 'UWI10'].tolist()
-    
+    if not df.empty:      
+        df = DF_UNSTRING(df)
+        OLD_UWI = df.loc[df.Month1.dt.year<2020, 'UWI10'].tolist()
+        NEW_UWI = df.loc[df.Month1.dt.year>2020, 'UWI10'].tolist()
+    else:
+        OLD_UWI =[]
+
     FLIST = list()
     for file in listdir(dir_add):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
