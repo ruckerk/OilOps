@@ -433,7 +433,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
             
     OUTPUT=OUTPUT.dropna(how='all')
     OUTPUT.index.name = 'UWI'   
-
+    OUTPUT.reset_index(inplace = True)
+    OUTPUT = DF_UNSTRING(OUTPUT)
+           
     SQL_COLS = '''([UWI] INTEGER PRIMARY KEY
          ,[BTU_MEAN] REAL
          ,[BTU_STD] REAL
@@ -533,23 +535,28 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
     PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
+
     PRODDATA.to_parquet(PROD_FNAME+'.parquet') 
 
+    PRODDATA.reset_index(inplace = True)
+           
     if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
         conn = sqlite3.connect(file)
         c = conn.cursor()    
            
         COLTYPES = FRAME_TO_SQL_TYPES(OUTPUT)
         INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
-        
+        conn.commit()
+
         SUCCESS = 0
-        
-        for x in range(0, 1000):
-            print(x)
+        COUNT = -1
+        while SUCCESS == 0 and COUNT < 1000:
+            COUNT+=1     
+
             try:
                 #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
                 tmp = str(OUTPUT.index.max())
-                OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+                OUTPUT.to_sql(tmp, conn, if_exists='replace', index = False)
                 SQL_CMD='DELETE FROM {0} WHERE [UWI] IN (SELECT [UWI] FROM \'{1}\');'.format(PROD_SUMMARY_TABLE,tmp)
                 c.execute(SQL_CMD)
                 
@@ -567,7 +574,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 print('PROD SUMMARY SAVED')
                 break
             except Exception as e: 
-                print(e):
+                print(e)
                 sleep(10)
                 pass
            
@@ -593,7 +600,14 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                     pass
 
         #LOAD PRODUCTION DATA
-        for x in range(0, 1000):
+        SUCCESS = 0
+        COUNT = -1
+
+        COLTYPES = FRAME_TO_SQL_TYPES(PRODDATA)
+        INIT_SQL_TABLE(conn, PROD_DATA_TABLE, COLTYPES)
+
+        while SUCCESS == 0 and COUNT < 1000:
+            COUNT += 1
             try:
                 tmp = str(PRODDATA.index.max()) 
                 PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)   
@@ -604,6 +618,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
                 conn.commit()  
                 print('PROD DATA SAVED')
+                SUCCESS =1
                 break
             except Exception as e: 
                 print(e)
