@@ -785,15 +785,15 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
             if isinstance(FIELD_DICT[k], (list, tuple)):
                 #FIELD_TEXT = FIELD_TEXT + '"' + k + '" ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
                 if len(FIELD_TEXT) > 0:
-                    FIELD_TEXT = '{0}, {1} {2}'.format(FIELD_TEXT, k, ' '.join(FIELD_DICT[k]))
+                    FIELD_TEXT = '{0}, \'{1}\' {2}'.format(FIELD_TEXT, k, ' '.join(FIELD_DICT[k]))
                 else:
-                    FIELD_TEXT = '{0} {1}'.format(k, ' '.join(FIELD_DICT[k]))
+                    FIELD_TEXT = '\'{0}\' {1}'.format(k, ' '.join(FIELD_DICT[k]))
             else:
                 if len(FIELD_TEXT) > 0:
                     #FIELD_TEXT = FIELD_TEXT + '"'+ k + '" \'' + FIELD_DICT[k]+'\', \n'
-                    FIELD_TEXT = '{0}, {1} {2}'.format(FIELD_TEXT, k, FIELD_DICT[k])
+                    FIELD_TEXT = '{0}, \'{1}\' {2}'.format(FIELD_TEXT, k, FIELD_DICT[k])
                 else:
-                    FIELD_TEXT = '{0} {1}'.format(k, FIELD_DICT[k])
+                    FIELD_TEXT = '\'{0}\' {1}'.format(k, FIELD_DICT[k])
         #FIELD_TEXT = FIELD_TEXT[:-4]
         #QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
         QRY = 'CREATE TABLE {0} ({1}); '.format(TABLENAME,FIELD_TEXT)
