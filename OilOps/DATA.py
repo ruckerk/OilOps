@@ -544,7 +544,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         
         SUCCESS = 0
         
-        for x in range(0, 30000):
+        for x in range(0, 1000):
             print(x)
             try:
                 #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
@@ -566,7 +566,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 SUCCESS = 1
                 print('PROD SUMMARY SAVED')
                 break
-            except:
+            except Exception as e: 
+                print(e):
                 sleep(10)
                 pass
            
@@ -587,11 +588,12 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                     print('PROD SUMMARY SAVED')
                     SUCCESS = 1
                     break
-                except:
+                except Exception as e: 
+                    print(e)
                     pass
 
         #LOAD PRODUCTION DATA
-        for x in range(0, 30000):
+        for x in range(0, 1000):
             try:
                 tmp = str(PRODDATA.index.max()) 
                 PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)   
@@ -603,7 +605,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 conn.commit()  
                 print('PROD DATA SAVED')
                 break
-            except:
+            except Exception as e: 
+                print(e)
                 sleep(10)     
     try:
         conn.close()
