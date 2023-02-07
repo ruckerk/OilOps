@@ -545,6 +545,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         SUCCESS = 0
         
         for x in range(0, 30000):
+            print(x)
             try:
                 #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
                 tmp = str(OUTPUT.index.max())
