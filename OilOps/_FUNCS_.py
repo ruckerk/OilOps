@@ -766,6 +766,18 @@ def SQL_UNDUPLICATE(CONN, TABLENAME):
     return(NEWROWS)
 
 def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
+    # DROP_COLS is list of fields to remove
+    
+    #DROP TABLE IF EMPTY
+    TEST = -1
+    try:
+        TEST =  pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(TABLENAME), CONN).shape[0]
+    except:
+        pass
+    
+    if TEST == 0:
+        DROP_SQL_TABLE(CONN,TABLENAME)        
+  
     if FIELD_DICT == None:
         FIELD_DICT = {}
     QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '{0}' '''.format(TABLENAME)
@@ -775,7 +787,7 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
     c = CONN.cursor()
     c.execute(QRY)
 
-    if c.fetchone()[0]==0 :
+    if c.fetchone()[0]==0:
         QRY = """ CREATE TABLE _TABLENAME_ (
                 _FIELDS_
             ); """
