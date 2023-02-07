@@ -545,8 +545,12 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         c = conn.cursor()    
            
         COLTYPES = FRAME_TO_SQL_TYPES(OUTPUT)
+        OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PROD_SUMMARY_TABLE), conn)
+        if OLD.shape[0]>0:
+           OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
+           COLTYPES = COLTYPES.update(OLD_COLTYPES)
         INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
-        conn.commit()
+
 
         SUCCESS = 0
         COUNT = -1
@@ -604,6 +608,10 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         COUNT = -1
 
         COLTYPES = FRAME_TO_SQL_TYPES(PRODDATA)
+        OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PRODDATA), conn)
+        if OLD.shape[0]>0:
+           OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
+           COLTYPES = COLTYPES.update(OLD_COLTYPES)
         INIT_SQL_TABLE(conn, PROD_DATA_TABLE, COLTYPES)
 
         while SUCCESS == 0 and COUNT < 1000:
