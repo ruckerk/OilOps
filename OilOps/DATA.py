@@ -535,6 +535,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
     PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
+    PRODDATA.columns = PRODDATA.columns.str.replace(' ','_')
+    PRODDATA['UWI10'] = PRODDATA.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
 
     PRODDATA.to_parquet(PROD_FNAME+'.parquet') 
 
@@ -548,9 +550,12 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PROD_SUMMARY_TABLE), conn)
         if OLD.shape[0]>0:
            OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
-           COLTYPES = COLTYPES.update(OLD_COLTYPES)
+           COLTYPES.update(OLD_COLTYPES)
         INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
 
+        MISSING_COLS = [k for k in COLTYPES.keys() if k.upper() not in OUTPUT.keys().str.upper()]
+        if len(MISSING_COLS)>0:
+            OUTPUT[MISSING_COLS] = None   
 
         SUCCESS = 0
         COUNT = -1
@@ -568,7 +573,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 c.execute(SQL_CMD)
                 conn.commit()                
                 
-                SQL_CMD = 'INSERT INTO {0} SELECT * FROM \'{1}\';'.dformat(PROD_SUMMARY_TABLE,tmp)
+                SQL_CMD = 'INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_SUMMARY_TABLE,tmp)
                 c.execute(SQL_CMD)
 
                 SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
@@ -608,11 +613,15 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         COUNT = -1
 
         COLTYPES = FRAME_TO_SQL_TYPES(PRODDATA)
-        OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PRODDATA), conn)
+        OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PROD_DATA_TABLE), conn)
         if OLD.shape[0]>0:
            OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
-           COLTYPES = COLTYPES.update(OLD_COLTYPES)
+           COLTYPES.update(OLD_COLTYPES)
         INIT_SQL_TABLE(conn, PROD_DATA_TABLE, COLTYPES)
+
+        MISSING_COLS = [k for k in COLTYPES.keys() if k.upper() not in PRODDATA.keys().str.upper()]
+        if len(MISSING_COLS)>0:
+            PRODDATA[MISSING_COLS] = None   
 
         while SUCCESS == 0 and COUNT < 1000:
             COUNT += 1
@@ -684,7 +693,6 @@ def Get_Scouts(UWIs,db=None):
             docurl=re.sub('XNUMBERX',UWI[2:10],URL_BASE)
             RETRY=0
             
-           
             while RETRY<8:
                 try:
                     pagedf=pd.read_html(docurl)[0]
