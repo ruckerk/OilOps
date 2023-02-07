@@ -770,7 +770,7 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_DICT = {}
     QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '_TABLENAME_' '''
     QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
-    print(QRY)
+    #print(QRY)
 
     c = CONN.cursor()
     c.execute(QRY)
@@ -783,11 +783,15 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         FIELD_TEXT = ''
         for k in FIELD_DICT.keys():
             if isinstance(FIELD_DICT[k], (list, tuple)):
-                FIELD_TEXT = FIELD_TEXT + '"' + k + '" ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
+                #FIELD_TEXT = FIELD_TEXT + '"' + k + '" ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
+                FIELD_TEXT = '{0}, {1} {2},'.format(FIELD_TEXT, k, ' '.join(FIELD_DICT[k]))
             else:
-                FIELD_TEXT = FIELD_TEXT + '"'+ k + '" \'' + FIELD_DICT[k]+'\', \n '
-        FIELD_TEXT = FIELD_TEXT[:-4]
+                #FIELD_TEXT = FIELD_TEXT + '"'+ k + '" \'' + FIELD_DICT[k]+'\', \n'
+                FIELD_TEXT = '{0}, {1} {2}'.format(FIELD_TEXT, k, FIELD_DICT[k])
+        #FIELD_TEXT = FIELD_TEXT[:-4]
         QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
+        QRY = 'CREATE TABLE {0} ({1}); '.format(TABLENAME,FIELD_TEXT)
+                                                    
         print('1: '+QRY)
         c.execute(QRY)
 
@@ -802,12 +806,14 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
             else:
                 if isinstance(FIELD_DICT[k], (list, tuple)):
                     FIELD_TEXT = '"' + k + '" ' + ' '.join(FIELD_DICT[k])
+                    FIELD_TEXT = '\'{0}\' {1}'.format( k, ' '.join(FIELD_DICT[k]))                             
                 else:
                     FIELD_TEXT = '"' + k + '" ' + FIELD_DICT[k]
+                    FIELD_TEXT = '\'{0}\' {1}'.format(k, FIELD_DICT[k])       
             print('FT: '+FIELD_TEXT)
-            QRY = 'ALTER TABLE _TABLENAME_ ADD COLUMN \'_FIELDS_\' '
-            QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
-            QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
+            QRY = 'ALTER TABLE {0} ADD COLUMN {1}'.format(TABLENAME,FIELD_TEXT)
+            #QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
+            #QRY = re.sub('_FIELDS_',FIELD_TEXT,QRY)
             print('2: '+QRY)
             c.execute(QRY)
     CONN.commit()
