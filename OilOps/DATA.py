@@ -607,7 +607,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 except Exception as e: 
                     print(e)
                     pass
-
+       
+        DROP_SQL_TABLE(conn,tmp)
+           
         #LOAD PRODUCTION DATA
         SUCCESS = 0
         COUNT = -1
@@ -640,6 +642,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
             except Exception as e: 
                 print(e)
                 sleep(10)     
+                      
+    DROP_SQL_TABLE(conn,tmp)
     try:
         conn.close()
     except:
