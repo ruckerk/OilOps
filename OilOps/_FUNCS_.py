@@ -768,8 +768,8 @@ def SQL_UNDUPLICATE(CONN, TABLENAME):
 def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
     if FIELD_DICT == None:
         FIELD_DICT = {}
-    QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '_TABLENAME_' '''
-    QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
+    QRY = '''SELECT count(name) FROM sqlite_master WHERE type='table' AND name = '{0}' '''.format(TABLENAME)
+    #QRY = re.sub('_TABLENAME_',TABLENAME,QRY)
     #print(QRY)
 
     c = CONN.cursor()
@@ -784,7 +784,7 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
         for k in FIELD_DICT.keys():
             if isinstance(FIELD_DICT[k], (list, tuple)):
                 #FIELD_TEXT = FIELD_TEXT + '"' + k + '" ' + ' '.join('\''+FIELD_DICT[k]+'\'')+', \n'
-                FIELD_TEXT = '{0}, {1} {2},'.format(FIELD_TEXT, k, ' '.join(FIELD_DICT[k]))
+                FIELD_TEXT = '{0}, {1} {2}'.format(FIELD_TEXT, k, ' '.join(FIELD_DICT[k]))
             else:
                 #FIELD_TEXT = FIELD_TEXT + '"'+ k + '" \'' + FIELD_DICT[k]+'\', \n'
                 FIELD_TEXT = '{0}, {1} {2}'.format(FIELD_TEXT, k, FIELD_DICT[k])
