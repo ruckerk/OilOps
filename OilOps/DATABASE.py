@@ -277,7 +277,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
     global adir
     adir = path.abspath(pathname)
     global dir_add
-    dir_add = path.abspath(path.dirname(argv[0]))+"\\SURVEYFOLDER"
+    dir_add = path.join(adir+"SURVEYFOLDER")
 
     #Read UWI files and form UWI list
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
@@ -325,6 +325,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
             makedirs(dir_add)
     
     print('{0} UWI\'s for surveys'.format(len(UWIlist)))
+          
+    func = CO_Get_Surveys(URL_BASE=URL_BASE, DL_BASE=DL_BASE, dir_add=dir_add)
 
     if len(UWIlist)>1000:
         processors = min(1,floor(multiprocessing.cpu_count()/2))
@@ -337,9 +339,11 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
         #print (f'batch = {batch}')
 
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-          f = {executor.submit(CO_Get_Surveys,a): a for a in data}
+          #f = {executor.submit(CO_Get_Surveys,a): a for a in data
+          f = {executor.submit(func,a): a for a in data}
     elif len(UWIlist)>0:
-        CO_Get_Surveys(UWIlist)
+        func(UWIlist)
+        #CO_Get_Surveys(UWIlist)
 
 
 def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
