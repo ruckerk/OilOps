@@ -839,7 +839,7 @@ def INIT_SQL_TABLE(CONN,TABLENAME, FIELD_DICT= None):
 
 def DROP_SQL_TABLE(CONN, TABLE_NAME):
     c = CONN.cursor()
-    QRY = 'DROP TABLE IF EXISTS '+TABLE_NAME
+    QRY = 'DROP TABLE IF EXISTS \'{0}\''.format(str(TABLE_NAME))
     c.execute(QRY)
     CONN.commit()           
 
