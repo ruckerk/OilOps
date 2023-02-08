@@ -1888,7 +1888,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     else:
         return OUTPUT
 
-N
+
 def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX',DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX', dir_add=None):
     #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
