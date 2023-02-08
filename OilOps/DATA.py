@@ -607,8 +607,6 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 except Exception as e: 
                     print(e)
                     pass
-       
-        DROP_SQL_TABLE(conn,tmp)
            
         #LOAD PRODUCTION DATA
         SUCCESS = 0
@@ -629,7 +627,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
             COUNT += 1
             try:
                 tmp = str(PRODDATA.index.max()) 
-                PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)   
+                PRODDATA.to_sql(tmp, conn, if_exists='replace', index = False)
                 SQL_CMD = 'DELETE FROM \'{0}\' WHERE rowid IN (SELECT A.rowid FROM \'{0}\' A INNER JOIN \'{1}\' B ON A.API_Sequence=B.API_Sequence AND A.First_of_Month = B.First_of_Month AND A.Formation = B.Formation);'.format(PROD_DATA_TABLE, tmp)
                 c.execute(SQL_CMD)
                 SQL_CMD ='INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_DATA_TABLE,tmp)
@@ -643,7 +641,6 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 print(e)
                 sleep(10)     
                       
-    DROP_SQL_TABLE(conn,tmp)
     try:
         conn.close()
     except:
