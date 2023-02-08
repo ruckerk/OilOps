@@ -277,7 +277,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
     global adir
     adir = path.abspath(pathname)
     global dir_add
-    dir_add = path.join(adir+"SURVEYFOLDER")
+    dir_add = path.join(adir,'SURVEYFOLDER')
 
     #Read UWI files and form UWI list
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
