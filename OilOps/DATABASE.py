@@ -323,19 +323,25 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
     # Create download folder
     if not path.exists(dir_add):
             makedirs(dir_add)
-    # Parallel Execution if 1==1:
-    processors = min(1,floor(multiprocessing.cpu_count()/2))
-        
-    chunksize = int(len(UWIlist)/processors)
-    chunksize = 1000
-    batch = int(len(UWIlist)/chunksize)
-    #processors = max(processors,batch)
-    data=np.array_split(UWIlist,batch)
-    #print (f'batch = {batch}')
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-        f = {executor.submit(CO_Get_Surveys,a): a for a in data}
     
+    print('{0} UWI\'s for surveys'.format(len(UWIlist)))
+
+    if len(UWIlist)>1000:
+        processors = min(1,floor(multiprocessing.cpu_count()/2))
+
+        chunksize = int(len(UWIlist)/processors)
+        chunksize = 1000
+        batch = int(len(UWIlist)/chunksize)
+        #processors = max(processors,batch)
+        data=np.array_split(UWIlist,batch)
+        #print (f'batch = {batch}')
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+          f = {executor.submit(CO_Get_Surveys,a): a for a in data}
+    elif len(UWIlist)>0:
+        CO_Get_Surveys(UWIlist)
+
+
 def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
