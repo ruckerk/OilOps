@@ -1,5 +1,6 @@
 # update base files
 from ._FUNCS_ import *
+from .WELLAPI import WELLAPI as WELLAPI
 
 __all__ = ['CO_BASEDATA',
            'Get_LAS',
@@ -1898,7 +1899,7 @@ def CO_Get_Surveys(UWIx):
     with get_driver() as browser:
         for UWI in UWIx:
             print(UWI)
-            UWI = OilOps.WELLAPI(UWI).STRING(10)
+            UWI = WELLAPI(UWI).STRING(10)
             #warnings.simplefilter("ignore")
             SUCCESS=TRYCOUNT=PAGEERROR=ERROR=0
             while ERROR == 0:
