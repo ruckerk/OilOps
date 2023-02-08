@@ -263,10 +263,10 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     ###############################
     # TABLE OF UNIT/WELL
  
-def UPDATE_SURVEYS():
+def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
     ###############
     # GET SURVEYS #
-    ###############
+    ############### #if True:
     # Initialize constants
     global URL_BASE
     URL_BASE = 'https://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
@@ -290,13 +290,17 @@ def UPDATE_SURVEYS():
 
     SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
 
-    connection_obj = sqlite3.connect('FIELD_DATA.db')
+    connection_obj = sqlite3.connect(DB)
     UWIPROD = pd.read_sql("SELECT DISTINCT UWI10 FROM PRODDATA WHERE First_of_Month LIKE '2022%'", connection_obj)
     UWIPROD = UWIPROD.UWI10.tolist()
 
     df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
     connection_obj.close()
-    
+
+    UWIKEY = GetKey(df,'UWI')
+    UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index[0]
+    df['UWI10'] = df[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
+          
     if not df.empty:      
         df = DF_UNSTRING(df)
         OLD_UWI = df.loc[df.Month1.dt.year<2020, 'UWI10'].tolist()
@@ -332,12 +336,12 @@ def UPDATE_SURVEYS():
     with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
         f = {executor.submit(CO_Get_Surveys,a): a for a in data}
     
-def UPDATE_PROD(FULL_UPDATE = False):
+def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(adir,'PRODFOLDER')
           
-    connection_obj = sqlite3.connect('FIELD_DATA.db')
+    connection_obj = sqlite3.connect(DB)
     
     if not 'PRODDATA' in LIST_SQL_TABLES(connection_obj):
           FULL_UPDATE = True
@@ -413,8 +417,10 @@ def UPDATE_PROD(FULL_UPDATE = False):
     batch = int(len(UWIlist)/chunksize)
     #processors = max(processors,batch)
     data=np.array_split(UWIlist,batch)
+    data = [list(a) for a in data]
+          
     #print (f'batch = {batch}')
-    func = partial(Get_ProdData,file='FIELD_DATA.db',SQLFLAG=1, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY')
+    func = partial(Get_ProdData,file=DB,SQLFLAG=1, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY')
     with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
         f = {executor.submit(func,a): a for a in data}
     
