@@ -436,6 +436,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     OUTPUT.index.name = 'UWI'   
     OUTPUT.reset_index(inplace = True)
     OUTPUT = DF_UNSTRING(OUTPUT)
+    OUTPUT['UWI10'] = OUTPUT.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
            
     SQL_COLS = '''([UWI] INTEGER PRIMARY KEY
          ,[BTU_MEAN] REAL
