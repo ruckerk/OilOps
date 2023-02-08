@@ -1553,7 +1553,7 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     else:
         UWIKEY = Find_Str_Locs(df_in,'UWI|API')
         try:
-            UWIKEY = pdf[UWIKEY].applymap(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+            UWIKEY = pdf[UWIKEY].applymap(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
         except:
             print('NO UWI COLUMN!')
             return None
