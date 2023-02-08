@@ -1888,8 +1888,16 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     else:
         return OUTPUT
 
-
-def CO_Get_Surveys(UWIx):
+N
+def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX',DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX', dir_add=None):
+    #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
+    #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
+    if dir_add == None:      
+        pathname = path.dirname(argv[0])
+        adir = path.abspath(pathname)
+        dir_add = path.join(adir,"SURVEYS")
+        if path.isdir(dir_add) == False:
+           mkdir(dir_add)
            
     if isinstance(UWIx,(str,int,float)):
         UWIx=[UWIx]
