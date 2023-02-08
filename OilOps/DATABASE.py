@@ -326,7 +326,10 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
     
     print('{0} UWI\'s for surveys'.format(len(UWIlist)))
           
-    func = CO_Get_Surveys(URL_BASE=URL_BASE, DL_BASE=DL_BASE, dir_add=dir_add)
+    func = partial(CO_Get_Surveys, 
+                   URL_BASE=URL_BASE, 
+                   DL_BASE=DL_BASE, 
+                   dir_add=dir_add)
 
     if len(UWIlist)>1000:
         processors = min(1,floor(multiprocessing.cpu_count()/2))
