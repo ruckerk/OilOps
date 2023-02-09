@@ -291,6 +291,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
 
     SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
     
+    OLD_YEAR = datetime.datetime.now().year-4
+    
     try:
         connection_obj = sqlite3.connect(DB)
         UWIPROD = pd.read_sql("SELECT DISTINCT UWI10 FROM PRODDATA WHERE First_of_Month LIKE '2022%'", connection_obj)
@@ -302,14 +304,15 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
         UWIKEY = GetKey(df,'UWI')
         UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index[0]
         df['UWI10'] = df[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
+        
     except:
         UWIPROD = []
         df = pd.DataFrame()
-          
+     
     if not df.empty:      
         df = DF_UNSTRING(df)
-        OLD_UWI = df.loc[df.Month1.dt.year<2020, 'UWI10'].tolist()
-        NEW_UWI = df.loc[df.Month1.dt.year>2020, 'UWI10'].tolist()
+        OLD_UWI = df.loc[df.Month1.dt.year<OLD_YEAR, 'UWI10'].tolist()
+        NEW_UWI = df.loc[df.Month1.dt.year>OLD_YEAR, 'UWI10'].tolist()
     else:
         OLD_UWI =[]
 
@@ -320,7 +323,11 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
 
  
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
-    UWIlist = list(set(OLD_UWI) - set(SURVEYED_UWIS))
+    if len(OLD_UWI)>0:
+        UWIlist = list(set(OLD_UWI) +set(NEW_UWI) - set(SURVEYED_UWIS)) 
+    else:
+        UWIlist = list(set(SHP_UWIS) - set(SURVEYED_UWIS)) 
+        
     UWIlist.sort(reverse=True)
     
     #UWIlist = list(set(UWIPROD) - set(OLD_UWI))
