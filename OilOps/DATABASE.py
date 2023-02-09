@@ -290,17 +290,21 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
     WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
 
     SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
+    
+    try:
+        connection_obj = sqlite3.connect(DB)
+        UWIPROD = pd.read_sql("SELECT DISTINCT UWI10 FROM PRODDATA WHERE First_of_Month LIKE '2022%'", connection_obj)
+        UWIPROD = UWIPROD.UWI10.tolist()
 
-    connection_obj = sqlite3.connect(DB)
-    UWIPROD = pd.read_sql("SELECT DISTINCT UWI10 FROM PRODDATA WHERE First_of_Month LIKE '2022%'", connection_obj)
-    UWIPROD = UWIPROD.UWI10.tolist()
-
-    df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
-    connection_obj.close()
-
-    UWIKEY = GetKey(df,'UWI')
-    UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index[0]
-    df['UWI10'] = df[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
+        df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
+        connection_obj.close()    
+    
+        UWIKEY = GetKey(df,'UWI')
+        UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index[0]
+        df['UWI10'] = df[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
+    except:
+        UWIPROD = []
+        df = pd.DataFrame()
           
     if not df.empty:      
         df = DF_UNSTRING(df)
