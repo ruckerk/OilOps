@@ -324,7 +324,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
  
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     if len(OLD_UWI)>0:
-        UWIlist = list(set(OLD_UWI) +set(NEW_UWI) - set(SURVEYED_UWIS)) 
+        UWIlist = list(set(OLD_UWI).union(set(NEW_UWI)) - set(SURVEYED_UWIS)) 
     else:
         UWIlist = list(set(SHP_UWIS) - set(SURVEYED_UWIS)) 
         
