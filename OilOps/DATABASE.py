@@ -370,11 +370,11 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     
     if not 'PRODDATA' in LIST_SQL_TABLES(connection_obj):
           FULL_UPDATE = True
-          
+
     if not FULL_UPDATE:
         QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
         df_prod = pd.read_sql(QRY, connection_obj)  
-
+          
     QRY = '''SELECT DISTINCT printf('%014d',APINumber) as API14 FROM FRAC_FOCUS WHERE SUBSTR(API14,1,2)='05' '''
     FF_LIST = pd.read_sql(QRY,connection_obj)
     FF_LIST = FF_LIST.API14.tolist()
@@ -422,11 +422,9 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
             FULL_UPDATE = True
 
         NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
-
-    if FULL_UPDATE:
-        UWIlist = FULL_SCOUT_LIST
-    else:
         UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
+    else:
+        UWIlist = FULL_SCOUT_LIST
 
     UWIlist = [WELLAPI(x).STRING(10) for x in UWIlist]
     UWIlist.sort(reverse=True)
