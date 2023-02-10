@@ -549,10 +549,431 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         c = conn.cursor()    
            
         COLTYPES = FRAME_TO_SQL_TYPES(OUTPUT)
+
+        if not PROD_SUMMARY_TABLE in LIST_SQL_TABLES(conn):
+            INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
+              
         OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PROD_SUMMARY_TABLE), conn)
+
         if OLD.shape[0]>0:
            OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
            COLTYPES.update(OLD_COLTYPES)
+           
+        INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
+
+        MISSING_COLS = [k for k in COLTYPES.keys() if k.upper() not in OUTPUT.keys().str.upper()]
+        if len(MISSING_COLS)>0:
+            OUTPUT[MISSING_COLS] = None   
+
+        SUCCESS = 0
+        COUNT = -1
+        while SUCCESS == 0 and COUNT < 1000:
+            COUNT+=1     
+
+            try:
+                #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
+                tmp = str(OUTPUT.index.max())
+                OUTPUT.to_sql(tmp, conn, if_exists='replace', index = False)
+                SQL_CMD='DELETE FROM {0} WHERE [UWI] IN (SELECT [UWI] FROM \'{1}\');'.format(PROD_SUMMARY_TABLE,tmp)
+                c.execute(SQL_CMD)
+                
+                SQL_CMD = 'DELETE FROM {0} WHERE UWI IN ({1})'.format(PROD_SUMMARY_TABLE,str(OUTPUT.UWI.tolist())[1:-1])
+                c.execute(SQL_CMD)
+                conn.commit()                
+                
+                SQL_CMD = 'INSERT INTO {0} SELECT * FROM \'{1}\';'.format(PROD_SUMMARY_TABLE,tmp)
+                c.execute(SQL_CMD)
+
+                SQL_CMD = 'DROP TABLE \'{0}\';'.format(tmp)
+                c.execute(SQL_CMD)
+                conn.commit()
+                SUCCESS = 1
+                print('PROD SUMMARY SAVED')
+                break
+            except Exception as e: 
+                print(e)
+                sleep(10)
+                pass
+           
+            if SUCCESS == 0:
+                try:
+                    #c.execute('CREATE TABLE IF NOT EXISTS ' + PROD_SUMMARY_TABLE + ' ' + SQL_COLS)
+                    tmp = str(OUTPUT.index.max())
+                    OUTPUT.to_sql(tmp, conn, if_exists='replace', index = True)
+                    SQL_CMD='DELETE FROM '+PROD_SUMMARY_TABLE+' WHERE [UWI] IN (SELECT [UWI] FROM \''+tmp+'\');'
+                    c.execute(SQL_CMD)
+                    SQL_CMD ='INSERT INTO '+PROD_SUMMARY_TABLE+' SELECT * FROM \''+tmp+'\';'
+                    c.execute(SQL_CMD)
+                    conn.commit()
+    #if 1==1:
+    #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
+    URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+    #warnings.simplefilter("ignore")
+    OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
+                                 ,'API_MEAN','API_STD'
+                                 ,'Peak_Oil_Date','Peak_Oil_Days','Peak_Oil_CumOil','Peak_Oil_CumGas','Peak_Oil_CumWtr'
+                                 ,'Peak_Gas_Date','Peak_Gas_Days','Peak_Gas_CumOil','Peak_Gas_CumGas','Peak_Gas_CumWtr'
+                                 ,'OWR_PrePeakOil','OWR_PostPeakGas'
+                                 ,'GOR_PrePeakOil','GOR_PeakGas','GOR_PostPeakGOR'
+                                 ,'WOC_PostPeakOil','WOC_PostPeakGas'
+                                 ,'GOR_Final','OWC_Final'
+                                 ,'Month1'
+                                 ,'GOR_MO2to4','GOR_MO5to7','GOR_MO11to13','GOR_MO23to25','GOR_MO35to37','GOR_MO47to49'
+                                 ,'OWR_MO2to4','OWR_MO5to7','OWR_MO11to13','OWR_MO23to25','OWR_MO35to37','OWR_MO47to49'
+                                 ,'Production_Formation'])
+    MonthArray = np.arange(3,49,3)
+    for i in MonthArray:
+        OUTPUT[str(i)+'Mo_CumOil'] = np.nan
+        OUTPUT[str(i)+'Mo_CumGas'] = np.nan
+        OUTPUT[str(i)+'Mo_CumWtr'] = np.nan
+
+    if len(UWIs[0])<=1:
+        UWIs=[UWIs]
+        print(UWIs[0])
+
+    PRODDATA = pd.DataFrame()
+    ct = 0
+    t1 = perf_counter()
+    for UWI in UWIs:
+        #print(UWI)              
+        if (floor(ct/20)*20) == ct:
+            print(str(ct)+' of '+str(len(UWIs)))
+        ct+=1
+        html = soup = pdf = None 
+
+        ERROR=0
+
+        while ERROR == 0: #if 1==1:
+            connection_attempts = 4 
+            #Screen for Colorado wells
+            userows=pd.DataFrame()
+            if UWI[:2] == '05':
+                #print(UWI)
+                #Reduce well to county and well numbers
+                COWELL=UWI[5:10]
+                if len(UWI)>=12:
+                    COMPLETION=UWI[10:12]
+                else:
+                    COMPLETION="00"
+                docurl=re.sub('XNUMBERX',COWELL,URL_BASE)
+                docurl=re.sub('XCOUNTYX',UWI[2:5],docurl)
+                docurl=re.sub('XCOMPLETIONX',COMPLETION,docurl)
+                #try:
+                #    html = urlopen(docurl).read()
+                #except Exception as ex:
+                #    print(f'Error connecting to {docurl}.')
+                #    ERROR=1
+                #    continue
+                #soup = BS(html, 'lxml')
+                #try:
+                #    parsed_table = soup.find_all('table')[1]
+                #except:
+                #    print(f'No Table for {UWI}.')
+                #    ERROR=1
+                #    continue
+                if perf_counter() - t1 < 0.5:
+                    sleep(0.5)
+                t1 = perf_counter()
+                
+                try:
+                    #pdf = pd.read_html(docurl,encoding='utf-8', header=0)[1]
+                    content = requests_retry_session().get(docurl).content
+                    s_cont = str(content)
+                    if bool(re.search('no records found',s_cont,re.I)):
+                        print('No production data at ' + docurl)
+                        ERROR = 1
+                        continue  
+                    rawData = pd.read_html(StringIO(content.decode('utf-8')))
+                    pdf = rawData[1]
+                except:
+                    print(f'Error connecting to {docurl}.')
+                    ERROR=1
+                    continue
+                #pdf=pd.read_html('https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=123&APISeq=42282&APIWB=00&Year=All')[1]
+                try:
+                    SEQ      = pdf.iloc[:,pdf.keys().str.contains('.*SEQUENCE.*', regex=True, case=False,na=False)].keys()[0]
+                except:
+                    for i in range(0,pdf.shape[1]):
+                        newcol = str(pdf.keys()[i])+'_'+'_'.join(pdf.iloc[0:8,i].astype('str'))
+                        pdf=pdf.rename({pdf.keys()[i]:newcol},axis=1)
+                    try:    
+                        SEQ      = pdf.iloc[:,pdf.keys().str.contains('.*SEQUENCE.*', regex=True, case=False,na=False)].keys()
+                        x = min(np.array(pdf.loc[pdf[SEQ].astype(str) == COWELL,SEQ].index))-1   # non-value indexes
+                        xrows = list(range(0, x))
+                        for i in range(0,pdf.shape[1]):
+                            newcol = str(pdf.keys()[i])+'_'+'_'.join(pdf.iloc[0:x,i].astype('str'))
+                            pdf = pdf.rename({pdf.keys()[i]:newcol},axis=1)
+                            pdf = pdf.drop(xrows,axis=0)
+                    except:
+                        print(f'Cannot parse tabels 1 at: {docurl}.')
+                        ERROR = 1
+                        continue
+
+##                DATE     =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0])
+##                DAYSON   =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*DAYS.*PROD.*', regex=True, case=False,na=False)].keys()[0])
+##                OIL      =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*OIL.*PROD.*', regex=True, case=False,na=False)].keys()[0])
+##                GAS      =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*GAS.*PROD.*', regex=True, case=False,na=False)].keys()[0])
+##                WTR      =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*WATER.*VOLUME.*', regex=True, case=False,na=False)].keys()[0])
+##                API      =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*OIL.*GRAVITY.*', regex=True, case=False,na=False)].keys()[0])
+##                BTU      =pdf.keys().get_loc(pdf.iloc[0,pdf.keys().str.contains('.*GAS.*BTU.*', regex=True, case=False,na=False)].keys()[0])
+                try: 
+                    DATE     = pdf.iloc[:,pdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
+                    DAYSON   = pdf.iloc[0,pdf.keys().str.contains('.*DAYS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
+                    OIL      = pdf.iloc[0,pdf.keys().str.contains('.*OIL.*PROD.*', regex=True, case=False,na=False)].keys()[0]
+                    GAS      = pdf.iloc[0,pdf.keys().str.contains('.*GAS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
+                    WTR      = pdf.iloc[0,pdf.keys().str.contains('.*WATER.*VOLUME.*', regex=True, case=False,na=False)].keys()[0]
+                    API      = pdf.iloc[0,pdf.keys().str.contains('.*OIL.*GRAVITY.*', regex=True, case=False,na=False)].keys()[0]
+                    BTU      = pdf.iloc[0,pdf.keys().str.contains('.*GAS.*BTU.*', regex=True, case=False,na=False)].keys()[0]
+                    FM       = pdf.iloc[0,pdf.keys().str.contains('.*Formation.*', regex=True, case=False,na=False)].keys()[0]
+                except:
+                    print(f'Cannot parse tabels 2 at: {docurl}.')
+                    ERROR = 1
+                    continue                    
+                    
+                # Date is date formatted                
+                pdf[DATE]=pd.to_datetime(pdf[DATE]).dt.date
+                # Sort on earliest date first
+                pdf.sort_values(by = [DATE],inplace = True)
+                pdf.index = range(1, len(pdf) + 1)
+               
+                PRODOIL = pdf[OIL].dropna().index
+                PRODGAS = pdf[GAS].dropna().index
+                PRODWTR = pdf[WTR].dropna().index
+           
+                pdf['OIL_RATE'] = pdf[OIL]/pdf[DAYSON]
+                pdf['GAS_RATE'] = pdf[GAS]/pdf[DAYSON]
+                pdf['WTR_RATE'] = pdf[WTR]/pdf[DAYSON]
+                pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
+                      
+                pdf['CUMOIL'] = pdf[OIL].cumsum()
+                pdf['CUMGAS'] = pdf[GAS].cumsum()
+                pdf['CUMWTR'] = pdf[WTR].cumsum()
+                
+                pdf[['TMB_OIL','TMB_GAS','TMB_WTR']] = np.nan
+           
+                pdf.loc[PRODOIL,'TMB_OIL'] = pdf.loc[PRODOIL,'CUMOIL'] / pdf.loc[PRODOIL,OIL]
+                pdf.loc[PRODGAS,'TMB_GAS'] = pdf.loc[PRODGAS,'CUMGAS'] / pdf.loc[PRODGAS,GAS]
+                pdf.loc[PRODWTR,'TMB_WTR'] = pdf.loc[PRODWTR,'CUMWTR'] / pdf.loc[PRODWTR,WTR]      
+
+                pdf[['GOR','OWR','WOR','OWC','WOC']] = np.nan
+                               
+                pdf.loc[PRODOIL,'GOR'] = pdf[GAS]*1000/pdf[OIL]
+                pdf.loc[PRODWTR,'OWR'] = pdf[OIL]/pdf[WTR]
+                pdf.loc[PRODOIL,'WOR'] = pdf[WTR]/pdf[OIL]
+                
+                m = PRODOIL.join(PRODWTR,how='outer')
+                pdf.loc[m,'OWC'] = pdf.loc[m,OIL]/(pdf.loc[m,WTR]+pdf.loc[m,OIL])
+                pdf.loc[m,'WOC'] = pdf.loc[m,WTR]/(pdf[WTR]+pdf.loc[m,OIL])
+
+                if pdf[[API]].dropna(how='any').shape[0]>3:
+                    OUTPUT.at[UWI,'API_MEAN']         = pdf[API].astype('float').describe()[1]
+                    OUTPUT.at[UWI,'API_STD']          = pdf[API].astype('float').describe()[2]
+
+                if pdf[[BTU]].dropna(how='any').shape[0]>3:
+                    OUTPUT.at[UWI,'BTU_MEAN']         = pdf[BTU].astype('float').describe()[1]
+                    OUTPUT.at[UWI,'BTU_STD']          = pdf[BTU].astype('float').describe()[2]
+
+                if pdf[[OIL,GAS]].dropna(how='any').shape[0]>3:
+                    OUTPUT.at[UWI,'Peak_Oil_Date']   = pdf[DATE][pdf[OIL].idxmax()]
+                    OUTPUT.at[UWI,'Peak_Oil_Days']   = pdf['PROD_DAYS'][pdf[OIL].idxmax()]
+                    OUTPUT.at[UWI,'Peak_Oil_CumOil'] = pdf[OIL][0:pdf[OIL].idxmax()].sum()
+                    OUTPUT.at[UWI,'Peak_Oil_CumGas'] = pdf[GAS][0:pdf[OIL].idxmax()].sum()
+
+                    OUTPUT.at[UWI,'Peak_Gas_Date']   = pdf[DATE][pdf[GAS].idxmax()]
+                    OUTPUT.at[UWI,'Peak_Gas_Days']   = pdf['PROD_DAYS'][pdf[GAS].idxmax()]
+                    OUTPUT.at[UWI,'Peak_Gas_CumOil'] = pdf[OIL][0:pdf[GAS].idxmax()].sum()
+                    OUTPUT.at[UWI,'Peak_Gas_CumGas'] = pdf[GAS][0:pdf[GAS].idxmax()].sum()
+
+                    PREPEAKOIL  = pdf.loc[(pdf['PROD_DAYS']-pdf['PROD_DAYS'][pdf[OIL].idxmax()]).between(-100,0),:].index
+                    POSTPEAKOIL = pdf.loc[(pdf['PROD_DAYS'][pdf[OIL].idxmax()]-pdf['PROD_DAYS']).between(0,100),:].index
+                    POSTPEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(0,100),:].index
+                    PEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(-50,50),:].index
+                    LATEWATER = pdf.index[pdf['TMB_WTR']>500]
+                    LATEGAS = pdf.index[pdf['TMB_GAS']>30]
+                    
+                    if pdf.loc[PREPEAKOIL,OIL].sum()>0:
+                        OUTPUT.at[UWI,'GOR_PrePeakOil']  = pdf.loc[PREPEAKOIL,GAS].sum() * 1000 / pdf.loc[PREPEAKOIL,OIL].sum()
+                    if pdf.loc[PEAKGAS,OIL].sum()>0:
+                        OUTPUT.at[UWI,'GOR_PeakGas']     = pdf.loc[PEAKGAS,GAS].sum() * 1000 / pdf.loc[PEAKGAS,OIL].sum()
+                                       
+                    if len(PRODOIL.intersection(PRODGAS).intersection(PRODWTR)) >3 : 
+                        if pdf.loc[PREPEAKOIL,WTR].sum()>0:
+                            OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
+                        if pdf.loc[POSTPEAKGAS,WTR].sum() >0:
+                            OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()     
+                        
+                        OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
+                        OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
+                        OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf[WTR][0:pdf[OIL].idxmax()].sum()
+                        OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf[WTR][0:pdf[GAS].idxmax()].sum()
+                      
+                        if len(LATEGAS)>3:
+                            OUTPUT.at[UWI,'GOR_Final'] = pdf.loc[LATEGAS, GAS].sum() / pdf.loc[LATEGAS, OIL].sum() * 1000
+                        if len(LATEWATER)>3:
+                            OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
+
+                    # Emily uses Month 1 begins at 1st month w/ +14days oil prod
+                    if len(pdf[DATE].dropna())>10:
+                        MONTH1 = pdf.loc[(pdf[DAYSON]>14) & (pdf[OIL]>0),DATE].min()
+                        OUTPUT.at[UWI,'Month1'] = MONTH1
+
+                        if not isinstance(MONTH1,float):
+                            pdf['EM_PRODMONTH'] = (pd.to_datetime(pdf[DATE]).dt.year - MONTH1.year)*12+(pd.to_datetime(pdf[DATE]).dt.month - MONTH1.month)+1
+
+                            for i in MonthArray:
+                                if max(pdf['EM_PRODMONTH']) >= i:
+                                    i_dwn = i-1
+                                    i_up = i+1
+                                    OUTPUT[str(i)+'Mo_CumOil'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),OIL].sum()
+                                    OUTPUT[str(i)+'Mo_CumGas'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),GAS].sum()
+                                    OUTPUT[str(i)+'Mo_CumWtr'] = pdf.loc[(pdf['EM_PRODMONTH']<=i),WTR].sum()
+                                            
+                                    if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() > 0:
+                                        OUTPUT.at[UWI,'GOR_MO'+str(i_dwn)+'to'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),GAS].sum()*1000 / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum()
+                                    if (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum()) >=1:   
+                                        OUTPUT.at[UWI,'OWC_MO'+str(i)] = pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() / (pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),OIL].sum() + pdf.loc[(pdf['EM_PRODMONTH']>=0) & (pdf['EM_PRODMONTH']<=i),WTR].sum())
+                                    if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
+                                        OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'to'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
+                    OUTPUT.at[UWI,'CUM_OIL'] = pdf[OIL].sum()
+                    OUTPUT.at[UWI,'CUM_GAS'] = pdf[GAS].sum()
+                    OUTPUT.at[UWI,'CUM_WATER'] = pdf[WTR].sum()
+                    
+            OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
+
+            pdf['UWI'] = UWI
+            PRODDATA = pd.concat([PRODDATA,pdf],axis=0,join='outer',ignore_index=True) 
+
+            ERROR = 1
+            
+    OUTPUT=OUTPUT.dropna(how='all')
+    OUTPUT.index.name = 'UWI'   
+    OUTPUT.reset_index(inplace = True)
+    OUTPUT = DF_UNSTRING(OUTPUT)
+    OUTPUT['UWI10'] = OUTPUT.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
+           
+    SQL_COLS = '''([UWI] INTEGER PRIMARY KEY
+         ,[BTU_MEAN] REAL
+         ,[BTU_STD] REAL
+         ,[API_MEAN] REAL
+         ,[API_STD] REAL
+         ,[Peak_Oil_Date] DATE
+         ,[Peak_Oil_Days] INTEGER
+         ,[Peak_Oil_CumOil] REAL
+         ,[Peak_Oil_CumGas] REAL
+         ,[Peak_Gas_Date] DATE
+         ,[Peak_Gas_Days] INTEGER
+         ,[Peak_Gas_CumOil] REAL
+         ,[Peak_Gas_CumGas] REAL
+         ,[OWR_PrePeakOil] REAL
+         ,[OWR_PostPeakGas] REAL
+         ,[WOC_PrePeakOil] REAL
+         ,[WOC_PostPeakOil] REAL
+         ,[WOC_PostPeakGas] REAL
+         ,[Peak_Oil_CumWtr] REAL
+         ,[Peak_Gas_CumWtr] REAL
+         ,[Month1] DATE
+         ,[GOR_MO2to4] REAL
+         ,[GOR_MO5to7] REAL
+         ,[GOR_MO11to13] REAL
+         ,[GOR_MO23to25] REAL
+         ,[GOR_MO35to37] REAL
+         ,[GOR_MO47to49] REAL
+         ,[OWR_MO2to4] REAL
+         ,[OWR_MO5to7] REAL
+         ,[OWR_MO11to13] REAL
+         ,[OWR_MO23to25] REAL
+         ,[OWR_MO35to37] REAL
+         ,[OWR_MO47to49] REAL
+         ,[OWC_MO3] REAL
+         ,[OWC_MO6] REAL
+         ,[OWC_MO12] REAL
+         ,[OWC_MO24] REAL
+         ,[OWC_MO36] REAL
+         ,[OWC_MO48] REAL
+         ,[Production_Formation] TEXT
+         ,[3Mo_CumOil] REAL
+         ,[6Mo_CumOil] REAL
+         ,[9Mo_CumOil] REAL
+         ,[12Mo_CumOil] REAL
+         ,[15Mo_CumOil] REAL
+         ,[18Mo_CumOil] REAL
+         ,[21Mo_CumOil] REAL
+         ,[24Mo_CumOil] REAL
+         ,[27Mo_CumOil] REAL
+         ,[30Mo_CumOil] REAL
+         ,[33Mo_CumOil] REAL
+         ,[36Mo_CumOil] REAL
+         ,[39Mo_CumOil] REAL
+         ,[42Mo_CumOil] REAL
+         ,[45Mo_CumOil] REAL
+         ,[48Mo_CumOil] REAL
+         ,[3Mo_CumGas] REAL
+         ,[6Mo_CumGas] REAL
+         ,[9Mo_CumGas] REAL
+         ,[12Mo_CumGas] REAL
+         ,[15Mo_CumGas] REAL
+         ,[18Mo_CumGas] REAL
+         ,[21Mo_CumGas] REAL
+         ,[24Mo_CumGas] REAL
+         ,[27Mo_CumGas] REAL
+         ,[30Mo_CumGas] REAL
+         ,[33Mo_CumGas] REAL
+         ,[36Mo_CumGas] REAL
+         ,[39Mo_CumGas] REAL
+         ,[42Mo_CumGas] REAL
+         ,[45Mo_CumGas] REAL
+         ,[48Mo_CumGas] REAL
+         ,[3Mo_CumWtr] REAL
+         ,[6Mo_CumWtr] REAL
+         ,[9Mo_CumWtr] REAL
+         ,[12Mo_CumWtr] REAL
+         ,[15Mo_CumWtr] REAL
+         ,[18Mo_CumWtr] REAL
+         ,[21Mo_CumWtr] REAL
+         ,[24Mo_CumWtr] REAL
+         ,[27Mo_CumWtr] REAL
+         ,[30Mo_CumWtr] REAL
+         ,[33Mo_CumWtr] REAL
+         ,[36Mo_CumWtr] REAL
+         ,[39Mo_CumWtr] REAL
+         ,[42Mo_CumWtr] REAL
+         ,[45Mo_CumWtr] REAL
+         ,[48Mo_CumWtr] REAL
+         ,[CUM_OIL] REAL
+         ,[CUM_GAS] REAL
+         ,[CUM_WATER] REAL)
+         '''
+
+    #PROD_DATA_TABLE = 'PRODDATA', 
+    #PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY'    
+    
+    print('Saving Results')
+    PRODDATA = DF_UNSTRING(PRODDATA)
+    PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
+    PRODDATA.columns = PRODDATA.columns.str.replace(' ','_')
+    PRODDATA['UWI10'] = PRODDATA.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
+
+    PRODDATA.to_parquet(PROD_FNAME+'.parquet') 
+
+    PRODDATA.reset_index(inplace = True)
+           
+    if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
+        conn = sqlite3.connect(file)
+        c = conn.cursor()    
+           
+        COLTYPES = FRAME_TO_SQL_TYPES(OUTPUT)
+
+        if not PROD_SUMMARY_TABLE in LIST_SQL_TABLES(conn):
+            INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
+              
+        OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PROD_SUMMARY_TABLE), conn)
+
+        if OLD.shape[0]>0:
+           OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
+           COLTYPES.update(OLD_COLTYPES)
+           
         INIT_SQL_TABLE(conn, PROD_SUMMARY_TABLE, COLTYPES)
 
         MISSING_COLS = [k for k in COLTYPES.keys() if k.upper() not in OUTPUT.keys().str.upper()]
@@ -615,6 +1036,10 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         COUNT = -1
 
         COLTYPES = FRAME_TO_SQL_TYPES(PRODDATA)
+           
+        if not PROD_DATA_TABLE in LIST_SQL_TABLES(conn):
+            INIT_SQL_TABLE(conn, PROD_DATA_TABLE, COLTYPES)
+           
         OLD = pd.read_sql('SELECT * FROM {0} LIMIT 100'.format(PROD_DATA_TABLE), conn)
         if OLD.shape[0]>0:
            OLD_COLTYPES = FRAME_TO_SQL_TYPES(OLD)
@@ -641,7 +1066,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 break
             except Exception as e: 
                 print(e)
-                sleep(10)     
+                sleep(10)
                       
     try:
         conn.close()
