@@ -854,6 +854,7 @@ def LIST_SQL_TABLES(CONN):
     c = CONN.cursor()
     c.execute(QRY)
     OUT = c.fetchall()
+    OUT = list(itertools.chain.from_iterable(OUT))
     return OUT
 
 def QUERY_SQL_TABLES(CONN,QUERY):
