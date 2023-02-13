@@ -127,7 +127,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     if len(m)>0:
         #CONDENSE_DICT = SURVEYS.Condense_Surveys(ALL_SURVEYS[['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','X_PATH', 'Y_PATH']])
         # CONDENSE_DICT = SURVEYS.Condense_Surveys(ALL_SURVEYS.loc[m])
-        CONDENSE_DICT = SURVEYS.Condense_Surveys(ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH', 'EAST']])
+        CONDENSE_DICT = Condense_Surveys(ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH', 'EAST']])
         ALL_SURVEYS.loc[m,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m,'UWI10'].apply(lambda x:CONDENSE_DICT[x])
     
     #m = FAVORED_SURVEY.apply(lambda x:CONDENSE_DICT[x.UWI10] == x.FILE, axis=1)
