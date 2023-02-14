@@ -81,8 +81,9 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     
             if D[0].upper() in SCANNEDFILES:
                 continue
-
+            dd = list()
             try:
+                print(D[0])                
                 dd = survey_from_excel(tuple(D),ERRORS = False)
             except Exception as e:
                 print(f'EXCEPTION:{FILE} :: {e}')
