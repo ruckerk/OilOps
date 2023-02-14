@@ -110,8 +110,9 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     #ALL_SURVEYS['Y_PATH'] = ALL_SURVEYS[['NORTH_dY','Y_FEET']].sum(axis=1)
     
     # OLD PREFERRED SURVEYS
-    QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' # WHERE FAVORED_SURVEY = 1'
+    QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' 
     OLD_PREF = pd.read_sql(QRY, connection_obj)
+    
 
     
     m = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
@@ -119,11 +120,16 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     #assign favored file definitions from old table
     ALL_SURVEYS['FAVORED_SURVEY'] = -1
     ALL_SURVEYS.loc[~ALL_SURVEYS.index.isin(m),'FAVORED_SURVEY'] = ALL_SURVEYS.loc[~ALL_SURVEYS.index.isin(m),['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
+    
+    # SET FAVORED SURVEY to 1/0 binary
+    m1 = ALL_SURVEYS['FAVORED_SURVEY']==ALL_SURVEYS['FILE']
+    ALL_SURVEYS.loc[m1,'FAVORED_SURVEY'] = 1
+    ALL_SURVEYS.loc[~m1,'FAVORED_SURVEY'] = 0     
+    ALL_SURVEYS.FAVORED_SURVEY = ALL_SURVEYS.FAVORED_SURVEY.astype(int)
 
     #UWIs with new file
     NEW_UWI = ALL_SURVEYS.loc[m,'UWI10'].unique().tolist()
     m = ALL_SURVEYS.loc[ALL_SURVEYS.UWI10.isin(NEW_UWI)].index  
-
 
     if len(m)>0:
         #CONDENSE_DICT = SURVEYS.Condense_Surveys(ALL_SURVEYS[['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','X_PATH', 'Y_PATH']])
