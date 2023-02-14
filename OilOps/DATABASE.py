@@ -113,7 +113,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' # WHERE FAVORED_SURVEY = 1'
     OLD_PREF = pd.read_sql(QRY, connection_obj)
 
-    #m = ALL_SURVEYS[['UWI10','FILE']].drop_duplicates().apply(tuple,1).isin(OLD_PREF[['UWI10','FILE']].apply(tuple,1))
+    
     m = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
 
     #assign favored file definitions from old table
@@ -220,7 +220,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     data=np.array_split(UWIlist,batch)
     #print (f'batch = {batch}')
     func = partial(XYZSpacing,
-            xxdf= ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH_dY', 'EAST_dX']],
+            xxdf= ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH', 'EAST']],
             df_UWI = WELL_DF,
             DATELIMIT = 360,
             SAVE = False)
