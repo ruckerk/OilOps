@@ -132,8 +132,6 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     m = ALL_SURVEYS.loc[ALL_SURVEYS.UWI10.isin(NEW_UWI)].index  
 
     if len(m)>0:
-        #CONDENSE_DICT = SURVEYS.Condense_Surveys(ALL_SURVEYS[['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','X_PATH', 'Y_PATH']])
-        # CONDENSE_DICT = SURVEYS.Condense_Surveys(ALL_SURVEYS.loc[m])
         CONDENSE_DICT = Condense_Surveys(ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH_dY', 'EAST_dX']])
         ALL_SURVEYS.loc[m,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m,'UWI10'].apply(lambda x:CONDENSE_DICT[x])
     
@@ -217,32 +215,45 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     WELL_DF.sort_values(by = 'FIRST_PRODUCTION_DATE',ascending = False, inplace = True)
 
     UWIlist = WELL_DF.sort_values(by = 'UWI10', ascending = False).UWI10.tolist()
+
+    # MAJOR UPGRADE FOR SPEED: XYZ ONLY FOR NEW SURVEYS, AND WELLS NEAR NEW SURVEYS
+    # FOR WELL IN NEW_SURVEYS: ALL_SURVEYS[[NORTH,EAST]] - [[NORTH,EAST]] <= 10000
+    # UWILIST = AGGREGATED RESULT
+          
+    # FIND ALL UNCHANGED UWI-FILE PAIRS & USE THE OTHERS
+    m = pd.merge(ALL_SURVEYS[['UWI10','FILE']], OLD_PREF[['UWI10','FILE']], on=['UWI10','FILE'], how='left', indicator='TEST').TEST=='both'
+    m = ALL_SURVEYS.index[~m]
+    UWIlist = ALL_SURVEYS.loc[m,'UWI10'].unique()
+
     processors = max(1,floor(multiprocessing.cpu_count()/1))
-        
-    chunksize = int(len(UWIlist)/processors)
-    chunksize = 1000
-    batch = int(len(UWIlist)/chunksize)
-    #processors = max(processors,batch)
-    data=np.array_split(UWIlist,batch)
-    #print (f'batch = {batch}')
+    
     func = partial(XYZSpacing,
             xxdf= ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH', 'EAST']],
             df_UWI = WELL_DF,
             DATELIMIT = 360,
             SAVE = False)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-        f = {executor.submit(func,a): a for a in data}
     
     XYZ = pd.DataFrame()
-    for i in f.keys():
-        XYZ = XYZ.append(i.result(), ignore_index = True)
+    if len(UWIlist) >1000:
+        chunksize = int(len(UWIlist)/processors)
+        chunksize = min(2000, chunksize)
+        batches = int(len(UWIlist)/chunksize)
+        data=np.array_split(UWIlist,batches)
 
-    XYZ = DF_UNSTRING(XYZ)    
-    XYZ_COLS = FRAME_TO_SQL_TYPES(XYZ)
+        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+            f = {executor.submit(func,a): a for a in data}
+        
+        for i in f.keys():
+            XYZ = XYZ.append(i.result(), ignore_index = True)
+    elif len(UWIlist)>0:
+        XYZ = func(UWIlist)
     
-    XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
-    connection_obj.commit()
+    if XYZ.shape[0]>0:
+        XYZ = DF_UNSTRING(XYZ)    
+        XYZ_COLS = FRAME_TO_SQL_TYPES(XYZ)
+
+        XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
+        connection_obj.commit()
           
     ###################
     # PRODUCTION DATA #
