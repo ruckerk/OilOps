@@ -719,7 +719,7 @@ def load_surveyfile(conn, row):
 def convert_to_list(x):
     try: x=x.tolist()
     except: pass
-    if isinstance(x,(np.int,str)):
+    if isinstance(x,(int,str)):
         x=[x]
     if isinstance(x,(np.ndarray,pd.DataFrame,pd.Series)):
         x=list(x)
