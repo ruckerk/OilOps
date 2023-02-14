@@ -680,7 +680,7 @@ def CondenseSurvey(xdf,LIST_IN):
     # if 1==1:
     if isinstance(LIST_IN,(pd.Series,np.ndarray)):
         UWIs=list(LIST_IN)
-    if isinstance(LIST_IN,(str,int,np.uint,np.int64)):
+    if isinstance(LIST_IN,(str,int,np.integer)):
         UWIs=[LIST_IN]
     if isinstance(LIST_IN,list):
         UWIs=LIST_IN
