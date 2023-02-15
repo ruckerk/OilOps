@@ -224,12 +224,15 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     m = pd.merge(ALL_SURVEYS[['UWI10','FILE']], OLD_PREF[['UWI10','FILE']], on=['UWI10','FILE'], how='left', indicator='TEST').TEST!='both'
     m = ALL_SURVEYS.index[(ALL_SURVEYS.FAVORED_SURVEY==1) *m]
     UWIlist = ALL_SURVEYS.loc[m,'UWI10'].unique()
-
+    
+    XYZ_OLD = pd.DataFrame()
     if 'SPACING' in LIST_SQL_TABLES(connection_obj):
         XYZ_OLD = pd.read_sql('SELECT * FROM SPACING', con = connection_obj)
         XYZ_OLD.rename(columns = {'XYZFILE':'FILE'}, inplace = True)
         all_df = pd.merge(ALL_SURVEYS[['UWI10','FILE','FAVORED_SURVEY']], XYZ_OLD[['UWI10','FILE']], how='left', indicator='TEST')
         UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()
+    else:
+        UWIlist = ALL_SURVEYS.loc[ALL_SURVEYS.FAVORED_SURVEY==1,'UWI10'].unique()
 
     processors = max(1,floor(multiprocessing.cpu_count()/1))
     
@@ -254,14 +257,12 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     elif len(UWIlist)>0:
         XYZ = func(UWIlist)
     
-    if XYZ.shape[0]>0:
+    if ~XYZ.empty:
         XYZ = DF_UNSTRING(XYZ)    
         XYZ_COLS = FRAME_TO_SQL_TYPES(XYZ)
         
-
-                  
-        XYZ = pd.concat([XYZ, XYZ_OLD.loc[~XYZ_OLD.UWI10.isin(XYZ.UWI10)]], axis = 0, join = 'outer', ignore_index = True)
-
+        if ~XYZ_OLD.empty:
+            XYZ = pd.concat([XYZ, XYZ_OLD.loc[~XYZ_OLD.UWI10.isin(XYZ.UWI10)]], axis = 0, join = 'outer', ignore_index = True)
           
         XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
         connection_obj.commit()
