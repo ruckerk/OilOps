@@ -231,8 +231,17 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
         XYZ_OLD.rename(columns = {'XYZFILE':'FILE'}, inplace = True)
         all_df = pd.merge(ALL_SURVEYS[['UWI10','FILE','FAVORED_SURVEY']], XYZ_OLD[['UWI10','FILE']], how='left', indicator='TEST')
         UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()
+          
+        UWI_MEANS = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0).mean().reset_index(drop=False)
+        
+        # USE A SPATIAL FUNCTION HERE
+        # BUFFER AROUND CHANGING SURVEY PTS
+        # FIND ALL UWIS TOUCHING BUFFER AREAS            
+                        
     else:
         UWIlist = ALL_SURVEYS.loc[ALL_SURVEYS.FAVORED_SURVEY==1,'UWI10'].unique()
+
+   
 
     processors = max(1,floor(multiprocessing.cpu_count()/1))
     
