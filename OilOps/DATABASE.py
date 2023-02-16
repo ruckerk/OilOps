@@ -228,12 +228,23 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
         PTS0.reset_index(drop=True, inplace= True)
         PTS0 = PTS0.apply(lambda x: [[x[0],x[1]], [x[2],x[3]], [x[4],x[5]]], axis = 1).tolist()
         PTS0 = list(itertools.chain(*PTS0))
-        PTS0 = shapely.geometry.MultiPoint(PTS0)
+        #REMOVE NAN
+        PTS0 = shapely.geometry.MultiPoint(PTS0)      
         PTS0 = PTS0.buffer(10000)
 
         # INTERSECT BUFFER
         #is it fast to create linestrings of each well and intersect?
+        ALL_SURVEYS['XY']  = ALL_SURVEYS[['EAST','NORTH']].apply(list, axis = 1)  
+        TEST = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','XY']].groupby(by=['UWI10','FILE'], axis = 0)['XY'].apply(list)
+        TEST = TEST[TEST.apply(len)>1]
+        TEST = TEST.apply(lambda x: shapely.geometry.LineString(x))
         
+        s = STRtree(TEST.tolist())
+        r = s.query(PTS0)  
+        TEST = pd.DataFrame(TEST)
+        TEST['INTERSECTS_BUFFER'] = TEST.XY.apply(lambda x: x in r)
+        
+        PTS1.intersects(shapely.geometry.Point(PTS0[34]))
 
         UWI_MEANS = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0).mean().reset_index(drop=False)
         
