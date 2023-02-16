@@ -101,44 +101,36 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
 
     ALL_SURVEYS = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj)
     ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
-    
-    #ddf = CO_ABS_LOC(ALL_SURVEYS.UWI10,'CO_3_2.1.sqlite')
-    
-    # DROP OR FIX UWIS IN CO_ABS_LOC, NOT USED CURRENTLY
-    #ALL_SURVEYS = pd.merge(ALL_SURVEYS, ddf,how = 'left',on='UWI10',left_index = False, right_index = False)
-    #ALL_SURVEYS['X_PATH'] = ALL_SURVEYS[['EAST_dX',AL'X_FEET']].sum(axis=1)
-    #ALL_SURVEYS['Y_PATH'] = ALL_SURVEYS[['NORTH_dY','Y_FEET']].sum(axis=1)
-    
+        
+    # ALL UWI/SURVEY PAIRS NOT ALREADY CONSIDERED
+    m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
+    m_old = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']=='both'].index
+            
     # OLD PREFERRED SURVEYS
     QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' 
-    OLD_PREF = pd.read_sql(QRY, connection_obj)
+    OLD_PREF = pd.read_sql(QRY, connection_obj)   
     
-
+     # SET FAVORED SURVEY to 1/0 binary including old assignments   
+    ALL_SURVEYS['FAVORED_SURVEY'] = -1    
+    ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
+    ALL_SURVEYS.loc[ALL_SURVEYS['FILE']==ALL_SURVEYS['FAVORED_SURVEY'],'FAVORED_SURVEY'] = 1
+    ALL_SURVEYS.loc[~ALL_SURVEYS['FAVORED_SURVEY'].isin([-1,0,1]),'FAVORED_SURVEY'] = 0
     
-    m = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
-
-    #assign favored file definitions from old table
-    ALL_SURVEYS['FAVORED_SURVEY'] = -1
-    ALL_SURVEYS.loc[~ALL_SURVEYS.index.isin(m),'FAVORED_SURVEY'] = ALL_SURVEYS.loc[~ALL_SURVEYS.index.isin(m),['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
-    
-    # SET FAVORED SURVEY to 1/0 binary
-    m1 = ALL_SURVEYS['FAVORED_SURVEY']==ALL_SURVEYS['FILE']
-    ALL_SURVEYS.loc[m1,'FAVORED_SURVEY'] = 1
-    ALL_SURVEYS.loc[~m1,'FAVORED_SURVEY'] = 0     
     ALL_SURVEYS.FAVORED_SURVEY = ALL_SURVEYS.FAVORED_SURVEY.astype(int)
 
-    #UWIs with new file
-    NEW_UWI = ALL_SURVEYS.loc[m,'UWI10'].unique().tolist()
-    m = ALL_SURVEYS.loc[ALL_SURVEYS.UWI10.isin(NEW_UWI)].index  
-
+    #UWIs with new file or none assigned
+    NEW_UWI = ALL_SURVEYS.loc[m_new,'UWI10'].unique().tolist()
+    NEW_UWI.extend(ALL_SURVEYS.loc[(ALL_SURVEYS.FAVORED_SURVEY == -1),'UWI10'].unique().tolist())
+    m = ALL_SURVEYS.index[ALL_SURVEYS.UWI10.isin(NEW_UWI)]
+    
     if len(m)>0:
         CONDENSE_DICT = Condense_Surveys(ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH_dY', 'EAST_dX']])
         ALL_SURVEYS.loc[m,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m,'UWI10'].apply(lambda x:CONDENSE_DICT[x])
-    
+        m1 = (ALL_SURVEYS['FAVORED_SURVEY']==ALL_SURVEYS['FILE'])
+        ALL_SURVEYS.loc[m,'FAVORED_SURVEY'] = 0
+        ALL_SURVEYS.loc[m1,'FAVORED_SURVEY'] = 1
+            
     #m = FAVORED_SURVEY.apply(lambda x:CONDENSE_DICT[x.UWI10] == x.FILE, axis=1)
-    m = (ALL_SURVEYS.FAVORED_SURVEY == 1)
-    USE_SURVEYS = ALL_SURVEYS.loc[m]
-    USE_SURVEYS['UWI10'] = USE_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
 
     # CREATE ABSOLUTE LOCATION TABLE if True:
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
@@ -179,20 +171,20 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     LOC_DF.to_sql(name = 'SHL', con = connection_obj, if_exists='replace', index = False, dtype = LOC_COLS)
     connection_obj.commit()
     
+    m = (ALL_SURVEYS.FAVORED_SURVEY == 1)
+    
     #FLAG PREFERRED SURVEYS if True:
-    ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
     ALL_SURVEYS = ALL_SURVEYS.merge(LOC_DF[['UWI10','XFEET','YFEET']],how = 'left', on = 'UWI10')
     ALL_SURVEYS['NORTH'] = ALL_SURVEYS[['NORTH_dY','YFEET']].sum(axis=1)
     ALL_SURVEYS['EAST'] = ALL_SURVEYS[['EAST_dX','XFEET']].sum(axis=1)
     ALL_SURVEYS.rename({'YFEET':'SHL_Y_FEET','XFEET':'SHL_X_FEET'}, axis = 1, inplace = True)
 
-   
+
     #ALL_SURVEYS['FAVORED_SURVEY'] = ALL_SURVEYS.apply(lambda x: CONDENSE_DICT[x.UWI10], axis = 1).str.upper() == ALL_SURVEYS.FILE.str.upper()
 
     SCHEMA = {'UWI10': 'INTEGER', 'FILE':'TEXT', 'FAVORED_SURVEYS':'INTEGER'}
     #INIT_SQL_TABLE(connection_obj,'SURVEYDATA', SCHEMA)
 
-    m = ALL_SURVEYS.FAVORED_SURVEY==1
     ALL_SURVEYS.loc[:,['UWI10','FILE','FAVORED_SURVEY']].drop_duplicates().to_sql('FAVORED_SURVEYS',
                                                    connection_obj,
                                                    schema = SCHEMA,
@@ -221,22 +213,25 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     # UWILIST = AGGREGATED RESULT
           
     # FIND ALL UNCHANGED UWI-FILE PAIRS & USE THE OTHERS
-    m = pd.merge(ALL_SURVEYS[['UWI10','FILE']], OLD_PREF[['UWI10','FILE']], on=['UWI10','FILE'], how='left', indicator='TEST').TEST!='both'
-    m = ALL_SURVEYS.index[(ALL_SURVEYS.FAVORED_SURVEY==1) *m]
-    UWIlist = ALL_SURVEYS.loc[m,'UWI10'].unique()
-    
+    #m = pd.merge(ALL_SURVEYS[['UWI10','FILE']], OLD_PREF[['UWI10','FILE']], on=['UWI10','FILE'], how='left', indicator='TEST').TEST!='both'
     XYZ_OLD = pd.DataFrame()
     if 'SPACING' in LIST_SQL_TABLES(connection_obj):
         XYZ_OLD = pd.read_sql('SELECT * FROM SPACING', con = connection_obj)
         XYZ_OLD.rename(columns = {'XYZFILE':'FILE'}, inplace = True)
-        all_df = pd.merge(ALL_SURVEYS[['UWI10','FILE','FAVORED_SURVEY']], XYZ_OLD[['UWI10','FILE']], how='left', indicator='TEST')
+        all_df = pd.merge(ALL_SURVEYS[['UWI10','FILE','FAVORED_SURVEY']], 
+                          XYZ_OLD[['UWI10','FILE']],
+                          how='left', 
+                          indicator='TEST')
         UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()
           
         UWI_MEANS = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0).mean().reset_index(drop=False)
         
         # USE A SPATIAL FUNCTION HERE
         # BUFFER AROUND CHANGING SURVEY PTS
-        # FIND ALL UWIS TOUCHING BUFFER AREAS            
+        # FIND ALL UWIS TOUCHING BUFFER AREAS
+        
+        ALL_SURVEYS.loc[(ALL_SURVEYS.UWI10.isin(UWIlist)) * (ALL_SURVEYS.INC>88) * (ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0)[['EAST','NORTH']].first()
+        
                         
     else:
         UWIlist = ALL_SURVEYS.loc[ALL_SURVEYS.FAVORED_SURVEY==1,'UWI10'].unique()
