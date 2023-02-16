@@ -222,8 +222,19 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
                           XYZ_OLD[['UWI10','FILE']],
                           how='left', 
                           indicator='TEST')
-        UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()
-          
+        UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()     
+     
+        PTS0 = ALL_SURVEYS.loc[(ALL_SURVEYS.UWI10.isin(UWIlist)) * (ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0)[['EAST','NORTH']].agg(['first','mean','last'])
+        PTS0.reset_index(drop=True, inplace= True)
+        PTS0 = PTS0.apply(lambda x: [[x[0],x[1]], [x[2],x[3]], [x[4],x[5]]], axis = 1).tolist()
+        PTS0 = list(itertools.chain(*PTS0))
+        PTS0 = shapely.geometry.MultiPoint(PTS0)
+        PTS0 = PTS0.buffer(10000)
+
+        # INTERSECT BUFFER
+        #is it fast to create linestrings of each well and intersect?
+        
+
         UWI_MEANS = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0).mean().reset_index(drop=False)
         
         # USE A SPATIAL FUNCTION HERE
