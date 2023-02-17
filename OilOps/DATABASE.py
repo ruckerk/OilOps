@@ -243,8 +243,12 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
         r = s.query(PTS0)  
         TEST = pd.DataFrame(TEST)
         TEST['INTERSECTS_BUFFER'] = TEST.XY.apply(lambda x: x in r)
-        
-        PTS1.intersects(shapely.geometry.Point(PTS0[34]))
+        TEST.reset_index(drop=False,inplace=True)
+          
+        # UWIlist for wells intersecting buffer  
+        UWIlist = TEST.loc[TEST['INTERSECTS_BUFFER'],'UWI10'].unique().tolist()
+
+        #PTS1.intersects(shapely.geometry.Point(PTS0[34]))
 
         UWI_MEANS = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0).mean().reset_index(drop=False)
         
