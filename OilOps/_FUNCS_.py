@@ -880,3 +880,22 @@ def FRAME_TO_SQL_TYPES(df_in):
         T = df_in[k].dtype.name
         OUT[k] = DTYPE_TO_SQL(T)        
     return(OUT)    
+
+def APPLY_DICT_TO_LIST(LIST_IN,DICT_IN):
+    if isinstance(LIST_IN,type(None)):
+        return LIST_IN
+    elif isinstance(LIST_IN,(str, int, float)):
+        LIST_IN = [LIST_IN]
+    else:
+        LIST_IN = list(LIST_IN)
+    LIST_OUT = LIST_IN
+    for i in LIST_IN:
+        if not i in DICT_IN.keys():
+            continue
+        DICT_VAL = DICT_IN[i]
+        if isinstance(DICT_VAL,(str, int, float)):
+            DICT_VAL = [DICT_VAL]
+        else:
+            DICT_VAL = list(DICT_VAL)
+        LIST_OUT = LIST_OUT + DICT_VAL
+    return LIST_OUT
