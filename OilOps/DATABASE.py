@@ -101,15 +101,15 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
 
     ALL_SURVEYS = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj)
     ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
-        
-    # ALL UWI/SURVEY PAIRS NOT ALREADY CONSIDERED
-    m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
-    m_old = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']=='both'].index
-            
+           
     # OLD PREFERRED SURVEYS
     QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' 
     OLD_PREF = pd.read_sql(QRY, connection_obj)   
-    
+
+    # ALL UWI/SURVEY PAIRS NOT ALREADY CONSIDERED
+    m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
+    m_old = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']=='both'].index
+         
      # SET FAVORED SURVEY to 1/0 binary including old assignments   
     ALL_SURVEYS['FAVORED_SURVEY'] = -1    
     ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
