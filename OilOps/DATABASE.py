@@ -115,7 +115,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
     ALL_SURVEYS.loc[ALL_SURVEYS['FILE']==ALL_SURVEYS['FAVORED_SURVEY'],'FAVORED_SURVEY'] = 1
     ALL_SURVEYS.loc[~ALL_SURVEYS['FAVORED_SURVEY'].isin([-1,0,1]),'FAVORED_SURVEY'] = 0
-    
+
     ALL_SURVEYS.FAVORED_SURVEY = ALL_SURVEYS.FAVORED_SURVEY.astype(int)
 
     #UWIs with new file or none assigned
@@ -126,7 +126,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     if len(m)>0:
         CONDENSE_DICT = Condense_Surveys(ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH_dY', 'EAST_dX']])
         ALL_SURVEYS.loc[m,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m,'UWI10'].apply(lambda x:CONDENSE_DICT[x])
-        m1 = (ALL_SURVEYS['FAVORED_SURVEY']==ALL_SURVEYS['FILE'])
+        m1 = (ALL_SURVEYS['FAVORED_SURVEY']==ALL_SURVEYS['FILE']) + (ALL_SURVEYS['FAVORED_SURVEY'] == 1) 
         ALL_SURVEYS.loc[m,'FAVORED_SURVEY'] = 0
         ALL_SURVEYS.loc[m1,'FAVORED_SURVEY'] = 1
             
@@ -217,6 +217,11 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     XYZ_OLD = pd.DataFrame()
     if 'SPACING' in LIST_SQL_TABLES(connection_obj):
         XYZ_OLD = pd.read_sql('SELECT * FROM SPACING', con = connection_obj)
+        if 'FILE' in XYZ_OLD.keys():
+            KK = XYZ_OLD.keys().tolist()
+            KK.remove('FILE')
+            XYZ_OLD = XYZ_OLD[KK]
+            del KK
         XYZ_OLD.rename(columns = {'XYZFILE':'FILE'}, inplace = True)
         all_df = pd.merge(ALL_SURVEYS[['UWI10','FILE','FAVORED_SURVEY']], 
                           XYZ_OLD[['UWI10','FILE']],
