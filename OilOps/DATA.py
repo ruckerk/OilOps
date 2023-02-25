@@ -1967,7 +1967,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                     pdf['LINK']=None
                     pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
 
-                    surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY')==True)]
+                    surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True)]
 
                     # If another page, scan it too
                     # select next largest number
@@ -2002,7 +2002,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                             pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
                             #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                             #surveyrows.append(dirdata)
-                            surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA')==True])
+                            surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
                     elif (pages == 0) and (sum([len(i) for i in data]) > 10):
                         parsed_table = soup.find_all('table')[0]
                         pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
@@ -2011,7 +2011,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                         pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
                         #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                         #surveyrows.append(dirdata)
-                        surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA')==True])
+                        surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
                     else:
                         print(f'No Tables for {UWI}')
                         PAGEERROR=ERROR=1
