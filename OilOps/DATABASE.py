@@ -389,7 +389,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
  
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     
-    if not FULL_UPDATE:
+    if FULL_UPDATE:
         SURVEYED_UWIS = []
         NEW_UWI = []
         
