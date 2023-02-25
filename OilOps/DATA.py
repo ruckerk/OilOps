@@ -1915,6 +1915,8 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
     if isinstance(UWIx,(np.ndarray,pd.Series,pd.DataFrame)):
         UWIx=pd.DataFrame(UWIx).iloc[:,0].tolist()
 
+    UWIx = [OilOps.WELLAPI(x).STRING(10) for x in UWIx]
+           
     with get_driver() as browser:
         for UWI in UWIx:
             #print(UWI)
