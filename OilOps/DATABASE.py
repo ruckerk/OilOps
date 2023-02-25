@@ -330,7 +330,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     ###############################
     # TABLE OF UNIT/WELL
  
-def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
+def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
     ###############
     # GET SURVEYS #
     ############### #if True:
@@ -380,15 +380,19 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db'):
         OLD_UWI = df.loc[df.Month1.dt.year<OLD_YEAR, 'UWI10'].tolist()
         NEW_UWI = df.loc[df.Month1.dt.year>OLD_YEAR, 'UWI10'].tolist()
     else:
-        OLD_UWI =[]
+        OLD_UWI =[]       
 
     FLIST = list()
     for file in listdir(dir_add):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
             FLIST.append(file)
-
  
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
+    
+    if not FULL_UPDATE:
+        SURVEYED_UWIS = []
+        NEW_UWI = []
+        
     if len(OLD_UWI)>0:
         UWIlist = list(set(OLD_UWI).union(set(NEW_UWI)) - set(SURVEYED_UWIS)) 
     else:
