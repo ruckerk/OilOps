@@ -3,6 +3,7 @@ from .WELLAPI import *
 from .DATA import *
 from .SURVEYS import *
 from .MAP import convert_XY
+from ._MAPFUNCS_ import *
 
 __all__ = ['CONSTRUCT_DB',
           'UPDATE_SURVEYS',
