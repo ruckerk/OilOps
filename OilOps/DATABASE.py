@@ -316,7 +316,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     # FRAC FOCUS DATA #
     ###################
     # CREATE FRAC FOCUS TABLE
-    FF = DATA.Merge_Frac_Focus(DIR = 'FRAC_FOCUS', SAVE = False)
+    FF = Merge_Frac_Focus(DIR = 'FRAC_FOCUS', SAVE = False)
     FF = DF_UNSTRING(FF)
     FF_COLS = FRAME_TO_SQL_TYPES(FF)
     FF.to_sql(name = 'FRAC_FOCUS', con = connection_obj, if_exists = 'replace', index = False, dtype = FF_COLS)
