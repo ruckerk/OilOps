@@ -414,7 +414,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
                    dir_add=dir_add)
 
     if len(UWIlist)>1000:
-        processors = min(1,floor(multiprocessing.cpu_count()/2))
+        processors = max(1,floor(multiprocessing.cpu_count()/1))
+        processors = min(8,processors)
 
         chunksize = int(len(UWIlist)/processors)
         chunksize = 1000
