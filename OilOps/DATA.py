@@ -1968,9 +1968,10 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                     pdf['LINK']=None
                     pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
 
-                    # IS THIS ON PURPOSE? SURVEYROWS
                     #surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True)]
-
+                    m = pdf.iloc[:,3].str.contains('(?=.*DIRECTIONAL|.*DEVIAT|.*GYRO)(?=.*DATA|.*SURVEY)',flags = re.I,regex= True).fillna(False)
+                    surveyrows = pdf.loc[m,:]
+           
                     # If another page, scan it too
                     # select next largest number
                     tables=len(soup.find_all('table'))
@@ -2004,7 +2005,10 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                             pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
                             #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                             #surveyrows.append(dirdata)
-                            surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
+                            #surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
+                            m = pdf.iloc[:,3].str.contains('(?=.*DIRECTIONAL|.*DEVIAT|.*GYRO)(?=.*DATA|.*SURVEY)',flags = re.I,regex= True).fillna(False)
+                            surveyrows.append(pdf.loc[m,:])
+                                 
                     elif (pages == 0) and (sum([len(i) for i in data]) > 10):
                         parsed_table = soup.find_all('table')[0]
                         pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
@@ -2013,7 +2017,9 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                         pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
                         #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                         #surveyrows.append(dirdata)
-                        surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
+                        #surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
+                        m = pdf.iloc[:,3].str.contains('(?=.*DIRECTIONAL|.*DEVIAT|.*GYRO)(?=.*DATA|.*SURVEY)',flags = re.I,regex= True).fillna(False)
+                        surveyrows.append(pdf.loc[m,:])
                     else:
                         print(f'No Tables for {UWI}')
                         PAGEERROR=ERROR=1
