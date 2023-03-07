@@ -1581,7 +1581,6 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
 
     except:
         print(f'Cannot parse tables')
-        ERROR = 1
         return None
     
     pdf[DATE] = pd.to_datetime(pdf[DATE]).dt.date
@@ -1969,7 +1968,8 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
                     pdf['LINK']=None
                     pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
 
-                    surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True)]
+                    # IS THIS ON PURPOSE? SURVEYROWS
+                    #surveyrows=pdf.loc[(pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True)]
 
                     # If another page, scan it too
                     # select next largest number
