@@ -140,20 +140,26 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     WELL_LOC = WELL_LOC.loc[~(WELL_LOC['UWI10'] == 500000000)]
     WELL_LOC['X'] = WELL_LOC.coords.apply(lambda x:x[0][0])
     WELL_LOC['Y'] = WELL_LOC.coords.apply(lambda x:x[0][1])
+    WELL_LOC['XBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][0])
+    WELL_LOC['YBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][1])
 
     WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
     WELLPLAN_LOC['UWI10'] = WELLPLAN_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
     WELLPLAN_LOC = WELLPLAN_LOC.loc[~(WELLPLAN_LOC['UWI10'] == 500000000)]
     WELLPLAN_LOC['X'] = WELLPLAN_LOC.coords.apply(lambda x:x[0][0])
     WELLPLAN_LOC['Y'] = WELLPLAN_LOC.coords.apply(lambda x:x[0][1])
-    
+    WELLPLAN_LOC['XBHL'] = WELLPLAN_LOC.coords.apply(lambda x:x[-1][0])
+    WELLPLAN_LOC['YBHL'] = WELLPLAN_LOC.coords.apply(lambda x:x[-1][1])
+
     WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
     WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
     WELLLINE_LOC = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'] == 500000000)]
     WELLLINE_LOC['X'] = WELLLINE_LOC.coords.apply(lambda x:x[0][0])
     WELLLINE_LOC['Y'] = WELLLINE_LOC.coords.apply(lambda x:x[0][1])
+    WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
+    WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
     
-    LOC_COLS = ['UWI10','X','Y']
+    LOC_COLS = ['UWI10','X','Y','XBHL','YBHL']
     LOC_DF = WELLLINE_LOC[LOC_COLS].drop_duplicates()
     m = WELLPLAN_LOC.index[~(WELLPLAN_LOC.UWI10.isin(LOC_DF.UWI10))]
     LOC_DF = pd.concat([LOC_DF,WELLPLAN_LOC.loc[m,LOC_COLS].drop_duplicates()])
@@ -162,6 +168,11 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     LOC_DF.UWI10.shape[0]-len(LOC_DF.UWI10.unique())
     
     LOC_DF[['XFEET','YFEET']] = pd.DataFrame(convert_XY(LOC_DF.X,LOC_DF.Y,26913,2231)).T.values
+    LOC_DF[['XBHLFEET','YBHLFEET']] = pd.DataFrame(convert_XY(LOC_DF.XBHL,LOC_DF.YBHL,26913,2231)).T.values
+ 
+    LOC_DF['DELTA'] = ((LOC_DF['YBHLFEET'] - LOC_DF['YFEET'])**2 +  (LOC_DF['XBHLFEET'] - LOC_DF['XFEET'])**2)**0.5
+    m = LOC_DF['DELTA']>2000
+    VS_UWIS = LOC_DF.loc[m,'UWI10'].unique()
 
     LOC_COLS = {'UWI10': 'INTEGER',
                 'X': 'REAL',
@@ -169,7 +180,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
                 'XFEET':'REAL',
                 'YFEET':'REAL'}
     INIT_SQL_TABLE(connection_obj, 'SHL', LOC_COLS)
-    LOC_DF.to_sql(name = 'SHL', con = connection_obj, if_exists='replace', index = False, dtype = LOC_COLS)
+    LOC_DF[['UWI10','X','Y','XFEET','YFEET']].to_sql(name = 'SHL', con = connection_obj, if_exists='replace', index = False, dtype = LOC_COLS)
     connection_obj.commit()
     
     m = (ALL_SURVEYS.FAVORED_SURVEY == 1)
@@ -208,7 +219,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     WELL_DF.sort_values(by = 'FIRST_PRODUCTION_DATE',ascending = False, inplace = True)
 
     UWIlist = WELL_DF.sort_values(by = 'UWI10', ascending = False).UWI10.tolist()
-
+    
     # MAJOR UPGRADE FOR SPEED: XYZ ONLY FOR NEW SURVEYS, AND WELLS NEAR NEW SURVEYS
     # FOR WELL IN NEW_SURVEYS: ALL_SURVEYS[[NORTH,EAST]] - [[NORTH,EAST]] <= 10000
     # UWILIST = AGGREGATED RESULT
@@ -267,8 +278,6 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
                         
     else:
         UWIlist = ALL_SURVEYS.loc[ALL_SURVEYS.FAVORED_SURVEY==1,'UWI10'].unique()
-
-   
 
     processors = max(1,floor(multiprocessing.cpu_count()/1))
     
@@ -346,6 +355,13 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
     global dir_add
     dir_add = path.join(adir,'SURVEYFOLDER')
 
+    if FULL_UPDATE:
+        OLD_YEAR = 1900
+    else:
+        OLD_YEAR = datetime.datetime.now().year-2
+    
+    SHL_BHL_THRESH = 2000
+          
     #Read UWI files and form UWI list
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
     WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
@@ -355,13 +371,44 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
     WELLPLAN_LOC['UWI10'] = WELLPLAN_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
     WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
 
-    SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
+    # CREATE ABSOLUTE LOCATION TABLE if True:
+    WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
     
-    OLD_YEAR = datetime.datetime.now().year-4
+    WELL_LOC['UWI10'] = WELL_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELL_LOC = WELL_LOC.loc[~(WELL_LOC['UWI10'] == 500000000)]
+    WELL_LOC['X'] = WELL_LOC.coords.apply(lambda x:x[0][0])
+    WELL_LOC['Y'] = WELL_LOC.coords.apply(lambda x:x[0][1])
+    WELL_LOC['XBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][0])
+    WELL_LOC['YBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][1])
+
+    WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
+    WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLLINE_LOC = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'] == 500000000)]
+    WELLLINE_LOC['X'] = WELLLINE_LOC.coords.apply(lambda x:x[0][0])
+    WELLLINE_LOC['Y'] = WELLLINE_LOC.coords.apply(lambda x:x[0][1])
+    WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
+    WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
     
+    LOC_COLS = ['UWI10','X','Y','XBHL','YBHL']
+    LOC_DF = WELLLINE_LOC[LOC_COLS].drop_duplicates()
+    m = WELL_LOC.index[~(WELL_LOC.UWI10.isin(LOC_DF.UWI10))]
+    LOC_DF = pd.concat([LOC_DF,WELL_LOC.loc[m,LOC_COLS].drop_duplicates()])
+    LOC_DF.UWI10.shape[0]-len(LOC_DF.UWI10.unique())
+    
+    LOC_DF[['XFEET','YFEET']] = pd.DataFrame(convert_XY(LOC_DF.X,LOC_DF.Y,26913,2231)).T.values
+    LOC_DF[['XBHLFEET','YBHLFEET']] = pd.DataFrame(convert_XY(LOC_DF.XBHL,LOC_DF.YBHL,26913,2231)).T.values
+ 
+    LOC_DF['DELTA'] = ((LOC_DF['YBHLFEET'] - LOC_DF['YFEET'])**2 +  (LOC_DF['XBHLFEET'] - LOC_DF['XFEET'])**2)**0.5
+          
+    m = LOC_DF['DELTA']>SHL_BHL_THRESH
+    SHP_UWIS = list(LOC_DF.loc[m,'UWI10'].unique())
+
+    #SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
+     
     try:
         connection_obj = sqlite3.connect(DB)
-        UWIPROD = pd.read_sql("SELECT DISTINCT UWI10 FROM PRODDATA WHERE First_of_Month LIKE '2022%'", connection_obj)
+        QRY = "SELECT DISTINCT UWI10 FROM PRODDATA WHERE date(First_of_Month)>datetime('{0}-01-01')".format(OLD_YEAR)
+        UWIPROD = pd.read_sql(QRY, connection_obj)
         UWIPROD = UWIPROD.UWI10.tolist()
 
         df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
@@ -380,7 +427,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
         OLD_UWI = df.loc[df.Month1.dt.year<OLD_YEAR, 'UWI10'].tolist()
         NEW_UWI = df.loc[df.Month1.dt.year>OLD_YEAR, 'UWI10'].tolist()
     else:
-        OLD_UWI =[]       
+        OLD_UWI = NEW_UWI = []       
 
     FLIST = list()
     for file in listdir(dir_add):
@@ -389,14 +436,22 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
  
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     
+    # shapefile with any production
+    PROD_SHP_UWIS = set(SHP_UWIS).intersection(set(OLD_UWI).union(set(NEW_UWI))
+    # surveyed wells that aren't recent
+    OLD_SURVEYED_UWIS = set(SURVEYED_UWIS)-set(NEW_UWI)
+    
     if FULL_UPDATE:
-        SURVEYED_UWIS = []
-        NEW_UWI = []
-        
-    if len(OLD_UWI)>0:
-        UWIlist = list(set(OLD_UWI).union(set(NEW_UWI)) - set(SURVEYED_UWIS)) 
+        #SURVEYED_UWIS = []
+        #NEW_UWI = []
+        UWIlist = list(PROD_SHP_UWIS)
     else:
-        UWIlist = list(set(SHP_UWIS) - set(SURVEYED_UWIS)) 
+        UWIlist = list(set(UWIPROD).union(PROD_SHP_UWIS) - set(OLD_SURVEYED_UWIS))
+                       
+    #if len(OLD_UWI)>0:
+    #    UWIlist = list(set(NEW_UWI).union(SHP_UWIS) - set(OLD_UWI) - set(SURVEYED_UWIS)) 
+    #else:
+    #    UWIlist = list(set(SHP_UWIS) - set(SURVEYED_UWIS)) 
         
     UWIlist.sort(reverse=True)
     
