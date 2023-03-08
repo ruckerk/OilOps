@@ -747,14 +747,16 @@ def findfiles(which, where='.',latest = True):
     else:
         return list_of_files
 
-def SQL_UNDUPLICATE(CONN, TABLENAME):
+def SQL_UNDUPLICATE(CONN, TABLENAME, GROUPBY = ['MD','FILE','UWI']):
     # THIS IS VERY SLOW
+    if isinstance(GROUPBY,str):
+        GROUPBY = [GROUPBY]
     
     c = CONN.cursor()
     QRY = 'SELECT COUNT(*) FROM {}'.format(TABLENAME)
     OLDROWS = c.execute(QRY).fetchall()[0][0]
 
-    QRY = 'delete from {} where rowid not in (select  min(rowid) from {} group by MD,FILE,UWI)'.format(TABLENAME,TABLENAME)
+    QRY = 'delete from {} where rowid not in (select  min(rowid) from {} group by {})'.format(TABLENAME,TABLENAME,','.join(GROUPBY))
     c.execute(QRY)
 
     QRY = 'SELECT COUNT(*) FROM {}'.format(TABLENAME)
