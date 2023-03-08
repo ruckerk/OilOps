@@ -9,7 +9,7 @@ __all__ = ['CONSTRUCT_DB',
           'UPDATE_SURVEYS',
           'UPDATE_PROD']
 
-def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
+def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     
@@ -18,11 +18,24 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     SURVEY_FILE_FIELDS = {'FILENAME':['CHAR'],'FILE':['BLOB']}
     INIT_SQL_TABLE(connection_obj, 'SURVEYFILES', SURVEY_FILE_FIELDS)
     
-    c.execute(''' SELECT DISTINCT FILENAME FROM SURVEYFILES  ''')
-    LOADED_FILES = c.fetchall()
-    LOADED_FILES = list(set(itertools.chain(*LOADED_FILES)))
+    DATA_COLS = {'MD': 'REAL',
+         'INC': 'REAL', 
+         'AZI':'REAL',
+         'TVD':'REAL',
+         'NORTH_dY':'REAL',
+         'EAST_dX':'REAL',
+         'UWI':'INTEGER',
+         'FILE': 'TEXT'
+         }  
+    INIT_SQL_TABLE(connection_obj,'SURVEYDATA', DATA_COLS)
     
-    SURVEYFOLDER = 'SURVEYFOLDER'
+    #c.execute(''' SELECT DISTINCT FILENAME FROM SURVEYFILES  ''')
+    #LOADED_FILES = c.fetchall()
+    #LOADED_FILES = list(set(itertools.chain(*LOADED_FILES)))
+    LOADED_FILES = pd.read_sql('SELECT DISTINCT FILE FROM SURVEYFILES', connection_obj).iloc[:,0].tolist()
+    SCANNEDFILES = pd.read_sql('SELECT DISTINCT FILE FROM SURVEYDATA', connection_obj).iloc[:,0].tolist()
+    
+    SURVEYFOLDER = path.join(adir,SURVEYFOLDER)
     XLSLIST = filelist(SURVEYFOLDER,None,None,'.xls')
     USELIST = list(set(XLSLIST).difference(set(LOADED_FILES)))
 
@@ -32,35 +45,19 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
         if '~' in F:
             continue
         B = convertToBinaryData(path.join(SURVEYFOLDER,F))
-        
-        SQL_QRY = ''' INSERT INTO SURVEYFILES(FILENAME, FILE) VALUES (?,?)'''
         data_tuple = (F,B)
-
-        load_surveyfile(connection_obj,data_tuple)
-        
-    connection_obj.commit()
+        load_surveyfile(connection_obj,data_tuple, table  = 'SURVEYFILES')
+    
+    SQL_UNDUPLICATE(connection_obj,'SURVEYFILES')
 
     #DATA = READ_SQL_TABLE(connection_obj,'SURVEYFILES')
     #DATA_df = pd.DataFrame(DATA, columns = ['FILE','BLOB'])
     DATA_df = pd.read_sql('SELECT * FROM SURVEYFILES', connection_obj)
 
-    DATA_COLS = {'MD': 'REAL',
-             'INC': 'REAL', 
-             'AZI':'REAL',
-             'TVD':'REAL',
-             'NORTH_dY':'REAL',
-             'EAST_dX':'REAL',
-             'UWI':'INTEGER',
-             'FILE': 'TEXT'
-             }
-    
- 
-    INIT_SQL_TABLE(connection_obj,'SURVEYDATA', DATA_COLS)
-
-    QRY = 'SELECT DISTINCT UPPER(FILE) FROM SURVEYDATA'
-    c.execute(QRY)
-    SCANNEDFILES = c.fetchall()
-    SCANNEDFILES = list(itertools.chain(*SCANNEDFILES))
+    #QRY = 'SELECT DISTINCT UPPER(FILE) FROM SURVEYDATA'
+    #c.execute(QRY)
+    #SCANNEDFILES = c.fetchall()
+    #SCANNEDFILES = list(itertools.chain(*SCANNEDFILES))
     m = DATA_df.loc[~DATA_df.FILENAME.str.upper().isin(SCANNEDFILES)].index
 
     S_KEYS = pd.read_sql('SELECT * FROM SURVEYDATA LIMIT 1', connection_obj).keys()
@@ -314,7 +311,13 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
           
         XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
         connection_obj.commit()
-          
+     
+    # DROP TABLES WITH NAMES THAT ARE ONLY NUMBERS (INTERMEDIATE TABLES USED EARLIER)
+    for T in LIST_SQL_TABLES(connection_obj):
+        if bool(re.match(r'^\d*$',T)):
+            DROP_SQL_TABLE(connection_obj,T)
+         
+    
     ###################
     # PRODUCTION DATA #
     ###################
@@ -341,6 +344,9 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     # DEVELOPMENT UNIT ASSIGNMENT #
     ###############################
     # TABLE OF UNIT/WELL
+ 
+          
+    
  
 def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
     ###############
