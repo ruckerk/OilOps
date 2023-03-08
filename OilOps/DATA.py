@@ -1911,7 +1911,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.asp
     else:
         if path.exists(FOLDER):
            dir_add= FOLDER
-        elif path.exists(path.join(adir,FOLDER):
+        elif path.exists(path.join(adir,FOLDER)):
            dir_add = path.join(adir,FOLDER)
         else:
            dir_add = path.join(adir,FOLDER)
