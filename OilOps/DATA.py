@@ -1899,14 +1899,22 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         return OUTPUT
 
 
-def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX',DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX', dir_add=None):
+def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX',DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX', FOLDER = None):
     #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
-    if dir_add == None:      
-        pathname = path.dirname(argv[0])
-        adir = path.abspath(pathname)
+    pathname = path.dirname(argv[0])       
+    adir = path.abspath(pathname)
+    if FOLDER == None:      
         dir_add = path.join(adir,"SURVEYS")
         if path.isdir(dir_add) == False:
+           mkdir(dir_add)
+    else:
+        if path.exists(FOLDER):
+           dir_add= FOLDER
+        elif path.exists(path.join(adir,FOLDER):
+           dir_add = path.join(adir,FOLDER)
+        else:
+           dir_add = path.join(adir,FOLDER)
            mkdir(dir_add)
            
     if isinstance(UWIx,(str,int,float)):
