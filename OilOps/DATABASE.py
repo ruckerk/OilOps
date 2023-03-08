@@ -436,14 +436,25 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
     for file in listdir(dir_add):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
             FLIST.append(file)
- 
+                   
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     
     # shapefile with any production
     PROD_SHP_UWIS = set(SHP_UWIS).intersection(set(OLD_UWI).union(set(NEW_UWI)))
     # surveyed wells that aren't recent
     OLD_SURVEYED_UWIS = set(SURVEYED_UWIS) - set(NEW_UWI)
+
+    # Producing wells not in list of good surveys
+    SURVEYDATA = pd.read_sql('SELECT * FROM SURVEYDATA WHERE INC>88',connection_obj)
+    SURVEYDATA['OFFSET'] = (SURVEYDATA['NORTH_dY']**2+SURVEYDATA['EAST_dX']**2)**0.5
+    # # SHL-BHL offset passes threshold
+    OFFSET_THRESH_UWIS = SURVEYDATA.loc[SURVEYDATA['OFFSET']>SHL_BHL_THRESH,'UWI'].unique()
     
+    m = ((SURVEYDATA.INC-SURVEYDATA.INC.apply(floor))>0) * ((SURVEYDATA.AZI-SURVEYDATA.AZI.apply(floor))>0)
+    #SURVEYDATA.loc[m]
+    ACTUALS_UWI = []
+    MISSING_SURVEY_UWIQ = []
+          
     if FULL_UPDATE:
         #SURVEYED_UWIS = []
         #NEW_UWI = []
