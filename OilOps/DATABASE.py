@@ -229,6 +229,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     #m = pd.merge(ALL_SURVEYS[['UWI10','FILE']], OLD_PREF[['UWI10','FILE']], on=['UWI10','FILE'], how='left', indicator='TEST').TEST!='both'
     XYZ_OLD = pd.DataFrame()
     if 'SPACING' in LIST_SQL_TABLES(connection_obj):
+        #ALL_SURVEYS = pd.read_sql('SELECT s.*, f.UWI10,f.FILE, f.FAVORED_SURVEY FROM SURVEYDATA s JOIN FAVORED_SURVEYS f ON s.UWI=f.UWI10 AND s.FILE=f.FILE WHERE f.FAVORED_SURVEY=1 ', connection_obj)                    
         XYZ_OLD = pd.read_sql('SELECT * FROM SPACING', con = connection_obj)
         if 'FILE' in XYZ_OLD.keys():
             KK = XYZ_OLD.keys().tolist()
@@ -237,8 +238,9 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
             del KK
         XYZ_OLD.rename(columns = {'XYZFILE':'FILE'}, inplace = True)
         all_df = pd.merge(ALL_SURVEYS[['UWI10','FILE','FAVORED_SURVEY']], 
-                          XYZ_OLD[['UWI10','FILE']],
+                          XYZ_OLD[['UWI10','FILE']].dropna(),
                           how='left', 
+                          on = ['UWI10','FILE'],
                           indicator='TEST')
         UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()     
      
