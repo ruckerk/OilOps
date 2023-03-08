@@ -2,6 +2,10 @@ from ._FUNCS_ import *
 from .WELLAPI import WELLAPI as WELLAPI
 from .MAP import convert_XY
 
+# ISSUES
+# LOADED SURVEYS ARE BRCOMING INTEGERS! DONT LOSE DECIMAL
+# MANY WELLS ARE CATCHING WRONG COLUMN eg. TVD for INC
+
 # BUG FIXES
 #v101 as_type(float) errors fixed with pd.to_numeric(errors='coerce')
 #v106 looks for API col
