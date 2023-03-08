@@ -32,7 +32,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     #c.execute(''' SELECT DISTINCT FILENAME FROM SURVEYFILES  ''')
     #LOADED_FILES = c.fetchall()
     #LOADED_FILES = list(set(itertools.chain(*LOADED_FILES)))
-    LOADED_FILES = pd.read_sql('SELECT DISTINCT FILE FROM SURVEYFILES', connection_obj).iloc[:,0].tolist()
+    LOADED_FILES = pd.read_sql('SELECT DISTINCT FILENAME FROM SURVEYFILES', connection_obj).iloc[:,0].tolist()
     SCANNEDFILES = pd.read_sql('SELECT DISTINCT FILE FROM SURVEYDATA', connection_obj).iloc[:,0].tolist()
     
     SURVEYFOLDER = path.join(adir,SURVEYFOLDER)
