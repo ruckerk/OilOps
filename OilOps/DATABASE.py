@@ -200,6 +200,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     ALL_SURVEYS.loc[:,['UWI10','FILE','FAVORED_SURVEY']].drop_duplicates().to_sql('FAVORED_SURVEYS',
                                                    connection_obj,
                                                    schema = SCHEMA,
+                                                   index = False,
                                                    if_exists = 'replace')
     
     connection_obj.commit()
