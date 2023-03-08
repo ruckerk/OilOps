@@ -446,7 +446,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
         #NEW_UWI = []
         UWIlist = list(PROD_SHP_UWIS)
     else:
-        UWIlist = list(set(UWIPROD).union(PROD_SHP_UWIS) - set(OLD_SURVEYED_UWIS))
+        UWIlist = list(set(UWIPROD).intersection(PROD_SHP_UWIS) - set(OLD_SURVEYED_UWIS))
                        
     #if len(OLD_UWI)>0:
     #    UWIlist = list(set(NEW_UWI).union(SHP_UWIS) - set(OLD_UWI) - set(SURVEYED_UWIS)) 
