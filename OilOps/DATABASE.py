@@ -437,9 +437,9 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     
     # shapefile with any production
-    PROD_SHP_UWIS = set(SHP_UWIS).intersection(set(OLD_UWI).union(set(NEW_UWI))
+    PROD_SHP_UWIS = set(SHP_UWIS).intersection(set(OLD_UWI).union(set(NEW_UWI)))
     # surveyed wells that aren't recent
-    OLD_SURVEYED_UWIS = set(SURVEYED_UWIS)-set(NEW_UWI)
+    OLD_SURVEYED_UWIS = set(SURVEYED_UWIS) - set(NEW_UWI)
     
     if FULL_UPDATE:
         #SURVEYED_UWIS = []
