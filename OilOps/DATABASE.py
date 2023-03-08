@@ -358,7 +358,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
     if FULL_UPDATE:
         OLD_YEAR = 1900
     else:
-        OLD_YEAR = datetime.datetime.now().year-2
+        OLD_YEAR = datetime.datetime.now().year-4
     
     SHL_BHL_THRESH = 2000
           
