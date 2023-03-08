@@ -339,7 +339,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db'):
     ###############################
     # TABLE OF UNIT/WELL
  
-def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
+def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
     ###############
     # GET SURVEYS #
     ############### #if True:
@@ -353,7 +353,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
     global adir
     adir = path.abspath(pathname)
     global dir_add
-    dir_add = path.join(adir,'SURVEYFOLDER')
+    dir_add = path.join(adir,FOLDER)
 
     if FULL_UPDATE:
         OLD_YEAR = 1900
@@ -466,7 +466,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False):
     func = partial(CO_Get_Surveys, 
                    URL_BASE=URL_BASE, 
                    DL_BASE=DL_BASE, 
-                   dir_add=dir_add)
+                   FOLDER = dir_add)
 
     if len(UWIlist)>1000:
         processors = max(1,floor(multiprocessing.cpu_count()/1))
