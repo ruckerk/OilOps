@@ -703,14 +703,14 @@ def convertToBinaryData(filename):
         blobData = file.read()
     return blobData
 
-def load_surveyfile(conn, row):
+def load_surveyfile(conn, row, table = 'SURVEYFILES'):
     """
     Create a new survey as filename and blob 
     :param conn:
     :param row:
     :return:
     """
-    sql = ''' INSERT INTO SURVEYFILES(FILENAME, FILE) VALUES (?,?)'''
+    sql = ''' INSERT INTO {0}(FILENAME, FILE) VALUES (?,?)'''.format(table)
     cur = conn.cursor()
     cur.execute(sql, row)
     conn.commit()
