@@ -278,7 +278,14 @@ def survey_from_excel(file, ERRORS = True): #if True:
         except:
             #print(file+': ERROR')
             RUNERROR = True
-        
+    
+    # make headers strings
+    if isinstance(xl,dict):
+        for i in xl:
+        	xl[i].columns = [str(s) for s in xl[i].columns]
+    elif isinstance(xl,pd.DataFrame):
+        xl.columns = [str(s) for s in xl.columns]
+
     if len(xl)==0:
         #print('FILE XL READ ERROR IN: '+ file)
         outdf = None
@@ -372,7 +379,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             outdf = outdf.dropna(thresh=3,axis=0)
     return outdf
              
-def SurveyCols(df_s_in=None):
+def SurveyCols(df_s_in=None):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
              'INC':r'.*INC.*|.*DIP.*',
              'AZI':r'.*AZI.*|.*AZM.*',
@@ -388,19 +395,22 @@ def SurveyCols(df_s_in=None):
     
     if isinstance(df_s_in,pd.Series):
         df_s_in=list(df_s_in)
+        df_s_in= [str(s) for x in df_s_in]
+        
     #if isinstance(df_s_in,pd.DataFrame):
     #    df_s_in=list(df_s_in.keys())
+    
     for s in sterms:
         #print(sterms[s])
         if isinstance(df_s_in,pd.DataFrame):
-            term = df_s_in.iloc[0,df_s_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()
+            term = df_s_in.iloc[0,df_s_in.keys().astype(str).str.contains(sterms[s], regex=True, case=False,na=False)].keys()
             if not isinstance(term, str) and len(term)>0:
                 term = term[0]
             if len(term)>0:
                 sterms[s] = term
             else:
                 sterms[s] = None
-            #sterms[s]=df_s_in.iloc[0,df_s_in.keys().str.contains(sterms[s], regex=True, case=False,na=False)].keys()[0]
+            #sterms[s]=df_s_in.iloc[0,df_s_in.keys().astype(str).str.contains(sterms[s], regex=True, case=False,na=False)].keys()[0]
             
             #sterms[s] = term
         if isinstance(df_s_in,list):
