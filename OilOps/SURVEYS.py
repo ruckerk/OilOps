@@ -204,7 +204,7 @@ def ExtractSurvey(df_in): #if True:
                         df_in.reset_index(drop=True, inplace= True)
 
                         outdf_in = df_in[cols].copy(deep=True)
-                        outdf_in.rename(columns ={df_in.keys()[APICOL]:'UWI'},inplace=True)
+    ##                  outdf_in.rename(columns ={df_in.keys()[APICOL]:'UWI'},inplace=True)
 
                         outdf_in['UWI'] = ReadUWI
     ##                    
