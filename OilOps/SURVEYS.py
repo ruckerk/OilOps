@@ -379,7 +379,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             outdf = outdf.dropna(thresh=3,axis=0)
     return outdf
              
-def SurveyCols(df_s_in=None):      
+def SurveyCols(df_s_in=None, INCLUDE_NS = True):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
              'INC':r'.*INC.*|.*DIP.*',
              'AZI':r'.*AZI.*|.*AZM.*',
@@ -390,6 +390,11 @@ def SurveyCols(df_s_in=None):
            #  'NORTH_Y':r'.*ORTH.*|.*\+N.*|.*NS.*FT.*|.*N/S*',
            #  'EAST_X':r'.*EAST.*|.*\+E.*|.*EW.*FT.*|.*E/W.*'
         }
+
+    if INCLUDE_NS == False:
+        sterms.pop('NORTH_dY')
+        sterms.pop('EAST_dX')
+          
     if df_s_in is None:
         return(sterms)
     
