@@ -1117,10 +1117,41 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
 
     OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
+                   
+def MIN_CURVATURE(df_survey):
+    d = SurveyCols(df_survey,False)
+    keys = list(d.values())
 
-    OUTPUT.dropna(axis = 0, how='all')
-    OUTPUT = OUTPUT.drop_duplicates()
-    if SAVE:
-        OUTPUT.to_json(outfile+'.JSON')
-        OUTPUT.to_parquet(outfile+'.PARQUET')
-    return(OUTPUT)
+    df = df_survey[keys]
+    df.rename(columns = d, inplace=True)
+
+    df['INC_RAD'] = df[keys[1]] * pi/180
+    df['AZI_RAD'] = df[keys[2]] * pi/180
+
+    df[['TVD','NORTH','EAST']] = np.nan
+
+    MD = df.keys().get_loc(keys[0])
+    INC = df.keys().get_loc('INC_RAD')
+    AZI = df.keys().get_loc('AZI_RAD')
+
+    for i in np.arange(0,df.shape[0]):
+        idx0 = df.index[i-1]
+        idx1 = df.index[i]
+
+        if (i==0):
+            df.loc[idx1, ['TVD','NORTH','EAST']] = 0
+            continue
+        if (df.iloc[i,:][keys[1:]].sum() == 0):
+            df.loc[idx1, ['NORTH','EAST']] = 0
+            df.loc[idx1, 'TVD']  = df.loc[idx0, 'TVD'] + df.loc[idx1, keys[0]] - df.loc[idx0, keys[0]]
+            continue
+
+        BETA = acos( cos(df.iloc[i,INC] - df.iloc[i-1,INC] ) - sin(df.iloc[i-1,INC])*sin(df.iloc[i,INC])*(1-cos(df.iloc[i,AZI] - df.iloc[i-1,AZI])))
+        RF = 2/BETA * tan(BETA/2)
+        NORTH = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( sin(df.iloc[i-1,INC])*cos(df.iloc[i-1,AZI]) + sin(df.iloc[i,INC])*cos(df.iloc[i,AZI])) * RF + df.iloc[i-1,:]['NORTH']
+        EAST = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( sin(df.iloc[i-1,INC])*sin(df.iloc[i-1,AZI]) + sin(df.iloc[i,INC])*sin(df.iloc[i,AZI])) * RF + df.iloc[i-1,:]['EAST']
+        TVD = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( cos(df.iloc[i-1,INC]) + cos(df.iloc[i,INC]) ) * RF + df.iloc[i-1,:]['TVD']
+
+        df.loc[idx1, ['TVD','NORTH','EAST']] = [TVD,NORTH,EAST]
+
+    return df      
