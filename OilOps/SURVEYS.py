@@ -193,7 +193,7 @@ def ExtractSurvey(df_in): #if True:
                 for i in range(0,100): # is survey header in 1st 15 rows?
                     try:
                         df_in=adf_in.copy()
-                        N=min(i,n)
+                        N = max(1,min(i,n))
                         concat_vals = df_in.iloc[i:i+N,:].apply(lambda row:'_'.join(row.values.astype(str)),axis=0)
                         #SurveyCols(concat_vals)
 
