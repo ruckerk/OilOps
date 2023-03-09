@@ -130,7 +130,7 @@ def ExtractSurveyWrapper(df_in):
         OUT = ExtractSurvey(adf)
         OUT = pd.DataFrame(OUT)
         if not OUT.empty:
-            OUT.rename(columns = SurveyCols(OUT),inplace=True)
+            OUT.rename(columns = SurveyCols(OUT,False),inplace=True)
     except:
         try:
             df_in = COGCC_SURVEY_CLEANUP(adf)
@@ -139,7 +139,7 @@ def ExtractSurveyWrapper(df_in):
                 raise Exception('No survey found in dataframe')
             else:
                 OUT = ExtractSurvey(df_in)
-                OUT.rename(columns = SurveyCols(OUT),inplace=True)
+                OUT.rename(columns = SurveyCols(OUT, False),inplace=True)
             return outdf_in
         except:
             raise Exception('No survey found in dataframe')
@@ -158,9 +158,9 @@ def ExtractSurvey(df_in):
     adf_in=df_in.copy(deep=True)
 
     try: 
-        SurveyCols(df_in) # is first row survey header?
-        if df_in[list(SurveyCols(df_in))].dropna(how='all',axis = 1).dropna(how='all',axis = 0).shape[0]>5:
-            cols = list(SurveyCols(df_in))
+        SurveyCols(df_in,False) # is first row survey header?
+        if df_in[list(SurveyCols(df_in,False))].dropna(how='all',axis = 1).dropna(how='all',axis = 0).shape[0]>5:
+            cols = list(SurveyCols(df_in,False))
             outdf_in = df_in[cols].copy(deep=True)
                     
             outdf_in['UWI'] = ReadUWI
@@ -199,7 +199,7 @@ def ExtractSurvey(df_in):
 
                         df_in = df_in.iloc[i+N:,:]
                         df_in.columns = concat_vals
-                        cols = list(SurveyCols(df_in))
+                        cols = list(SurveyCols(df_in, False))
 
                         df_in.reset_index(drop=True, inplace= True)
 
@@ -243,8 +243,8 @@ def ExtractSurvey(df_in):
                         outdf_in = outdf_in.dropna(how='all',axis = 1)
                         outdf_in = outdf_in.dropna(how='all',axis = 0)
                         if outdf_in.shape[0] > 5:
-                            outdf_in = df_in[SurveyCols(df_in)]
-                            outdf_in.rename(columns = SurveyCols(outdf_in),inplace=True)
+                            outdf_in = df_in[SurveyCols(df_in, False)]
+                            outdf_in.rename(columns = SurveyCols(outdf_in,False),inplace=True)
                             if ('UWI' in outdf_in.keys()) == False:
                                 outdf_in['UWI'] = None
                             return outdf_in
