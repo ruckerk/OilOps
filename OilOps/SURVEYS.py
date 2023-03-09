@@ -151,7 +151,7 @@ def ExtractSurveyWrapper(df_in):
     return OUT
 
 
-def ExtractSurvey(df_in):
+def ExtractSurvey(df_in): #if True:
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
     
@@ -394,7 +394,7 @@ def SurveyCols(df_s_in=None, INCLUDE_NS = True):
     if INCLUDE_NS == False:
         sterms.pop('NORTH_dY')
         sterms.pop('EAST_dX')
-          
+        sterms.pop('TVD')
     if df_s_in is None:
         return(sterms)
     
