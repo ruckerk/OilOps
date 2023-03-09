@@ -271,10 +271,10 @@ def survey_from_excel(file, ERRORS = True): #if True:
     xl = {}
     # read excel as a dictionary of dataframes
     try:
-        xl = pd.read_excel(file, sheet_name = None, engine = None)
+        xl = pd.read_excel(file, sheet_name = None, engine = None, header = None)
     except:
         try:
-            xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl')
+            xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
         except:
             #print(file+': ERROR')
             RUNERROR = True
