@@ -177,8 +177,8 @@ def ExtractSurvey(df_in): #if True:
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
                 
-            #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
-            outdf_in = DF_UNSTRING(outdf_in)
+            outdf_in = outdf_in.applymap(str2num())
+            #outdf_in = DF_UNSTRING(outdf_in)
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                     
             outdf_in = outdf_in.dropna(how='all',axis = 1)
@@ -232,7 +232,8 @@ def ExtractSurvey(df_in): #if True:
                         
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
-                        outdf_in = DF_UNSTRING(outdf_in)
+                        #outdf_in = DF_UNSTRING(outdf_in)
+                        outdf_in = outdf_in.applymap(str2num())
                         outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                               
                               
@@ -447,23 +448,27 @@ def str2num(IN):
         str_in = str(IN)
         if (str_in.upper() == 'NONE'):
             return None
-        if str(int(IN)).upper() == 'NONE':
+        if str(IN).upper() == 'NONE':
             str_in = str(str_in)
             str_in = str_in.strip()
             str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
             c = len(re.findall('-',str_in))
-            if c>1:
-                val = re.sub(r'[^0-9\.]','',str(str_in))
-            else:
-                val = re.sub(r'[^0-9-\.]','',str(str_in))
-            if val == '':
+            val = re.sub(r'[^\-\s\d\.]',r'',str(str_in))
+            val = re.sub(r'[^\-\s\d\.]',r'',str(val))
+            if float(val) == int(val):
+                val = int(val)
+            #if c>1:             
+            #    val = re.sub(r'[^0-9\.]','',str(str_in))
+            #else:
+            #    val = re.sub(r'[^0-9-\.]','',str(str_in))
+            if (val == '') | (bool(re.match(r'^\s*$',str(val)))):
                 return None
             try:
                 val = np.floor(float(val))
             except:
                 val = None
         else:
-            val = int(IN)
+            val = IN
         return val
     
 def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
