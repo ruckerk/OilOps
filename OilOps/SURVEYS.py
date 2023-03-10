@@ -1160,6 +1160,6 @@ def MIN_CURVATURE(df_survey):
         EAST = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( sin(df.iloc[i-1,INC])*sin(df.iloc[i-1,AZI]) + sin(df.iloc[i,INC])*sin(df.iloc[i,AZI])) * RF + df.iloc[i-1,:]['EAST_dX']
         TVD = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( cos(df.iloc[i-1,INC]) + cos(df.iloc[i,INC]) ) * RF + df.iloc[i-1,:]['TVD']
 
-        df.loc[idx1, ['TVD','NORTH_dY_dX','EAST']] = [TVD,NORTH,EAST]
+        df.loc[idx1, ['TVD','NORTH_dY','EAST_dX']] = [TVD,NORTH,EAST]
 
     return df      
