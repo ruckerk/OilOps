@@ -48,7 +48,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         data_tuple = (F,B)
         load_surveyfile(connection_obj,data_tuple, table  = 'SURVEYFILES')
     
-    SQL_UNDUPLICATE(connection_obj, 'SURVEYFILES', ['UWI','FILE'])
+    SQL_UNDUPLICATE(connection_obj, 'SURVEYFILES', ['FILENAME'])
 
     #DATA = READ_SQL_TABLE(connection_obj,'SURVEYFILES')
     #DATA_df = pd.DataFrame(DATA, columns = ['FILE','BLOB'])
