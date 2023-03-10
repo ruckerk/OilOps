@@ -1136,7 +1136,7 @@ def MIN_CURVATURE(df_survey):
     df['INC_RAD'] = df[keys[1]] * pi/180
     df['AZI_RAD'] = df[keys[2]] * pi/180
 
-    df[['TVD','NORTH','EAST']] = np.nan
+    df[['TVD','NORTH_dY','EAST_dX']] = np.nan
 
     MD = df.keys().get_loc(keys[0])
     INC = df.keys().get_loc('INC_RAD')
