@@ -1161,5 +1161,5 @@ def MIN_CURVATURE(df_survey):
         TVD = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( cos(df.iloc[i-1,INC]) + cos(df.iloc[i,INC]) ) * RF + df.iloc[i-1,:]['TVD']
 
         df.loc[idx1, ['TVD','NORTH_dY','EAST_dX']] = [TVD,NORTH,EAST]
-    drop(['INC_RAD','AZI_RAD'], axis=1, inplace = True) 
+    df.drop(['INC_RAD','AZI_RAD'], axis=1, inplace = True) 
     return df      
