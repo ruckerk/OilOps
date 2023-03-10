@@ -186,6 +186,7 @@ def ExtractSurvey(df_in): #if True:
             if ('UWI' in outdf_in.keys()) == False:
                 outdf_in['UWI']=None
             #outdf_in.rename(columns = SurveyCols(outdf_in),inplace=True)
+            outdf_in =   MIN_CURVATURE(outdf_in)     
             return outdf_in
     except:
         # test for strings
@@ -253,6 +254,7 @@ def ExtractSurvey(df_in): #if True:
                             outdf_in.rename(columns = SurveyCols(outdf_in,False),inplace=True)
                             if ('UWI' in outdf_in.keys()) == False:
                                 outdf_in['UWI'] = None
+                            outdf_in =   MIN_CURVATURE(outdf_in)
                             return outdf_in
                     except: pass
 
