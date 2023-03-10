@@ -177,7 +177,7 @@ def ExtractSurvey(df_in): #if True:
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
                 
-            outdf_in = outdf_in.applymap(str2num())
+            outdf_in = outdf_in.applymap(str2num)
             #outdf_in = DF_UNSTRING(outdf_in)
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                     
@@ -233,7 +233,7 @@ def ExtractSurvey(df_in): #if True:
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
                         #outdf_in = DF_UNSTRING(outdf_in)
-                        outdf_in = outdf_in.applymap(str2num())
+                        outdf_in = outdf_in.applymap(str2num)
                         outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                               
                               
