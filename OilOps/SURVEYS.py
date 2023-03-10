@@ -160,8 +160,11 @@ def ExtractSurvey(df_in): #if True:
     try: 
         SurveyCols(df_in,False) # is first row survey header?
         if df_in[list(SurveyCols(df_in,False))].dropna(how='all',axis = 1).dropna(how='all',axis = 0).shape[0]>5:
-            cols = list(SurveyCols(df_in,False))
+            key_dict = SurveyCols(df_in,False)
+            cols = list(key_dict)
+          
             outdf_in = df_in[cols].copy(deep=True)
+            outdf_in.rename(columns = key_dict,inplace=True)      
                     
             outdf_in['UWI'] = ReadUWI
 ##                (DEAD,APICOL) = Find_API_Col(df_in)
@@ -199,13 +202,16 @@ def ExtractSurvey(df_in): #if True:
 
                         df_in = df_in.iloc[i+N:,:]
                         df_in.columns = concat_vals
-                        cols = list(SurveyCols(df_in, False))
+                        key_dict = SurveyCols(df_in,False)
+                        cols = list(key_dict)
+                        newcols = list(key_dict.values())
 
                         df_in.reset_index(drop=True, inplace= True)
 
                         outdf_in = df_in[cols].copy(deep=True)
+                        outdf_in.rename(columns = key_dict, inplace = True)
     ##                  outdf_in.rename(columns ={df_in.keys()[APICOL]:'UWI'},inplace=True)
-
+                        
                         outdf_in['UWI'] = ReadUWI
     ##                    
     ##                    (DEAD,APICOL) = Find_API_Col(df_in)
@@ -230,7 +236,7 @@ def ExtractSurvey(df_in): #if True:
                               
                               
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
-                        test = outdf_in.loc[:10,cols].dropna(how='any').shape[0]
+                        test = outdf_in.loc[:10,newcols].dropna(how='any').shape[0]
                         if test<10:
                             continue
 
