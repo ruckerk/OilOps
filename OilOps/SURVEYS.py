@@ -463,10 +463,6 @@ def str2num(IN):
             #    val = re.sub(r'[^0-9-\.]','',str(str_in))
             if (val == '') | (bool(re.match(r'^\s*$',str(val)))):
                 return None
-            try:
-                val = np.floor(float(val))
-            except:
-                val = None
         else:
             val = IN
         return val
