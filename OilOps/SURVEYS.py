@@ -1144,6 +1144,7 @@ def MIN_CURVATURE(df_survey):
     AZI = df.keys().get_loc('AZI_RAD')
 
     for i in np.arange(0,df.shape[0]):
+        print(i)
         idx0 = df.index[i-1]
         idx1 = df.index[i]
 
@@ -1156,7 +1157,10 @@ def MIN_CURVATURE(df_survey):
             continue
 
         BETA = acos( cos(df.iloc[i,INC] - df.iloc[i-1,INC] ) - sin(df.iloc[i-1,INC])*sin(df.iloc[i,INC])*(1-cos(df.iloc[i,AZI] - df.iloc[i-1,AZI])))
-        RF = 2/BETA * tan(BETA/2)
+        if BETA == 0:
+            RF = 1
+        else:
+            RF = 2/BETA * tan(BETA/2)
         NORTH = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( sin(df.iloc[i-1,INC])*cos(df.iloc[i-1,AZI]) + sin(df.iloc[i,INC])*cos(df.iloc[i,AZI])) * RF + df.iloc[i-1,:]['NORTH_dY']
         EAST = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( sin(df.iloc[i-1,INC])*sin(df.iloc[i-1,AZI]) + sin(df.iloc[i,INC])*sin(df.iloc[i,AZI])) * RF + df.iloc[i-1,:]['EAST_dX']
         TVD = (df.iloc[i,MD] - df.iloc[i-1,MD])/2 * ( cos(df.iloc[i-1,INC]) + cos(df.iloc[i,INC]) ) * RF + df.iloc[i-1,:]['TVD']
