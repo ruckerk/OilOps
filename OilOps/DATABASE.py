@@ -58,7 +58,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     #c.execute(QRY)
     #SCANNEDFILES = c.fetchall()
     #SCANNEDFILES = list(itertools.chain(*SCANNEDFILES))
-    m = DATA_df.loc[~DATA_df.FILENAME.str.upper().isin(SCANNEDFILES)].index
+    m = DATA_df.loc[~DATA_df.FILENAME.isin(SCANNEDFILES)].index
 
     S_KEYS = pd.read_sql('SELECT * FROM SURVEYDATA LIMIT 1', connection_obj).keys()
     OUT = pd.DataFrame(columns = S_KEYS)
