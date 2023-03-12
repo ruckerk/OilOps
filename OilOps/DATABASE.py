@@ -101,9 +101,12 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
            
     # OLD PREFERRED SURVEYS
-    QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' 
-    OLD_PREF = pd.read_sql(QRY, connection_obj)   
-
+    if 'FAVORED_SURVEYS' in LIST_SQL_TABLES(connection_obj):
+        QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' 
+        OLD_PREF = pd.read_sql(QRY, connection_obj)   
+    else:
+        OLD_PREF = pd.DataFrame(columns=['UWI10','FILE'])
+        
     # ALL UWI/SURVEY PAIRS NOT ALREADY CONSIDERED
     m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
     m_old = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']=='both'].index
