@@ -1144,7 +1144,6 @@ def MIN_CURVATURE(df_survey):
     AZI = df.keys().get_loc('AZI_RAD')
 
     for i in np.arange(0,df.shape[0]):
-        print(i)
         idx0 = df.index[i-1]
         idx1 = df.index[i]
 
