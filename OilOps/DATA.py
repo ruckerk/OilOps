@@ -660,7 +660,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     return(OUTPUT)
 
 
-def Get_Scouts(UWIs,db=None):
+def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
 
     Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
                'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
@@ -750,20 +750,23 @@ def Get_Scouts(UWIs,db=None):
         DATECOLS = [col for col in OUTPUT.columns if 'DATE' in col.upper()]
         for k in DATECOLS:
             OUTPUT.loc[:,k]=pd.to_datetime(OUTPUT.loc[:,k]).fillna(np.nan)
-            OUTPUT.loc[OUTPUT.loc[:,k],k]
+            #OUTPUT.loc[OUTPUT.loc[:,k],k]
         conn = sqlite3.connect(db)
         c = conn.cursor()
-        TABLE_NAME = 'CO_SCOUT'
+
         SQL_COLS = list()
+        SCHEMA = FRAME_TO_SQL_TYPES(OUTPUT)
+        INIT_SQL_TABLE(conn, TABLE_NAME, FIELD_DICT= SCHEMA)
+        
         # NEEDS CONVERSION OF PYTHON TYPES TO SQL TYPES
-        for k,v in OUTPUT.dtypes.to_dict().items():    
-            SQL_COLS=SQL_COLS+'['+str(k)+'] '+str(v)+','
+        #for k,v in OUTPUT.dtypes.to_dict().items():    
+        #    SQL_COLS=SQL_COLS+'['+str(k)+'] '+str(v)+','
         #c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ')
         #sql = "select * from %s where 1=0;" % table_name
         #c.execute(sql)
         #TBL_COLS = [d[0] for d in curs.description]
         #ADD_COLS = list(set(SQL_COLS).difference(TBL_COLS))
-        OUTPUT.to_sql(TABLE_NAME,conn,if_exists='append',index=False)
+        OUTPUT.to_sql(TABLE_NAME, conn, if_exists='append', index=False)
 
         #OUTPUT.to_csv(FILENAME)
 
