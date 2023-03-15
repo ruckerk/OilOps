@@ -781,6 +781,25 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                     SCOUT_DF =  pd.read_sql('SELECT * FROM {}'.format(TABLE_NAME),conn)
                     if 'index' in SCOUT_DF.keys():
                         SCOUT_DF.drop('index', axis =1, inplace = True)
+                      
+                    KEYS = list(SCOUT_DF.keys())
+                    KEYS = [re.sub(r'[^0-9a-zA-Z]','_',k) for k in KEYS]
+                    KEYS = [re.sub(r'1ST','FIRST',k) for k in KEYS]
+                    SCOUT_DF.columns = KEYS
+                    if (len(keys)-len(set(keys)))>0:
+                        for k in keys:
+	                 test = keys.count(k)
+                            if test > 1:           
+                                m1 = SCOUT_DF[k].iloc[:,0].isna()
+                                m2 = SCOUT_DF[k].iloc[:,1].isna()
+                                idx1 = keys.index(k)
+                                keys.reverse()
+                                idx2 = len(keys) - keys.index(k)
+                                keys.reverse()
+                                SCOUT_DF.iloc[idx1,m1] = SCOUT_DF.iloc[idx2,m1]
+                                idx_cols = list(np.arange(len(keys)))
+                                del idx_cols[idx2]
+                                SCOUT_DF = SCOUT_DF.iloc[:,idx_cols]
                     m = SCOUT_DF.UWI.isin(OUTPUT.UWI)
                     SCOUT_DF = pd.concat([SCOUT_DF.loc[~m],OUTPUT],axis=0, ignore_index=True)
                     SCOUT_DF['UWI10'] = SCOUT_DF.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
