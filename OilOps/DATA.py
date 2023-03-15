@@ -803,7 +803,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                     m = SCOUT_DF.UWI.isin(OUTPUT.UWI)
                     SCOUT_DF = pd.concat([SCOUT_DF.loc[~m],OUTPUT],axis=0, ignore_index=True)
                     SCOUT_DF['UWI10'] = SCOUT_DF.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
-                    SCOUT_DF.to_sql(TABLE_NAME, conn, if_exists='append', index=False)
+                    SCOUT_DF.to_sql(TABLE_NAME, conn, if_exists='replace', index=False)
                 else:
                     OUTPUT.to_sql(TABLE_NAME, conn, if_exists='append', index=False)
                 ATTEMPTS = 200
@@ -1380,8 +1380,8 @@ def SUMMARIZE_COGCC():
     c = conn.cursor()
     c.execute(Q2_Drop)
     c.execute(Q2.split(';')[0])
-   # c.execute(Q2.split(';')[1)
-   # df = pd.read_sql_query(Q2.split(';')[2],conn)
+    # c.execute(Q2.split(';')[1)
+    # df = pd.read_sql_query(Q2.split(';')[2],conn)
     df = pd.read_sql_query(Q2.split(';')[1],conn)
     df.loc[df.PastTreatmentDate!=None]
     df2 = pd.merge(df,pd.DataFrame(df).pivot_table(index=['StateWellKey'],aggfunc='size').rename('Count'),how='left',left_on='StateWellKey',right_on='StateWellKey')
