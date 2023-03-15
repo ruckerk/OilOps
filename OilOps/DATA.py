@@ -788,7 +788,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                     SCOUT_DF.columns = KEYS
                     if (len(keys)-len(set(keys)))>0:
                         for k in keys:
-	                    test = keys.count(k)
+                            test = keys.count(k)
                             if test > 1:           
                                 m1 = SCOUT_DF[k].iloc[:,0].isna()
                                 m2 = SCOUT_DF[k].iloc[:,1].isna()
