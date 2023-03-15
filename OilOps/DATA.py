@@ -737,6 +737,12 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                 OUTPUT=xSummary
             else:
                 OUTPUT=OUTPUT.append(xSummary,ignore_index=True)
+           
+    KEYS = list(OUTPUT.keys())
+    KEYS = [re.sub(r'[^0-9a-zA-Z]','_',k) for k in KEYS]
+    KEYS = [re.sub(r'1ST','FIRST',k) for k in KEYS]
+    OUTPUT.columns = KEYS
+    OUTPUT['UWI10'] = OUTPUT.UWI.apply(lambda x:WELLAPI(x).API2INT(10))       
 
     FILENAME = str(UWIs[0])+'_'+str(UWIs[-1])+"_"+datetime.datetime.now().strftime("%d%m%Y_%H%M%S")
     FILENAME = path.join(dir_add,FILENAME) 
@@ -750,26 +756,40 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
         DATECOLS = [col for col in OUTPUT.columns if 'DATE' in col.upper()]
         for k in DATECOLS:
             OUTPUT.loc[:,k]=pd.to_datetime(OUTPUT.loc[:,k]).fillna(np.nan)
-            #OUTPUT.loc[OUTPUT.loc[:,k],k]
-        conn = sqlite3.connect(db)
-        c = conn.cursor()
-
-        SQL_COLS = list()
+            #OUTPUT.loc[OUTPUT.loc[:,k],k]       
+     
         SCHEMA = FRAME_TO_SQL_TYPES(OUTPUT)
-        INIT_SQL_TABLE(conn, TABLE_NAME, FIELD_DICT= SCHEMA)
-        
-        # NEEDS CONVERSION OF PYTHON TYPES TO SQL TYPES
-        #for k,v in OUTPUT.dtypes.to_dict().items():    
-        #    SQL_COLS=SQL_COLS+'['+str(k)+'] '+str(v)+','
-        #c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ')
-        #sql = "select * from %s where 1=0;" % table_name
-        #c.execute(sql)
-        #TBL_COLS = [d[0] for d in curs.description]
-        #ADD_COLS = list(set(SQL_COLS).difference(TBL_COLS))
-        OUTPUT.to_sql(TABLE_NAME, conn, if_exists='append', index=False)
+        ATTEMPTS = -1
+        WHILE ATTEMPTS < 100:      
+            ATTEMPTS+=1
+            try:
+                conn = sqlite3.connect(db)
+              
+                INIT_SQL_TABLE(conn, TABLE_NAME, FIELD_DICT= SCHEMA)
 
-        #OUTPUT.to_csv(FILENAME)
-
+                # NEEDS CONVERSION OF PYTHON TYPES TO SQL TYPES
+                #for k,v in OUTPUT.dtypes.to_dict().items():    
+                #    SQL_COLS=SQL_COLS+'['+str(k)+'] '+str(v)+','
+                #c.execute('CREATE TABLE IF NOT EXISTS ' + TABLE_NAME + ' ')
+                #sql = "select * from %s where 1=0;" % table_name
+                #c.execute(sql)
+                #TBL_COLS = [d[0] for d in curs.description]
+                #ADD_COLS = list(set(SQL_COLS).difference(TBL_COLS))
+                SCOUTED_UWIS = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(TABLE_NAME),conn)
+                
+                if OUTPUT.UWI.isin(SCOUTED_UWIS).any():
+                    SCOUT_DF =  pd.read_sql('SELECT * FROM {}'.format(TABLE_NAME),conn)
+                    if 'index' in SCOUT_DF.keys():
+                        SCOUT_DF.drop('index', axis =1, inplace = True)
+                    m = SCOUT_DF.UWI.isin(OUTPUT.UWI)
+                    SCOUT_DF = pd.concat([SCOUT_DF.loc[~m],OUTPUT],axis=0, ignore_index=True)
+                    SCOUT_DF['UWI10'] = SCOUT_DF.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
+                    SCOUT_DF.to_sql(TABLE_NAME, conn, if_exists='append', index=False)
+                else:
+                    OUTPUT.to_sql(TABLE_NAME, conn, if_exists='append', index=False)
+                ATTEMPTS = 200
+            except:
+                sleep(30)
     return(OUTPUT)
 
 def Merge_Frac_Focus(DIR = None, SAVE=False):
