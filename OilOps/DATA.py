@@ -760,7 +760,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
      
         SCHEMA = FRAME_TO_SQL_TYPES(OUTPUT)
         ATTEMPTS = -1
-        WHILE ATTEMPTS < 100:      
+        while (ATTEMPTS < 100):      
             ATTEMPTS+=1
             try:
                 conn = sqlite3.connect(db)
