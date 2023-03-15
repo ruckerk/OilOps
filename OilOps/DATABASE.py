@@ -97,7 +97,12 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     
     warnings.filterwarnings('default')
 
-    ALL_SURVEYS = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj)
+    #ALL_SURVEYS = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj)
+    ALL_SURVEYS= pd.DataFrame()
+    READ = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj, chunksize = 50000)
+    for i in READ:
+         ALL_SURVEYS = pd.concat([ALL_SURVEYS,i],axis = 0, join = 'outer', ignore_index = True)
+          
     ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
            
     # OLD PREFERRED SURVEYS
@@ -113,9 +118,12 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
          
      # SET FAVORED SURVEY to 1/0 binary including old assignments   
     ALL_SURVEYS['FAVORED_SURVEY'] = -1    
-    ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
+
+    if len(m_old)>0:
+        ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
+
     ALL_SURVEYS.loc[ALL_SURVEYS['FILE']==ALL_SURVEYS['FAVORED_SURVEY'],'FAVORED_SURVEY'] = 1
-    ALL_SURVEYS.loc[~ALL_SURVEYS['FAVORED_SURVEY'].isin([-1,0,1]),'FAVORED_SURVEY'] = 0
+    #ALL_SURVEYS.loc[~ALL_SURVEYS['FAVORED_SURVEY'].isin([-1,0]),'FAVORED_SURVEY'] = 0
 
     ALL_SURVEYS.FAVORED_SURVEY = ALL_SURVEYS.FAVORED_SURVEY.astype(int)
 
@@ -191,11 +199,10 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ALL_SURVEYS['EAST'] = ALL_SURVEYS[['EAST_dX','XFEET']].sum(axis=1)
     ALL_SURVEYS.rename({'YFEET':'SHL_Y_FEET','XFEET':'SHL_X_FEET'}, axis = 1, inplace = True)
 
-
     #ALL_SURVEYS['FAVORED_SURVEY'] = ALL_SURVEYS.apply(lambda x: CONDENSE_DICT[x.UWI10], axis = 1).str.upper() == ALL_SURVEYS.FILE.str.upper()
 
     SCHEMA = {'UWI10': 'INTEGER', 'FILE':'TEXT', 'FAVORED_SURVEYS':'INTEGER'}
-    #INIT_SQL_TABLE(connection_obj,'SURVEYDATA', SCHEMA)
+    INIT_SQL_TABLE(connection_obj,'FAVORED_SURVEYS', SCHEMA)
 
     ALL_SURVEYS.loc[:,['UWI10','FILE','FAVORED_SURVEY']].drop_duplicates().to_sql('FAVORED_SURVEYS',
                                                    connection_obj,
@@ -281,7 +288,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
                         
     else:
         UWIlist = ALL_SURVEYS.loc[ALL_SURVEYS.FAVORED_SURVEY==1,'UWI10'].unique()
-
+ 
+    m = (ALL_SURVEYS.FAVORED_SURVEY == 1)
     processors = max(1,floor(multiprocessing.cpu_count()/1))
     
     func = partial(XYZSpacing,
@@ -291,7 +299,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
             SAVE = False)
     
     XYZ = pd.DataFrame()
-    if len(UWIlist) >1000:
+    if len(UWIlist) >8000:
         chunksize = int(len(UWIlist)/processors)
         chunksize = min(2000, chunksize)
         batches = int(len(UWIlist)/chunksize)
@@ -302,14 +310,14 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         
         for i in f.keys():
             XYZ = XYZ.append(i.result(), ignore_index = True)
-    elif len(UWIlist)>0:
+    elif len(UWIlist)<=8000:
         XYZ = func(UWIlist)
     
     if ~XYZ.empty:
         XYZ = DF_UNSTRING(XYZ)    
         XYZ_COLS = FRAME_TO_SQL_TYPES(XYZ)
         
-        if ~XYZ_OLD.empty:
+        if not XYZ_OLD.empty:
             XYZ = pd.concat([XYZ, XYZ_OLD.loc[~XYZ_OLD.UWI10.isin(XYZ.UWI10)]], axis = 0, join = 'outer', ignore_index = True)
           
         XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
@@ -324,11 +332,79 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ###################
     # PRODUCTION DATA #
     ###################
-
+    
     ##############
     # SCOUT DATA #
     ##############
+    WELL_LOC.Spud_Date=pd.to_datetime(WELL_LOC.Spud_Date)
+    WELL_LOC.Stat_Date=pd.to_datetime(WELL_LOC.Stat_Date)
+    m_recent = ((datetime.datetime.now()-WELL_LOC['Stat_Date'])/pd.Timedelta(days=1))<=(365*2)
+    m_spud = WELL_LOC.Spud_Date.dt.year>1000
+    UWIlist = WELL_LOC.loc[m_recent + m_spud,'UWI10']      
     
+    # if path.exists('SCOUTS'):
+        # pfiles = listdir('SCOUTS')
+        # pfiles = [f for f in pfiles if f.upper().endswith('PARQUET')]
+        # SCOUT_DATA = pd.DataFrame()
+        # for f in pfiles:
+            # x1=pd.read_parquet(path.join('SCOUTS',f))
+            # SCOUT_DATA = pd.concat([SCOUT_DATA,x1],ignore_index=True)
+        # SCOUT_DATA.drop_duplicates(inplace=True)
+        # SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
+        # DUPLICATED = SCOUT_DATA.loc[SCOUT_DATA['UWI10'].duplicated(),'UWI10'].to_list()
+        # for u in DUPLICATED:
+            # IDX = -1
+            # SCOUT_SUB = SCOUT_DATA.loc[SCOUT_DATA.UWI10 == u].copy()
+            # SCOUT_SUB = DF_UNSTRING(SCOUT_SUB)
+            # IDX_ALT = SCOUT_SUB.sort_values(by='STATUS_DATE', ascending = False).index[0]
+            # NA_LIMIT = SCOUT_SUB.isna().sum(axis=1).min()
+            # m = SCOUT_SUB.isna().sum(axis=1) == NA_LIMIT
+            # SCOUT_SUB =SCOUT_SUB.loc[m]
+            # m = (SCOUT_SUB == SCOUT_SUB.iloc[0]).min(axis=0)
+            # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
+            # m = SCOUT_SUB.isna().min(axis=0)
+            # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
+            # m=SCOUT_SUB.isna().min(axis=0)
+            # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
+            # SCOUT_SUB.drop_duplicates(inplace=True)
+            # if 'TREATMENT_SUMMARY' in SCOUT_SUB.keys():
+                # m = SCOUT_SUB['TREATMENT_SUMMARY'].str.len() == SCOUT_SUB['TREATMENT_SUMMARY'].str.len().max
+                # SCOUT_SUB= SCOUT_SUB.loc[m]   
+            # if (SCOUT_SUB.shape[0]==1) | (SCOUT_SUB.shape[1]==0):
+                # IDX = SCOUT_SUB.index[0]
+            # n = SCOUT_SUB.astype(float, errors='ignore').dtypes != object
+            # if n.any():
+                # m = (SCOUT_SUB.loc[:,n].astype(float).std()/SCOUT_SUB.loc[:,n].astype(float).mean()).abs() > 0.1
+                # if SCOUT_SUB.loc[:,m].shape[1]==0:
+                    # IDX = SCOUT_SUB.index[0]     
+            # if IDX == -1:
+                # IDX = IDX_ALT
+            # SCOUT_SUB = SCOUT_DATA.loc[SCOUT_DATA.UWI10 == u].copy()
+            # DROP_IDX = SCOUT_SUB.index[SCOUT_SUB.index != IDX]
+            # SCOUT_DATA.drop(DROP_IDX, axis=0, inplace= True)
+    
+    SCOUTTABLENAME = 'SCOUTDATA'  
+    SCOUT_DATA = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(SCOUTTABLENAME),connection_obj)     
+    SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
+    UWIlist = list(set(UWIlist.to_list())-set(SCOUT_DATA.UWI10.tolist()))
+    UWIlist = list()
+    func = partial(Get_Scouts,
+            db = DB_NAME,
+            TABLE_NAME = SCOUTTABLENAME)  
+    SCOUT_df = pd.DataFrame()
+    if len(UWIlist) >2000:
+        chunksize = int(len(UWIlist)/processors)
+        chunksize = min(2000, chunksize)
+        batches = int(len(UWIlist)/chunksize)
+        data=np.array_split(UWIlist,batches)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+            f = {executor.submit(func,a): a for a in data}
+        
+        for i in f.keys():
+            SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
+    elif len(UWIlist)>0:
+        SCOUT_df = Get_Scouts(UWIlist,DB_NAME)
 
     ###################
     # FRAC FOCUS DATA #
@@ -348,7 +424,40 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ###############################
     # TABLE OF UNIT/WELL
  
-          
+def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+    udir = path.dirname(adir)
+
+    CONN = sqlite3.connect(path.join(adir,DB_NAME))
+    
+    SCOUT_OLD = pd.read_sql('select * from SCOUTDATA',CONN)
+    SCOUT_OLD['UWI10'] = SCOUT_OLD.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
+    SCOUT_UWI = list(SCOUT_OLD['UWI10'].unique())
+    WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
+    WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLLINE_LOC = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'] == 500000000)]
+    WELLLINE_LOC['X'] = WELLLINE_LOC.coords.apply(lambda x:x[0][0])
+    WELLLINE_LOC['Y'] = WELLLINE_LOC.coords.apply(lambda x:x[0][1])
+    WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
+    WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
+    UWIlist = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'].isin(SCOUT_UWI)), 'UWI10']
+    len(UWIlist)
+    if len(UWIlist) >2000:
+        func = partial(OilOps.DATA.Get_Scouts,
+            db = DB_NAME,
+            TABLE_NAME = 'SCOUTDATA')
+        processors = max(1,floor(multiprocessing.cpu_count()/1))
+        chunksize = int(len(UWIlist)/processors)
+        chunksize = min(2000, chunksize)
+        batches = int(len(UWIlist)/chunksize)
+        data=np.array_split(UWIlist,batches)
+        SCOUT_df = pd.DataFrame()
+        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+            f = {executor.submit(func,a): a for a in data}
+        for i in f.keys():
+            SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
+    return N
     
  
 def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
@@ -503,8 +612,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
         #print (f'batch = {batch}')
 
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-          #f = {executor.submit(CO_Get_Surveys,a): a for a in data
-          f = {executor.submit(func,a): a for a in data}
+           #f = {executor.submit(CO_Get_Surveys,a): a for a in data
+           f = {executor.submit(func,a): a for a in data}
     elif len(UWIlist)>0:
         func(UWIlist)
         #CO_Get_Surveys(UWIlist)
