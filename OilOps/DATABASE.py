@@ -217,7 +217,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     # PAD ASSIGNMENTS FROM SPACING GROUPS (SAME SHL)
     # UNIT ASSIGNMENTS: NEAREST IN DATE DIFF RANGE AND EITHER LATERAL IS 90% OVERLAPPING OTHER
 
-    QRY = 'SELECT CAST(max(S.UWI10, P.UWI10) as INT) AS UWI10, S.FIRST_PRODUCTION_DATE, S.JOB_DATE, S.JOB_END_DATE, P.FIRST_PRODUCTION FROM SCOUTDATA AS S LEFT JOIN PRODUCTION_SUMMARY AS P ON S.UWI10 = P.UWI10'
+    #QRY = 'SELECT CAST(max(S.UWI10, P.UWI10) as INT) AS UWI10, S.FIRST_PRODUCTION_DATE, S.JOB_DATE, S.JOB_END_DATE, P.FIRST_PRODUCTION FROM SCOUTDATA AS S LEFT JOIN PRODUCTION_SUMMARY AS P ON S.UWI10 = P.UWI10'
     QRY = 'SELECT MAX(S.UWI10, P.UWI10) AS UWI10, P.MONTH1, S.JOB_DATE, S.JOB_END_DATE, S.FIRST_PRODUCTION_DATE FROM SCOUTDATA AS S LEFT JOIN PRODUCTION_SUMMARY AS P ON S.UWI10 = P.UWI10'
           
     WELL_DF = pd.read_sql(QRY,connection_obj)
@@ -227,7 +227,16 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     WELL_DF.sort_values(by = 'FIRST_PRODUCTION_DATE',ascending = False, inplace = True)
 
     UWIlist = WELL_DF.sort_values(by = 'UWI10', ascending = False).UWI10.tolist()
-    
+          
+    # TEST FOR LATERAL LENGTH      
+    m = ALL_SURVEYS.INV>88
+    LL_TEST = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>=88) * (ALL_SURVEYS.FAVORED_SURVEY==1)].copy()
+    LL_TEST['XY_DELTA'] = (LL_TEST['NORTH_dY']**2+LL_TEST['EAST_dX']**2).apply(sqrt)
+    LL_TEST = LL_TEST.groupby(by='UWI10')['XY_DELTA'].agg(['min','max'])
+    LL_TEST['LATLEN'] = LL_TEST.iloc[:,1]-LL_TEST.iloc[:,0]
+    UWIlist_LAT = LL_TEST.index[LL_TEST['LATLEN'] > 3000].tolist()
+    UWIlist = list(set(UWIlist).union(set(UWIlist_LAT)))
+
     # MAJOR UPGRADE FOR SPEED: XYZ ONLY FOR NEW SURVEYS, AND WELLS NEAR NEW SURVEYS
     # FOR WELL IN NEW_SURVEYS: ALL_SURVEYS[[NORTH,EAST]] - [[NORTH,EAST]] <= 10000
     # UWILIST = AGGREGATED RESULT
@@ -284,11 +293,11 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         # FIND ALL UWIS TOUCHING BUFFER AREAS
         
         ALL_SURVEYS.loc[(ALL_SURVEYS.UWI10.isin(UWIlist)) * (ALL_SURVEYS.INC>88) * (ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0)[['EAST','NORTH']].first()
-        
-                        
+                                
     else:
         UWIlist = ALL_SURVEYS.loc[ALL_SURVEYS.FAVORED_SURVEY==1,'UWI10'].unique()
- 
+        UWIlist = list(UWIlist)
+
     m = (ALL_SURVEYS.FAVORED_SURVEY == 1)
     processors = max(1,floor(multiprocessing.cpu_count()/1))
     
@@ -299,9 +308,9 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
             SAVE = False)
     
     XYZ = pd.DataFrame()
-    if len(UWIlist) >8000:
+    if len(UWIlist) >2000:
         chunksize = int(len(UWIlist)/processors)
-        chunksize = min(2000, chunksize)
+        chunksize = min(1000, chunksize)
         batches = int(len(UWIlist)/chunksize)
         data=np.array_split(UWIlist,batches)
 
@@ -310,7 +319,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         
         for i in f.keys():
             XYZ = XYZ.append(i.result(), ignore_index = True)
-    elif len(UWIlist)<=8000:
+    elif len(UWIlist)<=2000:
         XYZ = func(UWIlist)
     
     if ~XYZ.empty:
