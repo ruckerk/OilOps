@@ -891,7 +891,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     # xxUWI10 is list of UWI's to calc
     # DATELIMIT is number of days well 2 can be completed after well 1 and still treated as neighbor
           
-    # if 1==1:
+    # if True:
     xxdf = xxdf.copy(deep=True)
     
     df_UWI = df_UWI.copy(deep=True)
