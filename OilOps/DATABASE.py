@@ -328,10 +328,11 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         
         if not XYZ_OLD.empty:
             XYZ = pd.concat([XYZ, XYZ_OLD.loc[~XYZ_OLD.UWI10.isin(XYZ.UWI10)]], axis = 0, join = 'outer', ignore_index = True)
-          
-        XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
+        #FIX THIS SO IT UPDATES PROPERLY WITHOUT DUPLICATED UWIS  
+        XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='update', index = False, dtype = XYZ_COLS)
         connection_obj.commit()
-     
+    
+                    
     # DROP TABLES WITH NAMES THAT ARE ONLY NUMBERS (INTERMEDIATE TABLES USED EARLIER)
     for T in LIST_SQL_TABLES(connection_obj):
         if bool(re.match(r'^\d*$',T)):
