@@ -1126,6 +1126,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
 
     OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
+    return OUTPUT
                    
 def MIN_CURVATURE(df_survey):
     d = SurveyCols(df_survey,False)
