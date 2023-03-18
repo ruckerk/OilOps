@@ -235,6 +235,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     LL_TEST = LL_TEST.groupby(by='UWI10')['XY_DELTA'].agg(['min','max'])
     LL_TEST['LATLEN'] = LL_TEST.iloc[:,1]-LL_TEST.iloc[:,0]
     UWIlist_LAT = LL_TEST.index[LL_TEST['LATLEN'] > 3000].tolist()
+
     UWIlist = list(set(UWIlist).union(set(UWIlist_LAT)))
 
     # MAJOR UPGRADE FOR SPEED: XYZ ONLY FOR NEW SURVEYS, AND WELLS NEAR NEW SURVEYS
@@ -300,7 +301,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
 
     m = (ALL_SURVEYS.FAVORED_SURVEY == 1)
     processors = max(1,floor(multiprocessing.cpu_count()/1))
-    
+          
     func = partial(XYZSpacing,
             xxdf= ALL_SURVEYS.loc[m,['UWI10','FILE','MD', 'INC', 'AZI', 'TVD','NORTH', 'EAST']],
             df_UWI = WELL_DF,
@@ -328,6 +329,9 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         
         if not XYZ_OLD.empty:
             XYZ = pd.concat([XYZ, XYZ_OLD.loc[~XYZ_OLD.UWI10.isin(XYZ.UWI10)]], axis = 0, join = 'outer', ignore_index = True)
+          
+        XYZ = XYZ.loc[~(XYZ.iloc[:,:-1].isna().any(axis=1))]
+
         #FIX THIS SO IT UPDATES PROPERLY WITHOUT DUPLICATED UWIS  
         XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='update', index = False, dtype = XYZ_COLS)
         connection_obj.commit()
@@ -469,21 +473,58 @@ def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVE
             SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
     return N
     
- 
+def UPDATE_SPACINGS(DB = 'FIELD_DATA.db'):
+    CONN = sqlite3.connect(DB)
+    QRY = '''SELECT DISTINCT
+        F.FAVORED_SURVEY,
+        SUR.*,
+        SCOUT.FIRST_PRODUCTION_DATE,
+        SCOUT.JOB_DATE,
+        SCOUT.SPUD_DATE,
+        XYZ.MeanAZI180,
+        XYZ.MAX_MD,
+        XYZ.LatLen,
+        SHL.XFEET AS SHL_X,
+        SHL.YFEET AS SHL_Y,
+        P.MONTH
+        FROM FAVORED_SURVEYS F
+        LEFT JOIN SURVEYDATA SUR ON SUR.UWI=F.UWI10 AND SUR.FILE=F.FAVORED_SURVEY
+        LEFT JOIN SCOUTDATA SCOUT ON F.UWI10 = SCOUT.UWI10
+        LEFT JOIN SPACING XYZ ON F.UWI10 = XYZ.UWI10
+        LEFT JOIN SHL ON F.UWI10 = SHL.UWI10
+        LEFT JOIN (SELECT UWI10, MIN(DATE(First_of_Month)) AS MONTH FROM PRODDATA GROUP BY UWI10) P ON F.UWI10 = P.UWI10
+        WHERE F.FAVORED_SURVEY = SUR.FILE AND SUR.INC > 80  '''
+    XYZ_DF = pd.read_sql(QRY,CONN)
+    XYZ_DF = XYZ_DF.groupby(by=['UWI','MD'],as_index=False).first()
+    XYZ_DF = DF_UNSTRING(XYZ_DF)
+    XYZ_DF['DATE'] = XYZ_DF[GetKey(XYZ_DF,'DATE')+['MONTH']].min(axis=1,skipna=True)
+    XYZ_DF['VINTAGE'] = XYZ_DF['DATE'].dt.year.fillna(datetime.datetime.now().year)
+    XYZ_DF['YFEET']= XYZ_DF['NORTH_dY']+XYZ_DF['SHL_Y']
+    XYZ_DF['XFEET']= XYZ_DF['EAST_dX']+XYZ_DF['SHL_X']
+    XYZ_DF['SHAPE'] = XYZ_DF[['XFEET','YFEET']].apply(lambda x: tuple(x),axis=1)
+    m = XYZ_DF['DATE'].isna()
+    XYZ_DF = XYZ_DF.loc[~m,:]
+    
+    #SCOUT DATA
+    QRY = 'SELECT MAX(S.UWI10, P.UWI10) AS UWI10, P.MONTH1, S.JOB_DATE, S.JOB_END_DATE, S.FIRST_PRODUCTION_DATE FROM SCOUTDATA AS S LEFT JOIN PRODUCTION_SUMMARY AS P ON S.UWI10 = P.UWI10'
+          
+    WELL_DF = pd.read_sql(QRY,CONN)
+    WELL_DF=WELL_DF.dropna(how='all',axis = 0)
+    WELL_DF = WELL_DF.loc[~WELL_DF.UWI10.isna()]
+    WELL_DF = DF_UNSTRING(WELL_DF)
+    WELL_DF.sort_values(by = 'FIRST_PRODUCTION_DATE',ascending = False, inplace = True)
+        
+        
+          
 def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
     ###############
     # GET SURVEYS #
     ############### #if True:
     # Initialize constants
-    global URL_BASE
     URL_BASE = 'https://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
-    global DL_BASE 
     DL_BASE = 'https://cogcc.state.co.us/weblink/XLINKX'
-    global pathname
     pathname = path.dirname(argv[0])
-    global adir
     adir = path.abspath(pathname)
-    global dir_add
     dir_add = path.join(adir,FOLDER)
 
     if FULL_UPDATE:
