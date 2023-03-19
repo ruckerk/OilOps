@@ -962,8 +962,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     #print(list(xxdf.keys()))
     #print(SurveyCols(xxdf.head(5)))
     SCOLS = SurveyCols(xxdf.head(5))
-    SCOLS.pop(list(SurveyCols(XYZ_DF.head(5)).keys())[5])
-    SCOLS.pop(list(SurveyCols(XYZ_DF.head(5)).keys())[4])
+    SCOLS.pop(list(SurveyCols(xxdf.head(5)).keys())[5])
+    SCOLS.pop(list(SurveyCols(xxdf.head(5)).keys())[4])
     XPATH_NAME = (xxdf[GetKey(xxdf,'EAST')].abs().std()/xxdf[GetKey(xxdf,'EAST')].abs().mean()).sort_values(ascending=True).keys()[0]
     YPATH_NAME = (xxdf[GetKey(xxdf,'EAST')].abs().std()/xxdf[GetKey(xxdf,'NORTH')].abs().mean()).sort_values(ascending=True).keys()[0]
     XPATH = xxdf.keys().get_loc(XPATH_NAME)
