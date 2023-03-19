@@ -401,11 +401,12 @@ def SurveyCols(df_s_in=None, INCLUDE_NS = True):
         }
 
     if INCLUDE_NS == False:
-        sterms.pop('NORTH_dY')
-        sterms.pop('EAST_dX')
-        sterms.pop('NORTH_Y')
-        sterms.pop('EAST_X')
-        sterms.pop('TVD')
+        for k in ['NORTH_dY','EAST_dX','NORTH_Y','EAST_X']:
+            try:
+                sterms.pop(k)
+            except:
+                pass
+        #sterms.pop('TVD')
 
     if df_s_in is None:
         return(sterms)
