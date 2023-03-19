@@ -396,14 +396,17 @@ def SurveyCols(df_s_in=None, INCLUDE_NS = True):
              'NORTH_dY':r'.*\+N.*|.*(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}.*FT.*|.*N\+.*|^\s*N(?:[\/\\]){0,1}S\s*|.*NORTH(?!ING).*|(?:^|_)(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}(?:$|_)',
              'EAST_dX':r'.*\+E.*|.*(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}.*FT.*|.*E\+.*|^\s*E(?:[\/\\]){0,1}W\s*|.*EAST(?!ING).*|(?:^|_)(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}(?:$|_)'
         
-           #  'NORTH_Y':r'.*ORTH.*|.*\+N.*|.*NS.*FT.*|.*N/S*',
-           #  'EAST_X':r'.*EAST.*|.*\+E.*|.*EW.*FT.*|.*E/W.*'
+        #     ,'NORTH_Y':r'.*ORTH.*|.*\+N.*|.*NS.*FT.*|.*N/S*'
+        #     ,'EAST_X':r'.*EAST.*|.*\+E.*|.*EW.*FT.*|.*E/W.*'
         }
 
     if INCLUDE_NS == False:
         sterms.pop('NORTH_dY')
         sterms.pop('EAST_dX')
+        sterms.pop('NORTH_Y')
+        sterms.pop('EAST_X')
         sterms.pop('TVD')
+
     if df_s_in is None:
         return(sterms)
     
@@ -958,24 +961,32 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     #print(list(xxdf.keys()))
     #print(SurveyCols(xxdf.head(5)))
     SCOLS = SurveyCols(xxdf.head(5))
+    SCOLS.pop(list(SurveyCols(XYZ_DF.head(5)).keys())[5])
+    SCOLS.pop(list(SurveyCols(XYZ_DF.head(5)).keys())[4])
+    XPATH_NAME = (xxdf[GetKey(xxdf,'EAST')].abs().std()/xxdf[GetKey(xxdf,'EAST')].abs().mean()).sort_values(ascending=True).keys()[0]
+    YPATH_NAME = (xxdf[GetKey(xxdf,'EAST')].abs().std()/xxdf[GetKey(xxdf,'NORTH')].abs().mean()).sort_values(ascending=True).keys()[0]
+    XPATH = xxdf.keys().get_loc(XPATH_NAME)
+    YPATH = xxdf.keys().get_loc(NORTH)
 
     if 'UWI10' in xxdf.keys():
         UWICOL = xxdf.keys().get_loc('UWI10')
     else:
         UWICOL      = xxdf.keys().get_loc(xxdf.iloc[0,xxdf.keys().str.contains('.*UWI.*', regex=True, case=False,na=False)].keys()[0])
-    XPATH       = xxdf.keys().get_loc(list(SCOLS)[5])
-    YPATH       = xxdf.keys().get_loc(list(SCOLS)[4])
+  #  XPATH       = xxdf.keys().get_loc(list(SCOLS)[5])
+  #  YPATH       = xxdf.keys().get_loc(list(SCOLS)[4])
+    #XPATH       = xxdf.keys().get_loc(list(SCOLS)[5])
+    #YPATH       = xxdf.keys().get_loc(list(SCOLS)[4])       
     TVD         = xxdf.keys().get_loc(list(SCOLS)[3])
     AZI         = xxdf.keys().get_loc(list(SCOLS)[2])
     DIP         = xxdf.keys().get_loc(list(SCOLS)[1])
     MD          = xxdf.keys().get_loc(list(SCOLS)[0])
 
-    if 'NORTH_Y_XX' in list(SCOLS):
-        XPATH       = xxdf.keys().get_loc(SCOLS['EAST_X_XX'])
-        YPATH       = xxdf.keys().get_loc(SCOLS['NORTH_Y_XX'])
+    #if 'NORTH_Y_XX' in list(SCOLS):
+    #    XPATH       = xxdf.keys().get_loc(SCOLS['EAST_X_XX'])
+    #    YPATH       = xxdf.keys().get_loc(SCOLS['NORTH_Y_XX'])
     
-    XPATH_NAME  = xxdf.keys()[XPATH] #list(SurveyCols(xxdf.head(5)))[5]
-    YPATH_NAME  = xxdf.keys()[YPATH] #list(SurveyCols(xxdf.head(5)))[4]
+    #XPATH_NAME  = xxdf.keys()[XPATH] #list(SurveyCols(xxdf.head(5)))[5]
+    #YPATH_NAME  = xxdf.keys()[YPATH] #list(SurveyCols(xxdf.head(5)))[4]
     
     MD_NAME = xxdf.keys()[MD]
     
