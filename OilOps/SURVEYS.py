@@ -967,7 +967,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     XPATH_NAME = (xxdf[GetKey(xxdf,'EAST')].abs().std()/xxdf[GetKey(xxdf,'EAST')].abs().mean()).sort_values(ascending=True).keys()[0]
     YPATH_NAME = (xxdf[GetKey(xxdf,'EAST')].abs().std()/xxdf[GetKey(xxdf,'NORTH')].abs().mean()).sort_values(ascending=True).keys()[0]
     XPATH = xxdf.keys().get_loc(XPATH_NAME)
-    YPATH = xxdf.keys().get_loc(NORTH)
+    YPATH = xxdf.keys().get_loc(YPATH_NAME)
 
     if 'UWI10' in xxdf.keys():
         UWICOL = xxdf.keys().get_loc('UWI10')
