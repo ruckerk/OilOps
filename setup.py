@@ -9,7 +9,7 @@ setup(
     author='W Kurt Rucker',
     author_email='OilOpsDev@gmail.com',
     packages=['OilOps'],
-    install_requires=['adjusttext',
+    install_requires=['adjustText',
                       'beautifulsoup4',
                       'datetime',
                       'easygui',
