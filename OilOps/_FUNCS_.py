@@ -1,8 +1,9 @@
 # requires xlrd, openpyxl
-from adjustText import adjust_text
+
 from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
+from adjustText import adjust_text
 from math import floor, cos, sin, tan, radians, atan2, acos, asin, degrees, sqrt, ceil, isnan, pi
 import statistics
 from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin
