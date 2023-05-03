@@ -288,7 +288,7 @@ def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
     return X2,Y2
 
 def county_from_LatLon(LAT,LON):
-    geolocator = Nominatim(user_agent="geoapiExercises")
+    geolocator = Nominatim(user_agent="Geolocation")
     CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
     CNTY = CNTY.upper()
     CNTY = CNTY.replace('COUNTY','')
