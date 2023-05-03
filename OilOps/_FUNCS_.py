@@ -1,5 +1,5 @@
 # requires xlrd, openpyxl
-from adjustText import adjust_text
+from adjusttext import adjust_text
 from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
