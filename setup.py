@@ -17,7 +17,6 @@ setup(
                       'lasio',
                       'matplotlib',
                       'multiprocess',
-                      'adjustText',
                       'numpy',
                       'openpyxl',
                       'pandas',
