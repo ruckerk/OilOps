@@ -1,6 +1,7 @@
 # requires xlrd, openpyxl
 
-from bs4 import BeautifulSoup as BS
+import bs4.BeautifulSoup as BS
+from bs4 import BeautifulSoup as BS1
 from functools import partial
 from io import StringIO, BytesIO
 from adjustText import adjust_text
