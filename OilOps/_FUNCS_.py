@@ -1,5 +1,5 @@
 # requires xlrd, openpyxl
-
+import pandas as pd
 from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
