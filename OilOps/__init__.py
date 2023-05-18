@@ -1,4 +1,4 @@
-
+from ._FUNCS_ import *
 from .DATA import *
 from .MAP import *
 from .WELLAPI import WELLAPI
