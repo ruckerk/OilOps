@@ -328,9 +328,11 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
     EPSG_OLD= int(EPSG_OLD)
     EPSG_NEW=int(EPSG_NEW)
     
-    crs_old = CRS.from_user_input(EPSG_OLD)
-    crs_new = CRS.from_user_input(EPSG_NEW)
-
+    #crs_old = CRS.from_user_input(EPSG_OLD)
+    #crs_new = CRS.from_user_input(EPSG_NEW)
+    crs_old = pycrs.parse.from_epsg_code(EPSG_OLD)
+    crs_new = pycrs.parse.from_epsg_code(EPSG_NEW)
+    
     #read shapefile
     r = shp.Reader(SHP_File)   # THIS IS IN X Y COORDINATES!!!
 
