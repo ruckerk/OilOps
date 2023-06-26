@@ -13,6 +13,7 @@ __all__ = ['CO_BASEDATA',
            'CO_Get_Surveys']
 
 #Define Functions for multiprocessing iteration
+driver.quit()
 def ND_WELLSUMMARY(username, password, driver= None):
     if driver == None:
         driver = get_driver()
@@ -21,7 +22,7 @@ def ND_WELLSUMMARY(username, password, driver= None):
     FLAT_FILE_URL = 'https://www.dmr.nd.gov/oilgas/feeservices/flatfiles/flatfiles.asp'
 
     driver = login_to_website(username, password, FLAT_FILE_URL, driver)
-    
+
     soup = BS(driver.page_source)
     links = soup.find_all("a")
 
@@ -29,13 +30,17 @@ def ND_WELLSUMMARY(username, password, driver= None):
     for f in links:
         ftxt = f.get('href')
         if 'flatfiles' in ftxt:
-            FILES.append(ftxt.split('/')[-1])
+            DL_FILE = ftxt.split('/')[-1]
+            FILES.append(DL_FILE)
+            if path.exists(DL_FILE):
+               remove(DL_FILE)
             e = driver.find_element(webdriver.common.by.By.LINK_TEXT,f.text)
             e.click()
     for f in FILES:
         with ZipFile(f, 'r') as zipObj:
             # Extract all the contents of zip file in current directory
             zipObj.extractall('ND_WELLDATA')
+    driver.quit()
 
 def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     pathname = path.dirname(argv[0])
