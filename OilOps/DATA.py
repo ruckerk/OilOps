@@ -24,13 +24,18 @@ def ND_WELLSUMMARY(username, password, driver= None):
     
     soup = BS(driver.page_source)
     links = soup.find_all("a")
-    
+
+    FILES = []
     for f in links:
         ftxt = f.get('href')
         if 'flatfiles' in ftxt:
-            ftxt
+            FILES.append(ftxt.split('/')[-1])
             e = driver.find_element(webdriver.common.by.By.LINK_TEXT,f.text)
             e.click()
+    for f in FILES:
+        with ZipFile(f, 'r') as zipObj:
+            # Extract all the contents of zip file in current directory
+            zipObj.extractall('ND_WELLDATA')
 
 def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     pathname = path.dirname(argv[0])
