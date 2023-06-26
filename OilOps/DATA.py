@@ -13,6 +13,24 @@ __all__ = ['CO_BASEDATA',
            'CO_Get_Surveys']
 
 #Define Functions for multiprocessing iteration
+def ND_WELLSUMMARY(username, password, driver= None):
+    if driver == None:
+        driver = get_driver()
+
+    # tops, tops info, well stuff(has NCIS number!)
+    FLAT_FILE_URL = 'https://www.dmr.nd.gov/oilgas/feeservices/flatfiles/flatfiles.asp'
+
+    driver = login_to_website(username, password, FLAT_FILE_URL, get_driver())
+    
+    soup = BS(driver.page_source)
+    links = soup.find_all("a")
+    
+    for f in links:
+        ftxt = f.get('href')
+        if 'flatfiles' in ftxt:
+            ftxt
+            e = driver.find_element(webdriver.common.by.By.LINK_TEXT,f.text)
+            e.click()
 
 def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     pathname = path.dirname(argv[0])
