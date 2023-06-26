@@ -856,7 +856,7 @@ def Merge_Frac_Focus(DIR = None, SAVE=False):
                       
     APILEN = int(((FracFocus.APINumber.astype(str).replace(r'~\d','',regex=True).apply(len)/2).apply(np.ceil)*2).max())             
     FracFocus.APINumber = FracFocus.APINumber.apply(lambda x:WELLAPI(x).API2INT(APILEN))                                                    
-    
+    FracFocus = DF_UNSTRING(FracFocus)
     if SAVE:
         FracFocus.to_json('FracFocusTables.JSON')
         FracFocus.to_parquet('FracFocusTables.PARQUET')
