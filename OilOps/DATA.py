@@ -20,7 +20,7 @@ def ND_WELLSUMMARY(username, password, driver= None):
     # tops, tops info, well stuff(has NCIS number!)
     FLAT_FILE_URL = 'https://www.dmr.nd.gov/oilgas/feeservices/flatfiles/flatfiles.asp'
 
-    driver = login_to_website(username, password, FLAT_FILE_URL, get_driver())
+    driver = login_to_website(username, password, FLAT_FILE_URL, driver)
     
     soup = BS(driver.page_source)
     links = soup.find_all("a")
