@@ -451,6 +451,9 @@ def check_EPSG(epsg1):
     return(OUTPUT)
 
 def get_driver():
+    pathname = path.dirname(argv[0])
+    adir = path.abspath(pathname)
+
     ## initialize options
     #options = webdriver.ChromeOptions()
     ## pass in headless argument to options
@@ -460,6 +463,20 @@ def get_driver():
 
     opts = Options()
     opts.headless = True
+    
+    opts.set_preference("browser.download.folderList", 2)
+    opts.set_preference("browser.download.manager.showWhenStarting", False)
+    opts.set_preference("browser.download.dir", adir)
+    opts.set_preference("browser.helperApps.neverAsk.saveToDisk",
+                        (
+                            "application/pdf, application/zip, application/octet-stream, "
+                            "text/csv, text/xml, application/xml, text/plain, "
+                            "text/octet-stream, application/x-gzip, application/x-tar "
+                            "application/"
+                            "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        ),
+                    )
+
     driver = Firefox(options=opts)
     return driver
 
