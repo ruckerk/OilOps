@@ -1,0 +1,57 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel>=0.37.1"]
+
+[project]
+name = "OilOps"
+version = "1.0.0"
+authors = [
+    {name = "'W Kurt Rucker", email = "'OilOpsDev@gmail.com"},
+]
+description = "Oilfield Operations Tools."
+readme = "README.txt"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+
+dependencies = ['adjustText',
+                      'beautifulsoup4',
+                      'datetime',
+                      'easygui',
+                      'futures3',
+                      'geopy',
+                      'lasio',
+                      'matplotlib',
+                      'multiprocess',
+                      'numpy',
+                      'openpyxl',
+                      'pandas',
+                      'psutil',
+                      'pycrs',
+                      'pyproj',
+                      'pyshp',
+                      'python-dateutil',
+                      'python-magic-bin; sys.platform == "win32"',
+                      'requests',
+                      'scipy',
+                      'selenium',
+                      'scikit-learn',
+                      'sqlalchemy',
+                      'tabula-py',
+                      'textract',
+                      'urllib3',
+                      'wget',
+                      'xlrd', 
+                      'geopandas']
+                      
+keywords=[
+        'OilOps', 'Colorado data', 'petrophysics', 'well spacing',
+        'oilfield data', 'oilfield analysis', 'well survey', 'subsurface mapping'
+    ]                    
