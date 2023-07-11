@@ -13,7 +13,6 @@ __all__ = ['CO_BASEDATA',
            'CO_Get_Surveys']
 
 #Define Functions for multiprocessing iteration
-driver.quit()
 def ND_WELLSUMMARY(username, password, driver= None):
     if driver == None:
         driver = get_driver()
