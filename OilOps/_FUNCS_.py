@@ -13,6 +13,8 @@ from requests.packages.urllib3.util.retry import Retry
 from selenium import webdriver
 from selenium.webdriver import Firefox, Chrome
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.by import By
+
 #from shapely.geometry import Polygon, Point, LineString
 from sys import argv, exec_prefix
 from time import perf_counter, sleep
