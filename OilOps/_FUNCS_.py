@@ -457,7 +457,7 @@ def FullFileScan(FILE):
         ct+=1
         L.insert(0,path.split(L[0])[0])
     OUT = []    
-    for root, dirs, files in os.walk(L[0]):
+    for root, dirs, files in walk(L[0]):
         for file in files:
             if bool(re.findall(FILE,file,re.I)):
                 OUT.append(path.join(root,str(file)))
