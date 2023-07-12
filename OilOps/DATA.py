@@ -199,9 +199,9 @@ def Get_LAS(UWIS):
                     if userows.empty:
                         ERROR = 1
                         continue
-                    userows.loc[:,'DateString']=None
-                    userows.loc[:,'DateString']=userows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')               
-                      
+                    userows['DateString'] = None
+                    #userows.loc[:,'DateString']=userows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')               
+                    userows['DateString'] = pd.to_datetime(userows['Date']).dt.strftime('%Y_%m_%d')
                     for i in range(0,userows.shape[0]):
                         dl_url = re.sub('XLINKX', str(userows.iloc[i,LINKCOL]),DL_BASE)
                         r=requests.get(dl_url, allow_redirects=True)
