@@ -35,3 +35,6 @@ Pad grouping assignment
   cluster on completion date, azimuth (0-180), and overlap > 2000 ft
 
 Possibly incorporate SpatiaLite (SQLSpatial for SQLite)
+
+make las DL fix "txt aborted" automatically
+Fix LAS DL _1_1_1_1 and make it count _1 _2 _3 etc.
