@@ -152,7 +152,7 @@ def Get_LAS(UWIS):
                         print(f'Error connecting to {base_url}.')
                         ERROR=1
 
-                    browser.findElement(By.LINK_TEXT,"Class").click()
+                    browser.find_element(By.LINK_TEXT,"Class").click()
                     #browser.find_element_by_link_text('Class').click()    
                     soup = BS(browser.page_source, 'lxml')
                     parsed_table = soup.find_all('table')[0]
@@ -176,7 +176,7 @@ def Get_LAS(UWIS):
                     
                     if pages>1:
                         for p in range(1,pages):
-                            page_link = browser.findElement(By.PARTIAL_LINK_TEXT, str(1+p))
+                            page_link = browser.find_element(By.PARTIAL_LINK_TEXT, str(1+p))
                             #page_link = browser.find_element_by_partial_link_text(str(1+p))
                             page_link.click()
                             browser.page_source
