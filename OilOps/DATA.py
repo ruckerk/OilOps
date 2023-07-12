@@ -190,7 +190,8 @@ def Get_LAS(UWIS):
                             #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
                             #surveyrows.append(dirdata)
 
-                            userows.append(pdf.loc[(pdf.Class.astype(str).str.contains('Well Logs')==True)])
+                            #concatenate to previous userows
+                            userows = pd.concat([userows, pdf.loc[(pdf.Class.astype(str).str.contains('Well Logs')==True)]], axis=0)
                             
                     #browser.quit()
                     userows=pd.DataFrame(userows)
