@@ -85,7 +85,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     if COGCC_SHP:
         url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP'
         if path.exists(path.split(url)[-1]):
-            os.remove(path.split(url)[-1]) 
+            remove(path.split(url)[-1]) 
         filename = wget.download(url)
         with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
