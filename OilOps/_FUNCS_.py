@@ -14,7 +14,7 @@ from selenium import webdriver
 from selenium.webdriver import Firefox, Chrome
 from selenium.webdriver.firefox.options import Options
 #from shapely.geometry import Polygon, Point, LineString
-from sys import argv
+from sys import argv, exec_prefix
 from time import perf_counter, sleep
 from tkinter import filedialog
 from zipfile import ZipFile, BadZipfile
@@ -450,6 +450,19 @@ def check_EPSG(epsg1):
         OUTPUT = 'Invalid'
     return(OUTPUT)
 
+def FullFileScan(FILE):
+    L = [exec_prefix]
+    ct = -1
+    while (ct<2) or (L[0]!= L[min(len(L)-1,1)]):
+        ct+=1
+        L.insert(0,path.split(L[0])[0])
+    OUT = []    
+    for root, dirs, files in os.walk(L[0]):
+        for file in files:
+            if bool(re.findall(FILE,file,re.I)):
+                OUT.append(path.join(root,str(file)))
+    return OUT
+    
 def get_driver():
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
@@ -464,6 +477,9 @@ def get_driver():
     opts = Options()
     opts.headless = True
     
+    # Find local firefox.exe
+    opts.binary_location = FullFileScan(r'firefox.exe$')[-1]
+    
     opts.set_preference("browser.download.folderList", 2)
     opts.set_preference("browser.download.manager.showWhenStarting", False)
     opts.set_preference("browser.download.dir", adir)
@@ -476,7 +492,6 @@ def get_driver():
                             "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         ),
                     )
-
     driver = Firefox(options=opts)
     return driver
 
