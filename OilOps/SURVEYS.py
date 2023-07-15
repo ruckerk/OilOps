@@ -53,8 +53,8 @@ def Find_API_Col(df_inAPI):
     for k in keys:        
         # check for GT 100 rows per value
         if df2[k].shape[0]/len(df2[k].unique()) > 100:
-            keylist.(k)
-        UWIlist = UWIlist.(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
+            keylist.append(k)
+        UWIlist = UWIlist.append(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
 
     if len(keylist) > 0:
         longest = 0
@@ -88,7 +88,7 @@ def APIfromFrame(df_in):
     terms = list()
     if isinstance(df_in,dict):
         for k in df_in:
-            terms.(APIfromString(df_in[k].to_string(),ListResult=True))
+            terms.append(APIfromString(df_in[k].to_string(),ListResult=True))
         term = max(set(terms), key = terms.count)
     if isinstance(df_in,pd.DataFrame):
         term = APIfromString(df_in.to_string())
@@ -228,7 +228,7 @@ def ExtractSurvey(df_in): #if True:
                         # WAS GOING TO BUILD A CHECK THAT LAST ROW IN KEY COLUMNS DOES NOT CONTAIN VALUES
                         #keycols = list()
                         #for c in cols:
-                        #    keycols.(outdf_in.keys().get_loc(c))
+                        #    keycols.append(outdf_in.keys().get_loc(c))
                         
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
@@ -532,7 +532,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
                     if ERRORS == True:
                         #specify full path to force overwrite
                         shutil.move(path.join(adir,ffile), path.join(ERR_FOLDER,ffile))
-                    #ERROR_LIST.(ffile)
+                    #ERROR_LIST.append(ffile)
         except OSError as err:
             print(err)
             print('GENERAL ERROR IN: '+ ffile)
@@ -578,7 +578,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     FLIST=list()
     for file in listdir(adir):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
-            FLIST.(file)
+            FLIST.append(file)
 
     print(str(len(FLIST))+' FILES CONSIDERED')
 
