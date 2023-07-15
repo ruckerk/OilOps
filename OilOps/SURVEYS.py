@@ -53,8 +53,8 @@ def Find_API_Col(df_inAPI):
     for k in keys:        
         # check for GT 100 rows per value
         if df2[k].shape[0]/len(df2[k].unique()) > 100:
-            keylist.append(k)
-        UWIlist = UWIlist.append(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
+            keylist.(k)
+        UWIlist = UWIlist.(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
 
     if len(keylist) > 0:
         longest = 0
@@ -88,7 +88,7 @@ def APIfromFrame(df_in):
     terms = list()
     if isinstance(df_in,dict):
         for k in df_in:
-            terms.append(APIfromString(df_in[k].to_string(),ListResult=True))
+            terms.(APIfromString(df_in[k].to_string(),ListResult=True))
         term = max(set(terms), key = terms.count)
     if isinstance(df_in,pd.DataFrame):
         term = APIfromString(df_in.to_string())
@@ -228,7 +228,7 @@ def ExtractSurvey(df_in): #if True:
                         # WAS GOING TO BUILD A CHECK THAT LAST ROW IN KEY COLUMNS DOES NOT CONTAIN VALUES
                         #keycols = list()
                         #for c in cols:
-                        #    keycols.append(outdf_in.keys().get_loc(c))
+                        #    keycols.(outdf_in.keys().get_loc(c))
                         
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.applymap(lambda x:WELLAPI(x).str2num())
@@ -532,7 +532,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
                     if ERRORS == True:
                         #specify full path to force overwrite
                         shutil.move(path.join(adir,ffile), path.join(ERR_FOLDER,ffile))
-                    #ERROR_LIST.append(ffile)
+                    #ERROR_LIST.(ffile)
         except OSError as err:
             print(err)
             print('GENERAL ERROR IN: '+ ffile)
@@ -578,7 +578,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     FLIST=list()
     for file in listdir(adir):
         if file.lower().endswith(('.xls','xlsx','xlsm')):
-            FLIST.append(file)
+            FLIST.(file)
 
     print(str(len(FLIST))+' FILES CONSIDERED')
 
@@ -1002,7 +1002,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         #print(str(xxUWI10.index(xUWI10)),' / ',str(len(xxUWI10)),' ')
         if ix/10 == floor(ix/10):
             print(str(ix) + '/' + str(len(xxUWI10)))
-        OUTPUT=OUTPUT.append(pd.Series(name=ix,dtype='int64'))
+                  
+        OUTPUT=pd.concat([OUTPUT,pd.Series(name=ix,dtype='int64')], axis= 0, ignore_index = True)
 
         xUWI10=WELLAPI(xUWI10).API2INT(10)
         
@@ -1129,15 +1130,18 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
             MEANAZI = statistics.mean(xxdf.loc[m,df.keys()[AZI]])
             if MEANAZI >= 180:
                 MEANAZI_180 = MEANAZI - 180
-            OUTPUT=OUTPUT.append({'UWI10':xUWI10,
+
+            NewRow = pd.Series({'UWI10':xUWI10,
                                   'LatLen':abs(RefXMax-RefXMin),
                                   'MeanTVD':refTVD,
                                   'MeanX':statistics.mean(refXYZ[XPATH_NAME]),
                                   'MeanY':statistics.mean(refXYZ[YPATH_NAME]),
                                   'MAX_MD':max(refXYZ[MD_NAME].dropna()),
                                   'MeanAZI': MEANAZI,
-                                  'MeanAZI180': MEANAZI_180},
-                                 ignore_index=True)
+                                  'MeanAZI180': MEANAZI_180})
+                  
+            OUTPUT = pd.concat([OUTPUT,NewRow],axis = 0, ignore_index= True)
+
     outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
 
     OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
