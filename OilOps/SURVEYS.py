@@ -998,7 +998,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         # if 1==1:
         ix+=1
         xdf = xxdf.copy(deep=True)
-        xdf = xdf.loc[xdf[SurveyCols(xdf)].dropna().index,:]
+        xdf = xdf.loc[xdf[list(SurveyCols(xdf).values())].dropna().index,:]
         #print(str(xxUWI10.index(xUWI10)),' / ',str(len(xxUWI10)),' ')
         if ix/10 == floor(ix/10):
             print(str(ix) + '/' + str(len(xxUWI10)))
