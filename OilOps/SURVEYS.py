@@ -889,7 +889,7 @@ def Condense_Surveys(xdf):
     return RESULT
           
 # Define function for nearest neighbors
-def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
+          def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     # condensed SURVEYS in xxdf
     # WELL DATA in df_UWI
     # xxUWI10 is list of UWI's to calc
@@ -993,19 +993,21 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     #YPATH_NAME  = xxdf.keys()[YPATH] #list(SurveyCols(xxdf.head(5)))[4]
     
     MD_NAME = xxdf.keys()[MD]
+
+    xxdf['UWI10'] = xxdf.iloc[:,UWICOL].apply(lambda x: WELLAPI(x).API2INT(10))
     
     for xUWI10 in xxUWI10:
         # if 1==1:
         ix+=1
+        xUWI10=WELLAPI(xUWI10).API2INT(10)
+              
         xdf = xxdf.copy(deep=True)
-        xdf = xdf.loc[xdf[list(SurveyCols(xdf).values())].dropna().index,:]
+        xdf = xdf.loc[xdf[list(SurveyCols(xdf).keys())].dropna().index,:]
         #print(str(xxUWI10.index(xUWI10)),' / ',str(len(xxUWI10)),' ')
         if ix/10 == floor(ix/10):
             print(str(ix) + '/' + str(len(xxUWI10)))
                   
         OUTPUT=pd.concat([OUTPUT,pd.Series(name=ix,dtype='int64')], axis= 0, ignore_index = True)
-
-        xUWI10=WELLAPI(xUWI10).API2INT(10)
         
 
         # Check for lateral survey points for reference well
@@ -1109,7 +1111,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                 OUTPUT.loc[ix,[ol,dz,dxy,uwi,days]]=df_calc[df_calc.UWI10==sort_list.iloc[j]][['overlap','dz','dxy','UWI10','DAYS']].values[0]
        
         OUTPUT.loc[ix,'UWI10']=xUWI10
-        
+                  
         #calc lat len 
         OUTPUT.loc[ix,['LatLen']] =abs(RefXMax-RefXMin)    
         OUTPUT.loc[ix,['MeanTVD']]=refTVD
