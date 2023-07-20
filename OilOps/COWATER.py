@@ -220,7 +220,7 @@ def WaterDataPull(LAT=40.5832238,LON=-104.0990673,RADIUS=10):
     r_data = requests.post('https://www.waterqualitydata.us/data/Result/search', headers=headers, params=params, json=json_data)
     #r_station = requests.post('https://www.waterqualitydata.us/data/Station/search', headers=headers, params=params, json=json_data)
 
-    r_station = requests.get("https://www.waterqualitydata.us/data/Station/search?within=" + str(RADIUS) + "&lat=" +  str(LAT)+'&long=' + str(LON) + "&siteType=Well&siteType=Subsurface&siteType=Facility&siteType=Aggregate%20groundwater%20use&siteType=Not%20Assigned&sampleMedia=Water&sampleMedia=water&sampleMedia=Other&sampleMedia=No%20media&characteristicName=Total%20dissolved%20solids&characteristicName=Dissolved%20solids&characteristicName=Total%20solids&characteristicName=Total%20suspended%20solids&characteristicName=Fixed%20dissolved%20solids&characteristicName=Fixed%20suspended%20solids&characteristicName=Solids&characteristicName=Percent%20Solids&characteristicName=Total%20fixed%20solids&characteristicName=Salinity&startDateLo=01-01-1900&startDateHi=01-01-2030&mimeType=xlsx&zip=yes&providers=NWIS&providers=STEWARDS&providers=STORET")
+    r_station = requests.get(f"https://www.waterqualitydata.us/data/Station/search?within={str(RADIUS)}&lat={str(LAT)}&long={str(LON)}&siteType=Well&siteType=Subsurface&siteType=Facility&siteType=Aggregate%20groundwater%20use&siteType=Not%20Assigned&sampleMedia=Water&sampleMedia=water&sampleMedia=Other&sampleMedia=No%20media&characteristicName=Total%20dissolved%20solids&characteristicName=Dissolved%20solids&characteristicName=Total%20solids&characteristicName=Total%20suspended%20solids&characteristicName=Fixed%20dissolved%20solids&characteristicName=Fixed%20suspended%20solids&characteristicName=Solids&characteristicName=Percent%20Solids&characteristicName=Total%20fixed%20solids&characteristicName=Salinity&startDateLo=01-01-1900&startDateHi=01-01-2030&mimeType=xlsx&zip=yes&providers=NWIS&providers=STEWARDS&providers=STORET")
     
     #zipfile = ZipFile(BytesIO(r.content))
     #f = zipfile.namelist()[0]
@@ -460,6 +460,7 @@ def WATER_EXCEL_SUMMARY(PADNAME = 'PADNAME', LAT = 40, LON = -104):
     df_permits, df_tops, df_projections, df_levels, fig = CO_WATERWELL_SUMMARY(LAT,LON,DATA=True)
     df_water = COWATER_QUALITY(LAT,LON)
     with pd.ExcelWriter(FNAME+'.xlsx', engine='xlsxwriter') as writer:
+        df_water.to_excel(writer, sheet_name = 'Quality', index= False)
         df_permits.to_excel(writer, sheet_name = 'PERMITS', index= False)
         df_tops.to_excel(writer, sheet_name = 'TOPS', index= False)
         df_levels.to_excel(writer, sheet_name = 'LEVELS', index= False)
