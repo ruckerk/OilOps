@@ -355,7 +355,8 @@ def elevation_function(LAT83, LON83):
     if '<error>' in result.text:
         ELEVATION = np.nan
     else:
-        ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
+        #ELEVATION = result.json()['USGS_Elevation_Point_Query_Service']['Elevation_Query']['Elevation']
+        ELEVATION = result.json()['value']
     return ELEVATION
 
 def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
