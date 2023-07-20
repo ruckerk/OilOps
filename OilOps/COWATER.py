@@ -457,8 +457,8 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
 
 def WATER_EXCEL_SUMMARY(PADNAME = 'PADNAME', LAT = 40, LON = -104):
     FNAME = PADNAME+'_WATERSUMMARY'
-    df_permits, df_tops, df_projections, df_levels, fig = OilOps.COWATER.CO_WATERWELL_SUMMARY(df.loc[i,'LAT'],df.loc[i,'LON'],DATA=True)
-    df_water = OilOps.COWATER.COWATER_QUALITY(LAT,LON)
+    df_permits, df_tops, df_projections, df_levels, fig = CO_WATERWELL_SUMMARY(df.loc[i,'LAT'],df.loc[i,'LON'],DATA=True)
+    df_water = COWATER_QUALITY(LAT,LON)
     with pd.ExcelWriter(FNAME+'.xlsx', engine='xlsxwriter') as writer:
         df_permits.to_excel(writer, sheet_name = 'PERMITS', index= False)
         df_tops.to_excel(writer, sheet_name = 'TOPS', index= False)
