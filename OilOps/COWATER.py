@@ -13,7 +13,8 @@ __all__ = [
     'WaterDataPull',
     'Summarize_WaterChem',
     'COWATER_QUALITY',
-    'CO_WATERWELL_SUMMARY'
+    'CO_WATERWELL_SUMMARY',
+    'WATER_EXCEL_SUMMARY'
 ]
 
 def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
