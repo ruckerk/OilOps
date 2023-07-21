@@ -2898,12 +2898,15 @@ def SUMMARIZE_COGCC_SQL(SAVE = True, SAVEDB= 'FIELD_DATA.db',TABLE_NAME = 'CO_SQ
     ##                      if_exists='replace',
     ##                      index=False,
     ##                      dtype=df_typemap)
-    
+        ULT = DF_UNSTRING(ULT)
+        SCHEMA = FRAME_TO_SQL_TYPES(ULT)
+               FAVORED_DF[['UWI10','FAVORED_SURVEY']].to_sql('FAVORED_SURVEYS', CONN, if_exists = 'replace', index= False)
         if SAVE:
-            with sqlite3.connect(SAVEDB) as CONN:
-                ULT.to_sql(TABLE_NAME,CONN,
-                    if_exists='replace',
-                    index=False,
-                    dtype=df_typemap)
-        
+            CONN = sqlite3.connect(SAVEDB)
+            ULT.to_sql(TABLE_NAME,
+                       CONN,
+                       if_exists='replace',
+                       index=False,
+                       dtype=SCHEMA)
+return ULT
 #!! not all rows have a state producing key
