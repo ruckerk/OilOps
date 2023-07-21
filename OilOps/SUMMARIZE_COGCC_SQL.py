@@ -248,7 +248,7 @@ def Get_ProdData(UWIs,file='prod_data.db'):
         pass
     return(OUTPUT)
 
-def SUMMARIZE_COGCC():
+def SUMMARIZE_COGCC(SAVE = True, SAVEDB= 'FIELD_DATA.db',TABLE_NAME = 'CO_SQL_SUMMARY'):
     # SQLite COMMMANDS
     # well data
     Q1 = """
@@ -998,14 +998,12 @@ def SUMMARIZE_COGCC():
     ##                      if_exists='replace',
     ##                      index=False,
     ##                      dtype=df_typemap)
-
-        engine = sqlalchemy.create_engine('sqlite:///prod_data.db')
-        TABLE_NAME = 'Well_Summary'
-        with engine.begin() as connection:
-            ULT.to_sql(TABLE_NAME,connection,
-                              if_exists='replace',
-                              index=False,
-                              dtype=df_typemap)
+        if SAVE:
+            with sqlite3.connect(SAVEDB) as CONN:
+                ULT.to_sql(TABLE_NAME,CONN,
+                    if_exists='replace',
+                    index=False,
+                    dtype=df_typemap)
         
 #!! not all rows have a state producing key
 
