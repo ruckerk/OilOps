@@ -2900,7 +2900,7 @@ def SUMMARIZE_COGCC_SQL(SAVE = True, SAVEDB= 'FIELD_DATA.db',TABLE_NAME = 'CO_SQ
     ##                      dtype=df_typemap)
         ULT = DF_UNSTRING(ULT)
         SCHEMA = FRAME_TO_SQL_TYPES(ULT)
-               FAVORED_DF[['UWI10','FAVORED_SURVEY']].to_sql('FAVORED_SURVEYS', CONN, if_exists = 'replace', index= False)
+           
         if SAVE:
             CONN = sqlite3.connect(SAVEDB)
             ULT.to_sql(TABLE_NAME,
