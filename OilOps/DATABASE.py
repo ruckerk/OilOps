@@ -437,6 +437,10 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     # DEVELOPMENT UNIT ASSIGNMENT #
     ###############################
     # TABLE OF UNIT/WELL
+
+    # SUMMARIZE COGCC SQL TABLES
+    # add direct copy of key tables
+    SUMMARIZE_COGCC_SQL()
  
 def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
     pathname = path.dirname(argv[0])
