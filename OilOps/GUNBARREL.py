@@ -1,5 +1,4 @@
 # STAIR PLOT
-import pylab
 import matplotlib.ticker as tkr
 from ._FUNCS_ import *
 
