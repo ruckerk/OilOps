@@ -1,7 +1,7 @@
 # STAIR PLOT
 import pylab
 import matplotlib.ticker as tkr
-from adjustText import adjust_text
+from ._FUNCS_ import *
 
 __all__ = ['STAIR_PLOT']
 
