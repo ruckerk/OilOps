@@ -18,14 +18,14 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
     # normalize color scale
     if ProdKey:
         CVALS = ((df.loc[m,ProdKey] - df.loc[m,ProdKey].min()) / (df.loc[m,ProdKey].max()-df.loc[m,ProdKey].min())).values
-	    CVALS = df.loc[m,ProdKey].values
-	    CVAL_STEP = 10**np.floor(np.log10(df.loc[m,ProdKey].max() - df.loc[m,ProdKey].min()))/2
-	    CVAL_RANGE = range(int(np.ceil(CVALS.min()/CVAL_STEP)*CVAL_STEP),
-				       int(np.ceil(CVALS.max()/CVAL_STEP)*CVAL_STEP),
-				       int(CVAL_STEP)) 
+        CVALS = df.loc[m,ProdKey].values
+        CVAL_STEP = 10**np.floor(np.log10(df.loc[m,ProdKey].max() - df.loc[m,ProdKey].min()))/2
+        CVAL_RANGE = range(int(np.ceil(CVALS.min()/CVAL_STEP)*CVAL_STEP),
+                       int(np.ceil(CVALS.max()/CVAL_STEP)*CVAL_STEP),
+                       int(CVAL_STEP)) 
     else:
-		CVALS = 0
-	
+        CVALS = 0
+    
     
     #plot gunbarrel and stairs
     fig, ax = plt.subplots(1, sharex = True, squeeze = True)
@@ -112,8 +112,8 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
     texts = [ax.text((df.loc[m[j],'MeanX'] - minX),
                      df.loc[m[j],'MeanTVD'],
                      LABELS[j].strip(),
-		     fontsize = 9,
-		     bbox = dict(facecolor='w', edgecolor = 'none', alpha = 0.6)) for j in range(len(LABELS))]
+             fontsize = 9,
+             bbox = dict(facecolor='w', edgecolor = 'none', alpha = 0.6)) for j in range(len(LABELS))]
     
     adjust_text(texts,
                 ha = 'left',
