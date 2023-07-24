@@ -10,7 +10,7 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
 
     # subset or wells in plotting order
     m = df.loc[df.UWI10.isin(ULIST)].MeanX.dropna().sort_values(ascending=True).index
-    m = df.loc[m,'StateProducingUnitKey'].dropna().index
+    #m = df.loc[m,'StateProducingUnitKey'].dropna().index
 
     # normalize X axis
     minX = df.loc[m,'MeanX'].min()
