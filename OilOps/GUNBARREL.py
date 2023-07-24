@@ -91,20 +91,35 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
 
     # Plot well data labels (add regex to determine EUR or X mo Oil/Gas/Water
     LABELFORM = "API:_API_ DATE:_DATE_\nNAME:_NAME_\nOPER:_OPER_\nFI:_FI_   PI:_PI_\nLL:_LATLEN_   PROD:_PROD_"
+
+    WELLDATE = GetKey(df,r'FIRST.*PROD.*DATE|JOB.*DATE|SPUD.*DATE')
+    WELLDATE = df.loc[m,WELLDATE].keys()[(df.loc[m,WELLDATE].isna().count(axis=0) == df.loc[m,WELLDATE].isna().count(axis=0).min())].tolist()
+    WELLDATE = df.loc[m,WELLDATE].dropna().apply(lambda x:x[WELLDATE] == max(x[WELLDATE]), axis =1).max(axis=0).sort_values(ascending = False).keys()[0]
+    WELL_LABEL = GetKey(df,r'WELL.*(NAME|LABEL|NO)')
+    test = df.loc[m,WELL_LABEL].applymap(lambda x: len(str(x)))
+    WELL_LABEL = test.apply(lambda x: x==max(x), axis = 1).sum(axis=0).sort_values(ascending=False).keys()[0]
+    OPERATOR =  GetKey(df,r'OPERATOR')[0]
+    FLUID_INTENSITY = GetKey(df,r'(WATER|FLUID|INJ).*INTEN')[0]
+    PROP_INTENSITY = GetKey(df,r'(PROP|SAND).*INTEN')[0]
+    LATERAL_LENGTH = GetKey(df,r'LAT.*LEN')
+    LATERAL_LENGTH = (df.loc[m,LATERAL_LENGTH].fillna(0) > 0).sum(axis=0).sort_values(ascending=False).keys()[0]
     
     for i in m:
         if i == m[0]:
             LABELS = list()
+        
         LABEL_TEXT = LABELFORM.replace('_API_',str(df.loc[i,'UWI10']))
-        WELLDATE = pd.to_datetime(df.loc[i,['FirstProduction_Date','TreatmentDate','LastStimDate','JOB_END_DATE','1ST_PRODUCTION_DATE','Month1_Date']],errors='coerce').dropna().min().strftime('%m-%d-%Y')
         LABEL_TEXT = LABEL_TEXT.replace('_DATE_',WELLDATE.strip())
         LABEL_TEXT = LABEL_TEXT.replace('_NAME_',df.loc[i,['WELL_NAME','WELL_NUMBER']].str.cat(sep=' ').strip())
-        LABEL_TEXT = LABEL_TEXT.replace('_OPER_',df.loc[i,'OPERATOR_'].strip())
-        LABEL_TEXT = LABEL_TEXT.replace('_FI_',df.loc[i,'STIM_FLUID_INTENSITY'].astype(int).astype(str).strip()+' BBL/FT')
-        LABEL_TEXT = LABEL_TEXT.replace('_PI_',df.loc[i,'STIM_PROPPANT_INTENSITY'].astype(int).astype(str).strip()+' #/FT')
-        LABEL_TEXT = LABEL_TEXT.replace('_LATLEN_',df.loc[i,'Lateral_Length'].astype(int).astype(str).strip()+' FT')
+        LABEL_TEXT = LABEL_TEXT.replace('_OPER_',df.loc[i,OPERATOR].strip())
+        LABEL_TEXT.replace('_FI_',df.loc[i,FLUID_INTENSITY].astype(int).astype(str).strip()+' BBL/FT')
+        LABEL_TEXT = LABEL_TEXT.replace('_PI_',df.loc[i,PROP_INTENSITY].astype(int).astype(str).strip()+' #/FT')
+        LABEL_TEXT = LABEL_TEXT.replace('_LATLEN_',df.loc[i,LATERAL_LENGTH].astype(int).astype(str).strip()+' FT')
         if ProdKey:
             LABEL_TEXT = LABEL_TEXT.replace('_PROD_',df.loc[i,ProdKey].astype(int).astype(str).strip()+'MBBL')
+        else:     
+            LABEL_TEXT = LABEL_TEXT.replace('_PROD_','None')
+        #LABEL_TEXT = f"API:{str(df.loc[i,'UWI10'])} DATE:_DATE_\nNAME:_NAME_\nOPER:_OPER_\nFI:_FI_   PI:_PI_\nLL:_LATLEN_   PROD:_PROD_"
         LABELS.append(LABEL_TEXT)
         
     # manage overposting
