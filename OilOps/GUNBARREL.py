@@ -18,12 +18,11 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
     # normalize color scale
     if ProdKey:
         CVALS = ((df.loc[m,ProdKey] - df.loc[m,ProdKey].min()) / (df.loc[m,ProdKey].max()-df.loc[m,ProdKey].min())).values
-
 	    CVALS = df.loc[m,ProdKey].values
 	    CVAL_STEP = 10**np.floor(np.log10(df.loc[m,ProdKey].max() - df.loc[m,ProdKey].min()))/2
 	    CVAL_RANGE = range(int(np.ceil(CVALS.min()/CVAL_STEP)*CVAL_STEP),
-	                       int(np.ceil(CVALS.max()/CVAL_STEP)*CVAL_STEP),
-	                       int(CVAL_STEP)) 
+				       int(np.ceil(CVALS.max()/CVAL_STEP)*CVAL_STEP),
+				       int(CVAL_STEP)) 
     else:
 		CVALS = 0
 	
