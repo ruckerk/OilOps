@@ -145,5 +145,5 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
     #cbar.set_label('EUR [MBBL]', rotation=270)
     
     pylab.tight_layout()
-    plt.save('STAIRPLOT_'+str(ULIST[0])+'_'+str(ULIST[-1])+'.PNG')
+    plt.savefig('STAIRPLOT_'+str(ULIST[0])+'_'+str(ULIST[-1])+'.PNG')
     plt.close()
