@@ -109,8 +109,8 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
             LABELS = list()
         
         LABEL_TEXT = LABELFORM.replace('_API_',str(df.loc[i,'UWI10']))
-        LABEL_TEXT = LABEL_TEXT.replace('_DATE_',WELLDATE.strip())
-        LABEL_TEXT = LABEL_TEXT.replace('_NAME_',df.loc[i,['WELL_NAME','WELL_NUMBER']].str.cat(sep=' ').strip())
+        LABEL_TEXT = LABEL_TEXT.replace('_DATE_',df.loc[i,WELLDATE].dt.date.astype(str).str.strip())
+        LABEL_TEXT = LABEL_TEXT.replace('_NAME_',df.loc[i,WELL_LABEL].strip())
         LABEL_TEXT = LABEL_TEXT.replace('_OPER_',df.loc[i,OPERATOR].strip())
         LABEL_TEXT.replace('_FI_',df.loc[i,FLUID_INTENSITY].astype(int).astype(str).strip()+' BBL/FT')
         LABEL_TEXT = LABEL_TEXT.replace('_PI_',df.loc[i,PROP_INTENSITY].astype(int).astype(str).strip()+' #/FT')
@@ -119,6 +119,7 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
             LABEL_TEXT = LABEL_TEXT.replace('_PROD_',df.loc[i,ProdKey].astype(int).astype(str).strip()+'MBBL')
         else:     
             LABEL_TEXT = LABEL_TEXT.replace('_PROD_','None')
+            
         #LABEL_TEXT = f"API:{str(df.loc[i,'UWI10'])} DATE:_DATE_\nNAME:_NAME_\nOPER:_OPER_\nFI:_FI_   PI:_PI_\nLL:_LATLEN_   PROD:_PROD_"
         LABELS.append(LABEL_TEXT)
         
