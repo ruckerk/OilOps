@@ -40,7 +40,7 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
 
     #adjust Y axis for label room
     if ReverseY:
-        plt.ylim([df.loc[m,'MeanTVD'].max()+100,[df.loc[m,'MeanTVD'].min()-100])
+        plt.ylim([df.loc[m,'MeanTVD'].max()+100, df.loc[m,'MeanTVD'].min()-100])
     else:
         plt.ylim([df.loc[m,'MeanTVD'].min()-100, df.loc[m,'MeanTVD'].max()+100])
     
