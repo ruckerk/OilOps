@@ -5,7 +5,7 @@ from ._FUNCS_ import *
 __all__ = ['STAIR_PLOT']
 
 
-def STAIR_PLOT(ULIST,df, ProdKey= None):
+def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
 
     # subset or wells in plotting order
     #XY_KEY = GetKey(df,'Mean.*TVD')[0]
@@ -39,7 +39,10 @@ def STAIR_PLOT(ULIST,df, ProdKey= None):
     fig.set_figwidth(18)
 
     #adjust Y axis for label room
-    plt.ylim([df.loc[m,'MeanTVD'].min()-100, df.loc[m,'MeanTVD'].max()+100])
+    if ReverseY:
+        plt.ylim([df.loc[m,'MeanTVD'].max()+100,[df.loc[m,'MeanTVD'].min()-100])
+    else:
+        plt.ylim([df.loc[m,'MeanTVD'].min()-100, df.loc[m,'MeanTVD'].max()+100])
     
     ax.step(df.loc[m,XY_KEY] - minX,
             df.loc[m,'MeanTVD'],
