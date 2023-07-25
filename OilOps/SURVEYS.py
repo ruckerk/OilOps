@@ -948,7 +948,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     
     OUTPUT = pd.DataFrame(col_type,index=[])
 
-    COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*', regex=True, case=False,na=False)].keys()
+    COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*PROD.*DATE|.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*', regex=True, case=False,na=False)].keys()
     df_UWI['MAX_COMPLETION_DATE'] = df_UWI[COMPDATES].fillna(datetime.datetime(1900,1,1)).max(axis=1)
     COMPDATEdfd = df_UWI.keys().get_loc('MAX_COMPLETION_DATE')
 
