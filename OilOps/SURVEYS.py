@@ -1115,7 +1115,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                   
         #calc lat len 
         OUTPUT.loc[ix,['LatLen']] =abs(RefXMax-RefXMin)    
-        OUTPUT.loc[ix,['MeanTVD']]=refTVD
+        OUTPUT.loc[ix,['MeanTVD']]=meandepth
         OUTPUT.loc[ix,['MeanX']]  =statistics.mean(refXYZ[XPATH_NAME])
         OUTPUT.loc[ix,['MeanY']]  =statistics.mean(refXYZ[YPATH_NAME])
         OUTPUT.loc[ix,'MAX_MD']   = max(refXYZ[MD_NAME].dropna())
@@ -1136,7 +1136,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
 
             NewRow = pd.Series({'UWI10':xUWI10,
                                   'LatLen':abs(RefXMax-RefXMin),
-                                  'MeanTVD':refTVD,
+                                  'MeanTVD':meandepth,
                                   'MeanX':statistics.mean(refXYZ[XPATH_NAME]),
                                   'MeanY':statistics.mean(refXYZ[YPATH_NAME]),
                                   'MAX_MD':max(refXYZ[MD_NAME].dropna()),
