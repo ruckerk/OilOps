@@ -1035,7 +1035,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         #reference well TVD approximation
         # if 1==1:
         #refTVD = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))
-        refTVD = statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10])
+        #refTVD = statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10])
+        refTVD = 0
         #remove self well to prevent 0' offsets
         xdf=xdf[xdf['UWI10']!=xUWI10]
         
