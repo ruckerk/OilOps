@@ -15,7 +15,8 @@ from .MAP import convert_XY
 # NEED TO HANDLE UNLABELED COLUMNS
 
 # needs to be updated to populate SQL db
-# parallelize
+# parallxyz
+
 __all__ = ['Find_API_Col',
           'ExtractSurvey',
           'survey_from_excel',
@@ -709,6 +710,7 @@ def CO_ABS_LOC(UWIS, SQLDB = 'CO_3_2.1.sqlite'):
          
 
 def CondenseSurvey(xdf,LIST_IN):
+    INC_LIMIT = 85
     # if 1==1:
     if isinstance(LIST_IN,(pd.Series,np.ndarray)):
         UWIs=list(LIST_IN)
@@ -791,11 +793,11 @@ def CondenseSurvey(xdf,LIST_IN):
             # df.groupby(FILE).MD.apply(lambda x:x-np.floor(x))
             # sdf = sdf.loc[sdf.groupby('FILE').MD.apply(lambda x:x-np.floor(x))>0]
             # HZ AZI filter
-            if xxdf.loc[xxdf.INC > 85,:].shape[0]>5:
+            if xxdf.loc[xxdf.INC > INC_LIMIT,:].shape[0]>5:
                 #xxdf.loc[:,'AZI_DEC'] = xxdf.loc[:,'AZI'] - np.floor(xxdf.loc[:,'AZI'])
 
                 #sdf['MD_DEC'] = sdf['MD'] - np.floor(sdf['MD'])
-                ftest = xxdf.loc[xxdf.INC > 85,:].groupby('FILE')['AZI_DEC'].std()
+                ftest = xxdf.loc[xxdf.INC > INC_LIMIT,:].groupby('FILE')['AZI_DEC'].std()
                 ftest = pd.DataFrame(ftest[ftest>0.1])
                 #files = ftest.loc[ftest>0.1].index.to_list()
                 if ftest.empty:
@@ -890,6 +892,8 @@ def Condense_Surveys(xdf):
           
 # Define function for nearest neighbors
 def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
+    INC_LIMIT = 85
+          
     # condensed SURVEYS in xxdf
     # WELL DATA in df_UWI
     # xxUWI10 is list of UWI's to calc
@@ -897,7 +901,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
           
     # if True:
     xxdf = xxdf.copy(deep=True)
-    
+
     df_UWI = df_UWI.copy(deep=True)
     #if 1==1:
     #[xUWI10,args]=arg
@@ -953,7 +957,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     COMPDATEdfd = df_UWI.keys().get_loc('MAX_COMPLETION_DATE')
 
     xxdf = xxdf.rename(columns = SurveyCols(xxdf.head(5)))
-
+    xxdf = xxdf.loc[xxdf.INC> INC_LIMIT]
     
     # MAKE KEY COLUMNS NUMERIC
     for k in SurveyCols(xxdf):
@@ -997,7 +1001,6 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     xxdf['UWI10'] = xxdf.iloc[:,UWICOL].apply(lambda x: WELLAPI(x).API2INT(10))
     
     for xUWI10 in xxUWI10:
-        # if 1==1:
         ix+=1
         xUWI10=WELLAPI(xUWI10).API2INT(10)
               
@@ -1011,7 +1014,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         
 
         # Check for lateral survey points for reference well
-        if xdf.loc[(xdf['UWI10']==xUWI10) & (xdf['INC']>85),:].shape[0]<=5:
+        if xdf.loc[(xdf['UWI10']==xUWI10),:].shape[0]<=5:
             continue
 
         xFILE = xdf.loc[xdf.UWI10==xUWI10,'FILE'].values[0]
@@ -1028,7 +1031,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         # filter on dates
         xdf=xdf[xdf.UWI10.isin(UWI10list)]
         #isolate reference well
-        refXYZ=xdf[xdf.keys()[[UWICOL,XPATH,YPATH,TVD,MD]]][xdf.UWI10==xUWI10]
+        refXYZ=xdf[xdf.keys()[[UWICOL,XPATH,YPATH,TVD,MD]]][(xdf.UWI10==xUWI10)]
         
         if refXYZ.shape[0]<5:
             continue
@@ -1036,7 +1039,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         # if 1==1:
         #refTVD = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))
         #refTVD = statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10])
-        refTVD = 0
+        refTVD = statistics.mean(refXYZ.TVD)
         #remove self well to prevent 0' offsets
         xdf=xdf[xdf['UWI10']!=xUWI10]
         
@@ -1086,7 +1089,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                 overlap = max(xdf.Xfit[xdf.UWI10==well])-min(xdf.Xfit[xdf.UWI10==well])
                 gmeandistance = gmean(abs(xdf.Yfit[xdf.UWI10==well]))*np.sign(statistics.mean(xdf.Yfit[xdf.UWI10==well]))
                 #gmeandepth = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==well]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==well]))-refTVD
-                meandepth = statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==well])-refTVD
+                meandepth = statistics.mean(xdf.iloc[:,TVD][(xdf.UWI10==well)])
                 try:
                     deltadays =  np.timedelta64(refdate-(df_UWI[df_UWI['UWI10']==well][df_UWI.keys()[COMPDATEdfd]]).values[0],'D').astype(float)
                 except: deltadays = None
@@ -1095,7 +1098,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                 df_calc.loc[j,'overlap']=overlap
                 df_calc.loc[j,'dxy']=gmeandistance
                 df_calc.loc[j,'abs_dxy']=abs(gmeandistance)
-                df_calc.loc[j,'dz']=meandepth
+                df_calc.loc[j,'dz']=meandepth - refTVD
                 df_calc.loc[j,'DAYS']=deltadays
                 
                 
