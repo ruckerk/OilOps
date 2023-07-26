@@ -892,7 +892,7 @@ def Condense_Surveys(xdf):
           
 # Define function for nearest neighbors
 def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
-    INC_LIMIT = 85
+    INC_LIMIT = 87
           
     # condensed SURVEYS in xxdf
     # WELL DATA in df_UWI
@@ -957,14 +957,14 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     COMPDATEdfd = df_UWI.keys().get_loc('MAX_COMPLETION_DATE')
 
     xxdf = xxdf.rename(columns = SurveyCols(xxdf.head(5)))
-    xxdf = xxdf.loc[xxdf.INC> INC_LIMIT]
     
     # MAKE KEY COLUMNS NUMERIC
     for k in SurveyCols(xxdf):
         xxdf[k]=pd.to_numeric(xxdf[k],errors='coerce')
 
-    #print(list(xxdf.keys()))
-    #print(SurveyCols(xxdf.head(5)))
+    #filter to lateral 
+    xxdf = xxdf.loc[xxdf.INC> INC_LIMIT]
+
     try:
         SCOLS = SurveyCols(xxdf.head(5))
         SCOLS.pop(list(SurveyCols(xxdf.head(5)).keys())[5])
@@ -1098,9 +1098,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                 df_calc.loc[j,'overlap']=overlap
                 df_calc.loc[j,'dxy']=gmeandistance
                 df_calc.loc[j,'abs_dxy']=abs(gmeandistance)
-                df_calc.loc[j,'dz']=meandepth - refTVD
+                df_calc.loc[j,'dz'] =meandepth - refTVD
                 df_calc.loc[j,'DAYS']=deltadays
-                
                 
             df_calc[df_calc.overlap>=2000]
             sort_list=df_calc.sort_values(by=['abs_dxy']).UWI10
@@ -1118,7 +1117,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                   
         #calc lat len 
         OUTPUT.loc[ix,['LatLen']] =abs(RefXMax-RefXMin)    
-        OUTPUT.loc[ix,['MeanTVD']]=meandepth
+        OUTPUT.loc[ix,['MeanTVD']] = refTVD
         OUTPUT.loc[ix,['MeanX']]  =statistics.mean(refXYZ[XPATH_NAME])
         OUTPUT.loc[ix,['MeanY']]  =statistics.mean(refXYZ[YPATH_NAME])
         OUTPUT.loc[ix,'MAX_MD']   = max(refXYZ[MD_NAME].dropna())
