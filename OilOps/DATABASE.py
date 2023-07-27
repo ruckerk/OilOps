@@ -525,8 +525,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
     # GET SURVEYS #
     ############### #if True:
     # Initialize constants
-    URL_BASE = 'https://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
-    DL_BASE = 'https://cogcc.state.co.us/weblink/XLINKX'
+    URL_BASE = 'https://ecmc.state.co.us/weblink/results.aspx?id=XNUMBERX'
+    DL_BASE = 'https://ecmc.state.co.us/weblink/XLINKX'
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(adir,FOLDER)
