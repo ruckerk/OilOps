@@ -655,12 +655,12 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
                    DL_BASE=DL_BASE, 
                    FOLDER = dir_add)
 
-    if len(UWIlist)>1000:
+    if len(UWIlist)>500:
         processors = max(1,floor(multiprocessing.cpu_count()/1))
         processors = min(8,processors)
 
         chunksize = int(len(UWIlist)/processors)
-        chunksize = 1000
+        chunksize = 500
         batch = int(len(UWIlist)/chunksize)
         #processors = max(processors,batch)
         data=np.array_split(UWIlist,batch)
