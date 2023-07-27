@@ -580,18 +580,20 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
     SHP_UWIS = list(LOC_DF.loc[m,'UWI10'].unique())
 
     #SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
-     
+          
+    connection_obj = sqlite3.connect(DB)
+          
     try:
-        connection_obj = sqlite3.connect(DB)
-        QRY = "SELECT DISTINCT UWI10 FROM PRODDATA WHERE date(First_of_Month)>datetime('{0}-01-01')".format(OLD_YEAR)
+        QRY = f'SELECT UWI10, YY AS YEAR FROM (SELECT UWI10, min(CAST(strftime("%Y",date(First_of_Month)) AS INT)) AS YY FROM PRODDATA GROUP BY UWI10) WHERE YY > {OLD_YEAR}'
         UWIPROD = pd.read_sql(QRY, connection_obj)
         UWIPROD = UWIPROD.UWI10.tolist()
 
         df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
-        connection_obj.close()    
     
         UWIKEY = GetKey(df,'UWI')
-        UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index[0]
+        UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index.tolist()
+        UWIKEY = df[UWIKEY].applymap(lambda x: bool(re.search(r'[a-zA-Z\\\/]',str(x)))).sum(axis=0).sort_values(ascending=True).index[0]
+              
         df['UWI10'] = df[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
         
     except:
@@ -605,10 +607,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
     else:
         OLD_UWI = NEW_UWI = []       
 
-    FLIST = list()
-    for file in listdir(dir_add):
-        if file.lower().endswith(('.xls','xlsx','xlsm')):
-            FLIST.append(file)
+    FLIST = listdir(dir_add)
+    FLIST = [f for f in FLIST if f.lower().endswith(('.xls','xlsx','xlsm'))]
                    
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     
