@@ -481,7 +481,7 @@ def get_driver():
     opts.headless = True
     
     # Find local firefox.exe
-    opts.binary_location = FullFileScan(r'firefox.exe$')[-1]
+    Possible_Locations = FullFileScan(r'firefox.exe$')
     
     opts.set_preference("browser.download.folderList", 2)
     opts.set_preference("browser.download.manager.showWhenStarting", False)
@@ -495,7 +495,19 @@ def get_driver():
                             "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         ),
                     )
-    driver = Firefox(options=opts)
+    try:
+        driver = Firefox(options=opts)
+    except:
+        for f in Possible_Locations:
+            opts.binary_location = f
+            try:
+                drivers.append(Firefox(options=opts))
+                driver = drivers[-1]
+                break
+            except:
+                drivers[-1].quit()
+                pass
+                
     return driver
 
 def listjoin(list_in, sep="_"):
