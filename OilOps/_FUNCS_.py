@@ -498,6 +498,7 @@ def get_driver():
     try:
         driver = Firefox(options=opts)
     except:
+        drivers= []
         for f in Possible_Locations:
             opts.binary_location = f
             try:
