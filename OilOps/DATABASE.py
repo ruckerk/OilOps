@@ -110,7 +110,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         QRY = 'SELECT FILE, UWI10, FAVORED_SURVEY FROM FAVORED_SURVEYS' 
         OLD_PREF = pd.read_sql(QRY, connection_obj)   
     else:
-        OLD_PREF = pd.DataFrame(columns=['UWI10','FILE'])
+        OLD_PREF = pd.DataFrame(columns=['UWI10','FILE','FAVORED_SURVEY'])
         
     # ALL UWI/SURVEY PAIRS NOT ALREADY CONSIDERED
     m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
@@ -203,7 +203,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
 
     SCHEMA = {'UWI10': 'INTEGER', 'FILE':'TEXT', 'FAVORED_SURVEYS':'INTEGER'}
     INIT_SQL_TABLE(connection_obj,'FAVORED_SURVEYS', SCHEMA)
-
+    
     ALL_SURVEYS.loc[:,['UWI10','FILE','FAVORED_SURVEY']].drop_duplicates().to_sql('FAVORED_SURVEYS',
                                                    connection_obj,
                                                    schema = SCHEMA,
@@ -492,12 +492,12 @@ def UPDATE_SPACINGS(DB = 'FIELD_DATA.db'):
         SHL.YFEET AS SHL_Y,
         P.MONTH
         FROM FAVORED_SURVEYS F
-        LEFT JOIN SURVEYDATA SUR ON SUR.UWI=F.UWI10 AND SUR.FILE=F.FAVORED_SURVEY
+        LEFT JOIN SURVEYDATA SUR ON SUR.UWI=F.UWI10 AND SUR.FILE = F.FILE
         LEFT JOIN SCOUTDATA SCOUT ON F.UWI10 = SCOUT.UWI10
         LEFT JOIN SPACING XYZ ON F.UWI10 = XYZ.UWI10
         LEFT JOIN SHL ON F.UWI10 = SHL.UWI10
         LEFT JOIN (SELECT UWI10, MIN(DATE(First_of_Month)) AS MONTH FROM PRODDATA GROUP BY UWI10) P ON F.UWI10 = P.UWI10
-        WHERE F.FAVORED_SURVEY = SUR.FILE AND SUR.INC > 80  '''
+        WHERE F.FAVORED_SURVEY = 1 AND SUR.INC > 85  '''
     XYZ_DF = pd.read_sql(QRY,CONN)
     XYZ_DF = XYZ_DF.groupby(by=['UWI','MD'],as_index=False).first()
     XYZ_DF = DF_UNSTRING(XYZ_DF)
