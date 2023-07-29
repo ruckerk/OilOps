@@ -6,7 +6,8 @@ __all__ = ['STAIR_PLOT']
 
 
 def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
-
+    # add element to include actual survey points
+    
     # subset or wells in plotting order
     #XY_KEY = GetKey(df,'Mean.*TVD')[0]
     #m = df.loc[df.UWI10.isin(ULIST)][XY_KEY].dropna().sort_values(ascending=True).index
