@@ -475,7 +475,7 @@ def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVE
             f = {executor.submit(func,a): a for a in data}
         for i in f.keys():
             SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
-    return N
+    return len(UWILIST)
     
 def UPDATE_SPACINGS(DB = 'FIELD_DATA.db'):
     CONN = sqlite3.connect(DB)
