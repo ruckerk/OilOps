@@ -37,7 +37,7 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
     fig, ax = plt.subplots(1, sharex = True, squeeze = True)
 
     fig.set_figheight(7)
-    fig.set_figwidth(18)
+    fig.set_figwidth(21)
 
     #adjust Y axis for label room
     if ReverseY:
