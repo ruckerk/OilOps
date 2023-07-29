@@ -692,29 +692,7 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     FF_LIST = pd.read_sql(QRY,connection_obj)
     FF_LIST = FF_LIST.API14.tolist()
 
-    QRY = '''SELECT UWI10,
-                    FIRST_PRODUCTION_DATE,
-                    BBLS_H2O,
-                    BBLS_OIL,
-                    BTU_GAS,
-                    CALC_GOR,
-                    GRAVITY_OIL,
-                    JOB_DATE,
-                    JOB_END_DATE,
-                    MAX_PRESSURE,
-                    MIN_FRAC_GRADIENT,
-                    PRODUCED_WATER_USED,
-                    RECYCLED_WATER_USED,
-                    SPUD_DATE,
-                    STATUS_DATE,
-                    STIM_FLUID,
-                    STIM_PROPPANT,
-                    TOTAL_FLUID_USED
-                    TOTAL_PROPPANT_USED,
-                    TREATMENT_SUMMARY,
-                    TREAT_FLUID,
-                    TREAT_PROPPANT,
-                    TREAT_PRESSURE
+    QRY = '''SELECT *
               FROM SCOUTDATA
               WHERE (JULIANDAY('now') - JULIANDAY(STATUS_DATE)) < 600 '''
           
