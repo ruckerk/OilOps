@@ -229,7 +229,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     UWIlist = WELL_DF.sort_values(by = 'UWI10', ascending = False).UWI10.tolist()
           
     # TEST FOR LATERAL LENGTH      
-    m = ALL_SURVEYS.INV>88
+    m = ALL_SURVEYS.INC>88
     LL_TEST = ALL_SURVEYS.loc[(ALL_SURVEYS.INC>=88) * (ALL_SURVEYS.FAVORED_SURVEY==1)].copy()
     LL_TEST['XY_DELTA'] = (LL_TEST['NORTH_dY']**2+LL_TEST['EAST_dX']**2).apply(sqrt)
     LL_TEST = LL_TEST.groupby(by='UWI10')['XY_DELTA'].agg(['min','max'])
