@@ -119,6 +119,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
      # SET FAVORED SURVEY to 1/0 binary including old assignments   
     ALL_SURVEYS['FAVORED_SURVEY'] = -1    
 
+    # SOMETHING BREAKING HERE, NEED TO MAKE SURE FAVORED SURVEY is 0/1 and FILE is FILENAME       
     if len(m_old)>0:
         ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
 
