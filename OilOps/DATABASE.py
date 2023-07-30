@@ -111,17 +111,16 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         OLD_PREF = pd.read_sql(QRY, connection_obj)   
     else:
         OLD_PREF = pd.DataFrame(columns=['UWI10','FILE','FAVORED_SURVEY'])
-        
+
     # ALL UWI/SURVEY PAIRS NOT ALREADY CONSIDERED
-    m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
-    m_old = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']],indicator = True, how='left').loc[lambda x : x['_merge']=='both'].index
+    m_new = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']].drop_duplicates(),indicator = True, how='left').loc[lambda x : x['_merge']!='both'].index
+    m_old = ALL_SURVEYS[['UWI10','FILE']].merge(OLD_PREF[['UWI10','FILE']].drop_duplicates(),indicator = True, how='left').loc[lambda x : x['_merge']=='both'].index
          
      # SET FAVORED SURVEY to 1/0 binary including old assignments   
     ALL_SURVEYS['FAVORED_SURVEY'] = -1    
 
-    # SOMETHING BREAKING HERE, NEED TO MAKE SURE FAVORED SURVEY is 0/1 and FILE is FILENAME       
     if len(m_old)>0:
-        ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'])['FAVORED_SURVEY']
+        ALL_SURVEYS.loc[m_old,'FAVORED_SURVEY'] = ALL_SURVEYS.loc[m_old,['UWI10','FILE']].merge(OLD_PREF,on=['UWI10','FILE'], how = 'left')['FAVORED_SURVEY']
 
     ALL_SURVEYS.loc[ALL_SURVEYS['FILE']==ALL_SURVEYS['FAVORED_SURVEY'],'FAVORED_SURVEY'] = 1
     #ALL_SURVEYS.loc[~ALL_SURVEYS['FAVORED_SURVEY'].isin([-1,0]),'FAVORED_SURVEY'] = 0
