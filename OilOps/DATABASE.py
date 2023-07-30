@@ -401,7 +401,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     SCOUT_DATA = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(SCOUTTABLENAME),connection_obj)     
     SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
     UWIlist = list(set(UWIlist.to_list())-set(SCOUT_DATA.UWI10.tolist()))
-    UWIlist = list()
+    #UWIlist = list()
     func = partial(Get_Scouts,
             db = DB_NAME,
             TABLE_NAME = SCOUTTABLENAME)  
