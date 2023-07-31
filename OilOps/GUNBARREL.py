@@ -102,17 +102,23 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
     # Plot well data labels (add regex to determine EUR or X mo Oil/Gas/Water
     LABELFORM = "API:_API_ DATE:_DATE_\nNAME:_NAME_\nOPER:_OPER_\nFI:_FI_   PI:_PI_\nLL:_LATLEN_   PROD:_PROD_"
 
-    WELLDATE = GetKey(df,r'FIRST.*PROD.*DATE|JOB.*DATE|SPUD.*DATE')
-    WELLDATE = df.loc[m,WELLDATE].keys()[(df.loc[m,WELLDATE].isna().sum(axis=0) == df.loc[m,WELLDATE].isna().sum(axis=0).min())].tolist()
-    WELLDATE = df.loc[m,WELLDATE].dropna().apply(lambda x:x[WELLDATE] == max(x[WELLDATE]), axis =1).max(axis=0).sort_values(ascending = False).keys()[0]
-    WELL_LABEL = GetKey(df,r'WELL.*(NAME|LABEL|NO)')
-    test = df.loc[m,WELL_LABEL].applymap(lambda x: len(str(x)))
-    WELL_LABEL = test.apply(lambda x: x==max(x), axis = 1).sum(axis=0).sort_values(ascending=False).keys()[0]
-    OPERATOR =  GetKey(df,r'OPERATOR')[0]
-    FLUID_INTENSITY = GetKey(df,r'(WATER|FLUID|INJ).*INTEN')[0]
-    PROP_INTENSITY = GetKey(df,r'(PROP|SAND).*INTEN')[0]
-    LATERAL_LENGTH = GetKey(df,r'LAT.*LEN')
-    LATERAL_LENGTH = (df.loc[m,LATERAL_LENGTH].fillna(0) > 0).sum(axis=0).sort_values(ascending=False).keys()[0]
+    WELLDATE = GetKey(df2,r'FIRST.*PROD.*DATE|JOB.*DATE|SPUD.*DATE')
+    for k in WELLDATE:
+        df2[k] = pd.to_datetime(df2[k],errors='coerce')
+    WELLDATE = df2[WELLDATE].loc[:,df2[WELLDATE].max().dt.year>2000].keys().tolist()
+    #WELLDATE = df2.loc[m,WELLDATE].keys()[(df2.loc[m,WELLDATE].isna().sum(axis=0) == df2.loc[m,WELLDATE].isna().sum(axis=0).min())].tolist()
+    #WELLDATE = df2.loc[m,WELLDATE].dropna().apply(lambda x:x[WELLDATE] == max(x[WELLDATE]), axis =1).max(axis=0).sort_values(ascending = False).keys()[0]
+    WELL_LABEL = GetKey(df2,r'WELL.*(NAME|LABEL|NO)')
+    test = df2.loc[m,WELL_LABEL].applymap(lambda x: len(str(x)))
+    for k in test.keys():
+        test[k] = (test[k] == test.max(axis=1))
+    WELL_LABEL = test.sum(axis=0).sort_values(ascending =False).keys()[0]
+    #WELL_LABEL = test.apply(lambda x: x==max(x), axis = 1).sum(axis=0).sort_values(ascending=False).keys()[0]
+    OPERATOR =  GetKey(df2,r'OPERATOR')[0]
+    FLUID_INTENSITY = GetKey(df2,r'(WATER|FLUID|INJ).*INTEN')[0]
+    PROP_INTENSITY = GetKey(df2,r'(PROP|SAND).*INTEN')[0]
+    LATERAL_LENGTH = GetKey(df2,r'LAT.*LEN')
+    LATERAL_LENGTH = (df2.loc[m,LATERAL_LENGTH].fillna(0) > 0).sum(axis=0).sort_values(ascending=False).keys()[0]
     
     for i in m:
         if i == m[0]:
@@ -123,13 +129,13 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
             LABEL_TEXT = LABEL_TEXT.replace('_DATE_',df.loc[i,WELLDATE].strftime('%Y-%m-%d'))
         except:
             LABEL_TEXT = LABEL_TEXT.replace('_DATE_','NA')
-        LABEL_TEXT = LABEL_TEXT.replace('_NAME_',df.loc[i,WELL_LABEL].strip())
-        LABEL_TEXT = LABEL_TEXT.replace('_OPER_',df.loc[i,OPERATOR].strip())
-        LABEL_TEXT = LABEL_TEXT.replace('_FI_',df.loc[i,FLUID_INTENSITY].astype(int).astype(str).strip()+' BBL/FT')
-        LABEL_TEXT = LABEL_TEXT.replace('_PI_',df.loc[i,PROP_INTENSITY].astype(int).astype(str).strip()+' #/FT')
-        LABEL_TEXT = LABEL_TEXT.replace('_LATLEN_',df.loc[i,LATERAL_LENGTH].astype(int).astype(str).strip()+' FT')
+        LABEL_TEXT = LABEL_TEXT.replace('_NAME_',str(df.loc[i,WELL_LABEL]).strip())
+        LABEL_TEXT = LABEL_TEXT.replace('_OPER_',str(df.loc[i,OPERATOR]).strip())
+        LABEL_TEXT = LABEL_TEXT.replace('_FI_',str(np.floor(df.loc[i,FLUID_INTENSITY])).split('.')[0].strip() +' BBL/FT')
+        LABEL_TEXT = LABEL_TEXT.replace('_PI_',str(np.floor(df.loc[i,PROP_INTENSITY])).split('.')[0].strip() +' #/FT')
+        LABEL_TEXT = LABEL_TEXT.replace('_LATLEN_',str(np.floor(df.loc[i,LATERAL_LENGTH])).split('.')[0].strip() +' FT')
         if ProdKey:
-            LABEL_TEXT = LABEL_TEXT.replace('_PROD_',df.loc[i,ProdKey].astype(int).astype(str).strip()+'MBBL')
+            LABEL_TEXT = LABEL_TEXT.replace('_PROD_',str(np.floor(df.loc[i,ProdKey])).split('.')[0].strip() +'MBBL')
         else:     
             LABEL_TEXT = LABEL_TEXT.replace('_PROD_','None')
             
@@ -154,8 +160,8 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
     plt.xlabel("Horizontal Distance [feet]")
     plt.ylabel("Vertical Distance [feet]")
     if ProdKey:
-        cbar = plt.colorbar(sc, ticks = CVAL_RANGE, label = 'EUR [MBBL]')
-    #cbar.set_label('EUR [MBBL]', rotation=270)
+        cbar = plt.colorbar(sc, ticks = CVAL_RANGE, label = ProdKey)
+    #cbar.set_label(ProdKey, rotation=270)
     
     pylab.tight_layout()
     plt.savefig('STAIRPLOT_'+str(ULIST[0])+'_'+str(ULIST[-1])+'.PNG')
