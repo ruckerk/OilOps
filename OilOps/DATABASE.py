@@ -416,9 +416,10 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
             f = {executor.submit(func,a): a for a in data}
         
         for i in f.keys():
-            SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
+            SCOUT_df = pd.concat([SCOUT_df,i.result()],ignore_index = True)
+            #SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
     elif len(UWIlist)>0:
-        SCOUT_df = Get_Scouts(UWIlist,DB_NAME)
+        SCOUT_df =  Get_Scouts(UWIlist,DB_NAME)
 
     ###################
     # FRAC FOCUS DATA #
