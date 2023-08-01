@@ -433,7 +433,11 @@ def CO_WATERWELL_SUMMARY(LAT,LON,RADIUS = 1,UNITS = 'miles', EPSG_IN = 4269, DAT
         pad = plt.scatter(lon,lat, marker='s', color ='red', label = 'Pad Location')
 
         for i in m_max_depth.join(m_permit_radius.join(m_permit_radius_plus, how='outer'), how='inner'):
-                plt.annotate(df_permits.loc[i,'MAX_DEPTH'].astype(int), (df_permits.loc[i,'longitude'], df_permits.loc[i,'latitude']))
+                if not bool(df_permits.loc[i,'MAX_DEPTH']):
+                    continue
+                if not pd.to_numeric(df_permits.loc[i,'MAX_DEPTH'], errors = 'coerce') > 0:
+                    continue
+                plt.annotate(df_permits.loc[i,'MAX_DEPTH'], (df_permits.loc[i,'longitude'], df_permits.loc[i,'latitude']))
                 
         if 'z_well' in locals():
             plt.annotate(z_well, (lon, lat), c='r')
