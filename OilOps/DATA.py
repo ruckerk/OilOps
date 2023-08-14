@@ -767,7 +767,8 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
             if type(OUTPUT)==list:
                 OUTPUT=xSummary
             else:
-                OUTPUT=OUTPUT.append(xSummary,ignore_index=True)
+                OUTPUT = pd.concat([OUTPUT,xSummary], axis = 0, ignore_index=True)
+                #OUTPUT=OUTPUT.append(xSummary,ignore_index=True)
            
     KEYS = list(OUTPUT.keys())
     KEYS = [re.sub(r'[^0-9a-zA-Z]','_',k) for k in KEYS]
