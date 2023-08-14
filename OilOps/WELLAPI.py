@@ -17,9 +17,9 @@ class WELLAPI:
             str_in = re.sub(r'[-−﹣−–—−]','-',str_in)
             c = len(re.findall('-',str_in))
             #if c>0:
-            #    val = re.sub(r'[^0-9\.]','',str(str_in))
+            val = re.sub(r'[^0-9\.]','',str(str_in))
             #else:
-            val = re.sub(r'[^0-9-\.]','',str(str_in))
+            #    val = re.sub(r'[^0-9-\.]','',str(str_in))
             if val == '':
                 return None
             try:
