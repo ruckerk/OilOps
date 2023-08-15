@@ -98,6 +98,7 @@ def APIfromFrame(df_in):
 
     
 def COGCC_SURVEY_CLEANUP(df_in):#if True:
+    df_in.columns = df_in.keys().astype(str)      
     skeys = df_in.keys().str.upper().str.strip().str.replace(' ','')
     mask = skeys.str.contains('HEADER')
     skey = list(df_in.keys()[mask])
@@ -134,7 +135,12 @@ def ExtractSurveyWrapper(df_in):
             OUT.rename(columns = SurveyCols(OUT,False),inplace=True)
     except:
         try:
-            df_in = COGCC_SURVEY_CLEANUP(adf)
+            R = FIND_SURVEY_HEADER(adf,False)
+            if R:
+                H = FIND_SURVEY_HEADER(adf,True)
+                adf = adf.loc[R[-1]:,:].iloc[1:,:]
+                adf.columns = H
+            df_in = COGCC_SURVEY_CLEANUP(adf)            
             df_in = pd.DataFrame(df_in)
             if df_in.empty:
                 raise Exception('No survey found in dataframe')
@@ -388,7 +394,21 @@ def survey_from_excel(file, ERRORS = True): #if True:
             #outdf = outdf.loc[outdf.T.sum().index,:]
             outdf = outdf.dropna(thresh=3,axis=0)
     return outdf
-             
+
+def FIND_SURVEY_HEADER(df_in, return_header = False):
+    for n in np.arange(0,6):
+        for i,j in enumerate(df_in.index[0:10]):
+            try:
+                HEADER = df_in.loc[j:j+n,:].fillna('').astype(str).apply('_'.join,axis=0).tolist()
+                x=SurveyCols(HEADER, False)
+                ROWS = np.arange(j,j+n+1)
+                if return_header:
+                    return HEADER
+                else:
+                    return ROWS
+            except: 
+                pass
+
 def SurveyCols(df_s_in=None, INCLUDE_NS = True):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
              'INC':r'.*INC.*|.*DIP.*',
@@ -433,8 +453,14 @@ def SurveyCols(df_s_in=None, INCLUDE_NS = True):
             
             #sterms[s] = term
         if isinstance(df_s_in,list):
-            sterms[s]= list(filter(re.compile('(?i)'+sterms[s]).match,df_s_in))[0]
-
+            df_s_in = [str(x) for x in df_s_in]
+            sterms[s] = list(filter(re.compile('(?i)'+sterms[s]).match,df_s_in))
+            if len(sterms[s])>0:
+                sterms[s] = sterms[s][0]
+            else:
+                sterms[s] = None
+                
+   
     # sterms=dict((v, k) for k, v in sterms.iteritems())
     sterms = {v: k for k, v in sterms.items()}
     if None in list(sterms):
