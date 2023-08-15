@@ -341,18 +341,16 @@ def survey_from_excel(file, ERRORS = True): #if True:
             try:
                 ext_df = (df_s)
                 ext_df = pd.DataFrame(ext_df)
+                ext_df = ExtractSurveyWrapper(ext_df)      
             except:
                 continue
 
             #for kkey in SurveyCols().keys():
             #    list(SurveyCols(df_s).values())
 
-            ext_df = ExtractSurveyWrapper(ext_df)
-
-            ext_df
-
             if len(list((ext_df).values)) > 5:
                 outdf = ext_df
+                break
             #else:
             #    UWI = set(list(outdf.UWI.apply(str2num)))
                 
