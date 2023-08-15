@@ -133,10 +133,12 @@ def ExtractSurveyWrapper(df_in):
         OUT = pd.DataFrame(OUT)
         if not OUT.empty:
             OUT.rename(columns = SurveyCols(OUT,False),inplace=True)
+        else:
+            raise Exception('ExtractSurvey yielded empty result') 
     except:
         try:
             R = FIND_SURVEY_HEADER(adf,False)
-            if R:
+            if R!=None:
                 H = FIND_SURVEY_HEADER(adf,True)
                 adf = adf.loc[R[-1]:,:].iloc[1:,:]
                 adf.columns = H
@@ -147,7 +149,7 @@ def ExtractSurveyWrapper(df_in):
             else:
                 OUT = ExtractSurvey(df_in)
                 OUT.rename(columns = SurveyCols(OUT, False),inplace=True)
-            return outdf_in
+            return OUT
         except:
             raise Exception('No survey found in dataframe')
     if not isinstance(OUT,pd.DataFrame):
