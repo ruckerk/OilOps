@@ -610,7 +610,9 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
 
     FLIST = listdir(dir_add)
     FLIST = [f for f in FLIST if f.lower().endswith(('.xls','xlsx','xlsm'))]
-                   
+
+    # WORKAROUND TO REMOVE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<      
+    FLIST = [f for f in FLIST if '_UWI' in f]               
     SURVEYED_UWIS = [int(re.search(r'.*_UWI(\d*)\.',F).group(1)) for F in FLIST]
     
     # shapefile with any production
