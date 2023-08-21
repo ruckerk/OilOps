@@ -127,6 +127,7 @@ def Get_LAS(UWIS):
         UWIS = [UWIS]
     else:
         UWIS = list(UWIS)
+    UWIS = [WELLAPI(x).STRING(10) for x in UWIS]
     BADLINKS = []
     with get_driver() as browser:
         for UWI in UWIS:
