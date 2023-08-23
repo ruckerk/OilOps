@@ -51,7 +51,7 @@ import urllib
 import warnings
 import wget
 import magic
-import textract
+#import textract
 import lasio
 import psutil
 import fnmatch
