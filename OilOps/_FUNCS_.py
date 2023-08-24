@@ -102,7 +102,7 @@ def DF_UNSTRING(df_IN):
 
     for k in df_IN.keys():
         #check if just strings
-        if df_IN[k].astype(str).str.replace(r'[0-9\._\-\/\\]','',regex=True).str.len().mean() > 5:
+        if (df_IN[k].astype(str).str.replace(r'[0-9\._\-\/\\]','',regex=True).str.len().mean() > 5) and (df_IN[k].dropna().astype(str).str.replace(r'[A-Za-z\._\-\/\\]*','',regex=True).str.len().mean() > 5):
             continue
 
         mask = df_IN[k].astype(str).str.count(pattern)>0
