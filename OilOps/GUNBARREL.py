@@ -102,23 +102,23 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
     # Plot well data labels (add regex to determine EUR or X mo Oil/Gas/Water
     LABELFORM = "API:_API_ DATE:_DATE_\nNAME:_NAME_\nOPER:_OPER_\nFI:_FI_   PI:_PI_\nLL:_LATLEN_   PROD:_PROD_"
 
-    WELLDATE = GetKey(df2,r'FIRST.*PROD.*DATE|JOB.*DATE|SPUD.*DATE')
+    WELLDATE = GetKey(df,r'FIRST.*PROD.*DATE|JOB.*DATE|SPUD.*DATE')
     for k in WELLDATE:
-        df2[k] = pd.to_datetime(df2[k],errors='coerce')
-    WELLDATE = df2[WELLDATE].loc[:,df2[WELLDATE].max().dt.year>2000].keys().tolist()
-    #WELLDATE = df2.loc[m,WELLDATE].keys()[(df2.loc[m,WELLDATE].isna().sum(axis=0) == df2.loc[m,WELLDATE].isna().sum(axis=0).min())].tolist()
-    #WELLDATE = df2.loc[m,WELLDATE].dropna().apply(lambda x:x[WELLDATE] == max(x[WELLDATE]), axis =1).max(axis=0).sort_values(ascending = False).keys()[0]
-    WELL_LABEL = GetKey(df2,r'WELL.*(NAME|LABEL|NO)')
-    test = df2.loc[m,WELL_LABEL].applymap(lambda x: len(str(x)))
+        df[k] = pd.to_datetime(df[k],errors='coerce')
+    WELLDATE = df[WELLDATE].loc[:,df[WELLDATE].max().dt.year>2000].keys().tolist()
+    #WELLDATE = df.loc[m,WELLDATE].keys()[(df.loc[m,WELLDATE].isna().sum(axis=0) == df.loc[m,WELLDATE].isna().sum(axis=0).min())].tolist()
+    #WELLDATE = df.loc[m,WELLDATE].dropna().apply(lambda x:x[WELLDATE] == max(x[WELLDATE]), axis =1).max(axis=0).sort_values(ascending = False).keys()[0]
+    WELL_LABEL = GetKey(df,r'WELL.*(NAME|LABEL|NO)')
+    test = df.loc[m,WELL_LABEL].applymap(lambda x: len(str(x)))
     for k in test.keys():
         test[k] = (test[k] == test.max(axis=1))
     WELL_LABEL = test.sum(axis=0).sort_values(ascending =False).keys()[0]
     #WELL_LABEL = test.apply(lambda x: x==max(x), axis = 1).sum(axis=0).sort_values(ascending=False).keys()[0]
-    OPERATOR =  GetKey(df2,r'OPERATOR')[0]
-    FLUID_INTENSITY = GetKey(df2,r'(WATER|FLUID|INJ).*INTEN')[0]
-    PROP_INTENSITY = GetKey(df2,r'(PROP|SAND).*INTEN')[0]
-    LATERAL_LENGTH = GetKey(df2,r'LAT.*LEN')
-    LATERAL_LENGTH = (df2.loc[m,LATERAL_LENGTH].fillna(0) > 0).sum(axis=0).sort_values(ascending=False).keys()[0]
+    OPERATOR =  GetKey(df,r'OPERATOR')[0]
+    FLUID_INTENSITY = GetKey(df,r'(WATER|FLUID|INJ).*INTEN')[0]
+    PROP_INTENSITY = GetKey(df,r'(PROP|SAND).*INTEN')[0]
+    LATERAL_LENGTH = GetKey(df,r'LAT.*LEN')
+    LATERAL_LENGTH = (df.loc[m,LATERAL_LENGTH].fillna(0) > 0).sum(axis=0).sort_values(ascending=False).keys()[0]
     
     for i in m:
         if i == m[0]:
