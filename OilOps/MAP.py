@@ -22,7 +22,8 @@ __all__ = ['EPSG_CODES',
     'Pt_Bearing',
     'DistAzi',
     'elevation_function',
-    'Items_in_Polygons']
+    'Items_in_Polygons',
+    'df_to_geojson']
 
 def EPSG_CODES():
     print('''COMMON EPSG CODES ::
@@ -467,3 +468,26 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
         NAME = NAME.replace(' ','_')
         OUT_ITEMS[NAME] = [l.intersects(p) for l in ITEMS.geoms]
     return OUT_ITEMS
+
+def df_to_geojson(dictionary):
+    # create a new python dict to contain our geojson data, using geojson format
+    geojson = {'type': 'FeatureCollection', 'features': []}
+    
+    # loop through each row in the dataframe 
+    for key, value in dictionary.items():
+        # create a feature template to fill in
+        feature = {'type': 'Feature', 
+                   'properties': {},
+                   'geometry': {'type':'Polygon',
+                                'coordinates':[]}}
+        
+        # fill in the coordinates 
+        feature['geometry']['coordinates'] = [value]
+        
+        # create properies with region id
+        feature['properties']['region'] = key + 1
+        # add this feature (convert dataframe row) to the list of features inside our dict
+        geojson['features'].append(feature)
+    
+    return geojson
+    
