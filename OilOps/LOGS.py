@@ -469,7 +469,7 @@ def GetAlias(las):
                        "DTLF":1,"DTMN":1,"DTMX":1,"DTP":1,"DTSC":2,
                        "TTC":1,"AC1":1,"MSTT":5,"VEL":3},
                 'DTS':{"D4S":2,"DT4S":1,"DTS":1,"DTSD":1,"DTSF":1,"DTSS":2,
-                       "SHSL":1,"TTS":1},
+                       "SHSL":1,"TTS":5,"DTSM":1,"DTSH_MST":3},
                 'GR':{"HNGS":1,"CGR":1,"ECGR":1,"EHGR":1,"GGCE":1,"GR-A":1,"GRC":1,
                        "GRCO":1,"GRDE":1,"GRDI":1,"GRGC":1,"GRGM":1,"GRN":1,
                        "GRNC":1,"GRNP":1,"GRQH":1,"HCGR":1,"HGR":1,"HGR_STGC":1,
