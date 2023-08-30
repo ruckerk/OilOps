@@ -12,7 +12,11 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'LOG_DETREND',
            'ARRAY_CHANGEPOINTS',
            'Init_Futures',
-           'SP_WORKFLOW']
+           'SP_WORKFLOW',
+           'DLOGR',
+           'GetAlias',
+           'R0_DLOGN',
+           'Get_API']
 
 def TEMP_SUMMARY_LAS(_LASFILES_):
     SUMMARY = pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
