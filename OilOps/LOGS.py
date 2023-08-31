@@ -1068,3 +1068,51 @@ def DLOGR(LASfile):
     else: exlas="FALSE"
 
     return exlas           
+
+def WKR_Mech(lasfile):
+    exlas=lasio.LASFile()
+    dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\MECH"
+    try: las=lasio.read(lasfile)
+    except: las=[[0]]
+    Alias=GetAlias(las)
+    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["DTS"]!="NULL"):
+        df=las.df()
+        df["Vp"]=304800/df[Alias["DTC"]]
+        df["Vs"]=304800/df[Alias["DTS"]]
+        df["Zp"]=df[Alias["DEN"]]*df["Vp"]/1000
+        df["Zs"]=df[Alias["DEN"]]*df["Vs"]/1000
+        df["Lame1"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-2*df["Vs"]**2)*10**(-9)
+        df["ShearMod"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*10**(-9)
+        df["E_Youngs"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*(3*df["Vp"]**2-4*df["Vs"]**2)/(df["Vp"]**2-df["Vs"]**2)*10**(-9)
+        df["K_Bulk"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-4/3*df["Vs"]**2)*10**(-9)
+        df["Poisson"]=((df["Vp"]/df["Vs"])**2-2)/(2*(df["Vp"]/df["Vs"])**2-2)
+        df["RhoLambda"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
+        df["MuRho"]=df["ShearMod"]*df[Alias["DEN"]]/1000*10**9
+        df["LambdaMu"]=df["Lame1"]*df["ShearMod"]*10**18
+        df["LambdaRho"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
+        df["UCS_WFD"]=150.79*(304.8*df[Alias["DTC"]])**3.5
+
+        # INITIALIZE EXPORT LAS
+        exlas.well=las.well
+        exlas.well.Date=str(datetime.today())
+        exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
+        exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
+        exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
+        exlas.add_curve('DEPT',df.DEPTH , unit='ft')
+
+        # POPULATE EXPORT LAS
+        exlas.add_curve('WKR_Vp',df.Vp, unit='m/s', descr='Metric P Wave Velocity')
+        exlas.add_curve('WKR_Vs',df.Vs, unit='m/s', descr='Metric S Wave Velocity')
+        exlas.add_curve('WKR_ShearMod',df.ShearMod, unit='GPa', descr='Metric Shear Modulus')
+        exlas.add_curve('WKR_E_Youngs',df.E_Youngs, unit='GPa', descr='Metric Youngs Modulus')
+        exlas.add_curve('WKR_K_Bulk',df.K_Bulk, unit='GPa', descr='Metric Bulk Modulus')
+        exlas.add_curve('WKR_Poisson',df.Poisson, unit='None', descr='Poissons Ratio')
+        exlas.add_curve('WKR_MuRho',df.MuRho, unit='GPa*Kg/m3', descr='Metric Lame Mu * Den')
+        exlas.add_curve('WKR_LambdaMu',df.LambdaMu, unit='GPa*Gpa', descr='Metric Lame Mu * Lame Lambda')
+        exlas.add_curve('WKR_LambdaRho',df.LambdaRho, unit='GPa*Kg/m3', descr='Metric Lame Lambda * Den')    
+        exlas.add_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
+
+        filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_WKR_MECH.las"
+        exlas.write(filename, version = 2.0)
+    else: exlas=False
+    return exlas
