@@ -342,7 +342,8 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     #df=las.df()[[alias["NPHI"],alias["RDEEP"]]].dropna()
     #Alias = GetAlias(las)
     LABEL='_'+str(LABEL)
-    dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\DLOGR"
+    #dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\DLOGR"
+    dir_add = path.join(getcwd(),'DLOGR')       
     dfx=df.dropna()
     dfx["SW"]=None
     dfx["R0"]=None
@@ -724,7 +725,8 @@ def DLOGR(LASfile):
     #dir = path.abspath(pathname)
     #dirs = listdir( pathname )
     #dir_add = dir+"\\DLOGR"
-    dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\DLOGR"
+    dir_add = path.join(getcwd(),'DLOGR')       
+    #dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\DLOGR"
     #global Alias
     try: las = lasio.read(LASfile)
     except: las=[[0]]
@@ -1072,7 +1074,8 @@ def DLOGR(LASfile):
 
 def Mechanics(lasfile):
     exlas=lasio.LASFile()
-    dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\MECH"
+    dir_add = path.join(getcwd(),'MECH')
+    
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
