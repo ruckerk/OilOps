@@ -1075,7 +1075,9 @@ def DLOGR(LASfile):
 def Mechanics(lasfile):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'MECH')
-    
+    if not path.exists(dir_add):
+        mkdir(dir_add)
+                   
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
