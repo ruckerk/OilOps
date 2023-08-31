@@ -1081,6 +1081,7 @@ def Mechanics(lasfile):
     Alias=GetAlias(las)
     if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["DTS"]!="NULL"):
         df=las.df()
+        df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
         df["Vs"]=304800/df[Alias["DTS"]]
         df["Zp"]=df[Alias["DEN"]]*df["Vp"]/1000
@@ -1102,7 +1103,7 @@ def Mechanics(lasfile):
         exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
         exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
         exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
-        exlas.add_curve('DEPT',df.DEPTH , unit='ft')
+        exlas.add_curve('DEPT',df.Depth , unit='ft')
 
         # POPULATE EXPORT LAS
         exlas.add_curve('WKR_Vp',df.Vp, unit='m/s', descr='Metric P Wave Velocity')
