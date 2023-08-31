@@ -1069,7 +1069,7 @@ def DLOGR(LASfile):
 
     return exlas           
 
-def WKR_Mech(lasfile):
+def Mech(lasfile):
     exlas=lasio.LASFile()
     dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\MECH"
     try: las=lasio.read(lasfile)
