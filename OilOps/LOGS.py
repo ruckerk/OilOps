@@ -939,7 +939,7 @@ def DLOGR(LASfile):
                             exlas.well.STRT.value=df.DEPTH.min()
                             exlas.well.STOP.value=df.DEPTH.max()
                             exlas.well.STEP.value=step
-                            exlas.well.Date=str(datetime.today())
+                            exlas.well.Date=str(datetime.datetime.today())
                             exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
                             exlas.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(uwi).zfill(14), descr="Unique well identifier")
                             try: exlas.well["APIN"].value=str(uwi).zfill(14)
