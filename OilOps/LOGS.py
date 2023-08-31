@@ -1098,7 +1098,7 @@ def Mechanics(lasfile):
 
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
-        exlas.well.Date=str(datetime.today())
+        exlas.well.Date=str(datetime.datetime.today())
         exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
         exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
         exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
