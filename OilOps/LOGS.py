@@ -17,7 +17,7 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'GetAlias',
            'R0_DLOGN',
            'Get_API',
-           'MECH']
+           'Mechanics']
 
 def TEMP_SUMMARY_LAS(_LASFILES_):
     SUMMARY = pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
@@ -1070,7 +1070,7 @@ def DLOGR(LASfile):
 
     return exlas           
 
-def Mech(lasfile):
+def Mechanics(lasfile):
     exlas=lasio.LASFile()
     dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\MECH"
     try: las=lasio.read(lasfile)
