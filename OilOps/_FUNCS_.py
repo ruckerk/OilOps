@@ -482,8 +482,10 @@ def get_driver():
     
     # Find local firefox program
     if bool(re.match(r'.*linux.*',platform, re.I)):
-        P = subprocess.run(['which','firefox'], capture_output = True, text = True)
-        Possible_Locations = [P.stdout.strip()]
+        P = subprocess.run(['whereis','firefox'], capture_output = True, text = True)
+        P = P.stdout.strip()
+        P = re.split('\s+',P)[1:]
+        Possible_Locations = P
     if bool(re.match(r'.*windows.*',platform, re.I)):
         Possible_Locations = FullFileScan(r'firefox.exe$')
     
@@ -510,7 +512,10 @@ def get_driver():
                 driver = drivers[-1]
                 break
             except:
-                drivers[-1].quit()
+                try:
+                    drivers[-1].quit()
+                except:
+                    pass
                 pass
                 
     return driver
