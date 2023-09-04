@@ -443,7 +443,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     # add direct copy of key tables
     SUMMARIZE_COGCC_SQL()
  
-def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
+def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SCOUTS'):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     udir = path.dirname(adir)
