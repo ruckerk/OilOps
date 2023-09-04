@@ -463,7 +463,7 @@ def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SCOUT
     UWIlist = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'].isin(SCOUT_UWI)), 'UWI10']
     len(UWIlist)
     if len(UWIlist) >2000:
-        func = partial(OilOps.DATA.Get_Scouts,
+        func = partial(Get_Scouts,
             db = DB_NAME,
             TABLE_NAME = 'SCOUTDATA')
         processors = max(1,floor(multiprocessing.cpu_count()/1))
