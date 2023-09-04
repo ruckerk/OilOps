@@ -480,8 +480,12 @@ def get_driver():
     opts = Options()
     opts.headless = True
     
-    # Find local firefox.exe
-    Possible_Locations = FullFileScan(r'firefox.exe$')
+    # Find local firefox program
+    if bool(re.match(r'.*linux.*',platform, re.I)):
+        P = subprocess.run(['which','firefox'], capture_output = True, text = True)
+        Possible_Locations = [P.stdout,strip()]
+    if bool(re.match(r'.*windows.*',platform, re.I)):
+        Possible_Locations = FullFileScan(r'firefox.exe$')
     
     opts.set_preference("browser.download.folderList", 2)
     opts.set_preference("browser.download.manager.showWhenStarting", False)
