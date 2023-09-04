@@ -491,7 +491,7 @@ def get_driver():
         Possible_Locations = P
         # specific solution for SNAP Firefox
         if 'snap' in '_'.join(Possible_Locations).lower():
-            opts.binary_location = getoutput("find /snap/firefox -name firefox").split("\n")[-1]
+            opts.binary_location = subprocess.getoutput("find /snap/firefox -name firefox").split("\n")[-1]
             SNAP = True
         
     if bool(re.match(r'.*windows.*',platform, re.I)):
@@ -512,7 +512,7 @@ def get_driver():
     try:
         if SNAP:
             driver = webdriver.Firefox(service =
-                     Service(executable_path = getoutput("find /snap/firefox -name geckodriver").split("\n")[-1]),
+                     Service(executable_path = subprocess.getoutput("find /snap/firefox -name geckodriver").split("\n")[-1]),
                      options = opts)
         else:
             driver = Firefox(options=opts)
