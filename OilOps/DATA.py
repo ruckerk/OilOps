@@ -715,7 +715,8 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
     pagedf=[]
     xSummary = None
     URL_BASE = 'https://cogcc.state.co.us/cogis/FacilityDetail.asp?facid=XNUMBERX&type=WELL'
-    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Facility/FacilityDetail?api=XNUMBERX'
+    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Facility/FacilityDetailExpand?api=XNUMBERX'
+           
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
 
