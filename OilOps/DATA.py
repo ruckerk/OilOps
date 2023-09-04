@@ -84,7 +84,8 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
 
     # COGCC shapefiles
     if COGCC_SHP:
-        url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP'
+        # url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP' # NEW URL BELOW
+        url = 'https://ecmc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP'       
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
         filename = wget.download(url)
@@ -93,7 +94,8 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
            zipObj.extractall()
         remove(filename)
 
-        url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP'
+        # url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP' # NEW URL BELOW
+        url = 'https://ecmc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP'
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1])            
         filename = wget.download(url)
@@ -103,6 +105,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         remove(filename)
 
         url = 'https://cogcc.state.co.us/documents/data/downloads/gis/WELLS_SHP.ZIP'
+        url = 'https://ecmc.state.co.us/documents/data/downloads/gis/WELLS_SHP.ZIP'
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
         filename = wget.download(url)
@@ -114,7 +117,10 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
 def Get_LAS(UWIS):
     #if 1==1:
     URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
+    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX'
     DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
+    DL_BASE = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX'
+           
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(adir,"LOGS")
@@ -225,6 +231,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     #if 1==1:
     #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
+    URL_BASE = https://ecmc.state.co.us/cogisdb/Facility/Production?api_county_code=XCOUNTYX&api_seq_num=XNUMBERX
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     #warnings.simplefilter("ignore")
@@ -708,6 +715,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
     pagedf=[]
     xSummary = None
     URL_BASE = 'https://cogcc.state.co.us/cogis/FacilityDetail.asp?facid=XNUMBERX&type=WELL'
+    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Facility/FacilityDetail?api=XNUMBERX'
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
 
@@ -1974,7 +1982,8 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         return OUTPUT
 
 
-def CO_Get_Surveys(UWIx,URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX',DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX', FOLDER = None):
+def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX',DL_BASE = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX', FOLDER = None):
+           
     #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
     pathname = path.dirname(argv[0])       
