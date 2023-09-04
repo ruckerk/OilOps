@@ -14,7 +14,10 @@ from selenium import webdriver
 from selenium.webdriver import Firefox, Chrome
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.service import Service
+
 import subprocess
+
 #from shapely.geometry import Polygon, Point, LineString
 from sys import argv, exec_prefix, platform
 from time import perf_counter, sleep
@@ -478,14 +481,19 @@ def get_driver():
     #driver = webdriver.Chrome('\\\Server5\\Users\\KRucker\\chromedriver.exe',chrome_options=options)
 
     opts = Options()
-    opts.headless = True
-    
+    opts.headless = True    
+    SNAP = False
     # Find local firefox program
     if bool(re.match(r'.*linux.*',platform, re.I)):
         P = subprocess.run(['whereis','firefox'], capture_output = True, text = True)
         P = P.stdout.strip()
         P = re.split('\s+',P)[1:]
         Possible_Locations = P
+        # specific solution for SNAP Firefox
+        if 'snap' in '_'.join(Possible_Locations).lower():
+            opts.binary_location = getoutput("find /snap/firefox -name firefox").split("\n")[-1]
+            SNAP = True
+        
     if bool(re.match(r'.*windows.*',platform, re.I)):
         Possible_Locations = FullFileScan(r'firefox.exe$')
     
@@ -502,13 +510,19 @@ def get_driver():
                         ),
                     )
     try:
-        driver = Firefox(options=opts)
+        if SNAP:
+            driver = webdriver.Firefox(service =
+                     Service(executable_path = getoutput("find /snap/firefox -name geckodriver").split("\n")[-1]),
+                     options = opts)
+        else:
+            driver = Firefox(options=opts)
     except:
         drivers= []
         for f in Possible_Locations:
             opts.binary_location = f
             try:
                 drivers.append(Firefox(options=opts))
+
                 driver = drivers[-1]
                 break
             except:
@@ -517,7 +531,7 @@ def get_driver():
                 except:
                     pass
                 pass
-                
+       
     return driver
 
 def listjoin(list_in, sep="_"):
