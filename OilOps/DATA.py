@@ -877,7 +877,7 @@ def Merge_Frac_Focus(DIR = None, SAVE=False):
           
     return(FracFocus)
    
-def SUMMARIZE_COGCC():
+def SUMMARIZE_COGCC(SAVE = False, DB = 'FIELD_DATA.db',TABLE_NAME = 'COGCC_SQL_SUMMARY'):
     # SQLite COMMMANDS
     # well data
     Q1 = """
@@ -1607,15 +1607,14 @@ def SUMMARIZE_COGCC():
         }
 
     df_typemap = ULT.dtypes.astype('str').map(pd_sql_types).to_dict()
-
-    engine = sqlalchemy.create_engine('sqlite:///prod_data.db')
-    TABLE_NAME = 'Well_Summary'
-    with engine.begin() as connection:
-        ULT.to_sql(TABLE_NAME,connection,
-                          if_exists='replace',
-                          index=False,
-                          dtype=df_typemap)
-
+    if SAVE:               
+        engine = sqlalchemy.create_engine(f'sqlite:///{DB}')
+        with engine.begin() as connection:
+            ULT.to_sql(TABLE_NAME,connection,
+                      if_exists='replace',
+                      index=False,
+                      dtype=df_typemap)
+    
 def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
