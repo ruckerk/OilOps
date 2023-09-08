@@ -44,7 +44,7 @@ def IN_TC_AREA(well2,tc2):
     return(test) 
 
 def GROUP_IN_TC_AREA(tc,wells):
-    out = _FUNCS_.pd.DataFrame()
+    out = pd.DataFrame()
     out['API'] = wells.API_Label.str.replace(r'[^0-9]','',regex=True)
     out['TEST'] = wells.apply(lambda x: IN_TC_AREA(x,tc),axis=1)
     return(out)
