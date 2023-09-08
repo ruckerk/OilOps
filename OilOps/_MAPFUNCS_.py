@@ -76,9 +76,9 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
 
     # Speed, get subset of records
     if FilterFile == None:
-        SUBSET=_FUNCS_.np.arange(0,len(r.shapes()))
+        SUBSET=np.arange(0,len(r.shapes()))
     else:
-        FILTERUWI=_FUNCS_.pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
+        FILTERUWI = pd.read_csv(FilterFile,header=None,dtype=str).iloc[:,0].str.slice(start=1,stop=10)
         pdf=read_shapefile(r)
         pdf=pdf.API_Label.str.replace(r'[^0-9]','').str.slice(1,10)
         SUBSET=pdf[pdf.isin(FILTERUWI)].index.tolist()
@@ -96,7 +96,7 @@ def convert_shapefile(SHP_File,EPSG_OLD=3857,EPSG_NEW=3857,FilterFile=None,Label
                  print(str(ct)+" of "+str(total))
             shaperec=r.shapeRecord(i)
             Xshaperec=shaperec.shape            
-            points = _FUNCS_.np.array(shaperec.shape.points).T
+            points = np.array(shaperec.shape.points).T
             
             #points_t= transform(crs_old, crs_new, points[0],points[1],always_xy=True
             # NEEDS TO BE LON LAT ORDER
@@ -178,7 +178,7 @@ def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     df_in=df_in.copy()
     transformer = pyproj.Transformer.from_crs(epsg1, epsg2,always_xy =True)
     df_in[['X','Y']]=df_in.apply(lambda x: transformer.transform(x.iloc[2],x.iloc[1]), axis=1).apply(pd.Series)
-    #df_in[['X','Y']]=df_in.apply(lambda x: transform(epsg1,epsg2,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(_FUNCS_.pd.Series)
+    #df_in[['X','Y']]=df_in.apply(lambda x: transform(epsg1,epsg2,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(pd.Series)
     return df_in
 
 def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lines.shp'):
