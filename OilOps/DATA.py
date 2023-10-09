@@ -1621,8 +1621,9 @@ def SUMMARIZE_COGCC(SAVE = False, DB = 'FIELD_DATA.db',TABLE_NAME = 'COGCC_SQL_S
                       dtype=df_typemap)
     
 def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
+    #pathname = path.dirname(argv[0])
+    #adir = path.abspath(pathname)
+    adir = getcwd()
 
     pdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
@@ -1649,7 +1650,7 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     if 'UWI10' in pdf.keys():
         UWIKEY = 'UWI10'
     else:
-        UWIKEY = Find_Str_Locs(df_in,'UWI|API')
+        UWIKEY = Find_Str_Locs(pdf,'UWI|API')
         try:
             UWIKEY = pdf[UWIKEY].applymap(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
         except:
@@ -1802,9 +1803,7 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
 
 def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     warnings.filterwarnings('ignore')
-
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
+    adir = getcwd()
 
     ppdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
@@ -1831,7 +1830,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     if 'UWI10' in ppdf.keys():
         UWIKEY = 'UWI10'
     else:
-        UWIKEY = Find_Str_Locs(df_in,'UWI|API')
+        UWIKEY = Find_Str_Locs(ppdf,'UWI|API')
         try:
             UWIKEY = ppdf[UWIKEY].applymap(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
         except:
