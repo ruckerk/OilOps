@@ -231,9 +231,10 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     #if 1==1:
     #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
-    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Facility/Production?api_county_code=XCOUNTYX&api_seq_num=XNUMBERX'
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
+    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Facility/Production?api_county_code=XCOUNTYX&api_seq_num=XNUMBERX$'
+    #pathname = path.dirname(argv[0])
+    #adir = path.abspath(pathname)
+    adir = getcwd()
     #warnings.simplefilter("ignore")
     OUTPUT=pd.DataFrame(columns=['BTU_MEAN','BTU_STD'
                                  ,'API_MEAN','API_STD'
@@ -261,6 +262,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     ct = 0
     t1 = perf_counter()
     for UWI in UWIs:
+        UWI = WELLAPI(UWI).STRING(10)
         #print(UWI)              
         if (floor(ct/20)*20) == ct:
             print(str(ct)+' of '+str(len(UWIs)))
@@ -313,7 +315,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                         ERROR = 1
                         continue  
                     rawData = pd.read_html(StringIO(content.decode('utf-8')))
-                    pdf = rawData[1]
+                    pdf = rawData[-1]
                 except:
                     print(f'Error connecting to {docurl}.')
                     ERROR=1
