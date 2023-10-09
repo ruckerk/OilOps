@@ -84,6 +84,8 @@ import collections
 from collections.abc import Iterable
 from scipy.special import logsumexp
 
+import base64 
+
 from .WELLAPI import WELLAPI as WELLAPI
 
 warnings.filterwarnings('ignore')
