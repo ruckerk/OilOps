@@ -277,13 +277,16 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 #print(UWI)
                 #Reduce well to county and well numbers
                 COWELL=UWI[5:10]
+                COWELL64 = base64.b64encode(str(COWELL).encode('ascii')).decode().replace('=','')
+                COUNTYCODE64 = base64.b64encode(str(UWI[2:5]).encode('ascii')).decode().replace('=','')      
                 if len(UWI)>=12:
                     COMPLETION=UWI[10:12]
                 else:
                     COMPLETION="00"
-                docurl=re.sub('XNUMBERX',COWELL,URL_BASE)
-                docurl=re.sub('XCOUNTYX',UWI[2:5],docurl)
-                docurl=re.sub('XCOMPLETIONX',COMPLETION,docurl)
+                COMPLETIONCODE64 = base64.b64encode(str(COMPLETION).encode('ascii')).decode().replace('=','')                           
+                docurl=re.sub('XNUMBERX',COWELL64,URL_BASE)
+                docurl=re.sub('XCOUNTYX',COUNTYCODE64,docurl)
+                docurl=re.sub('XCOMPLETIONX',COMPLETIONCODE64,docurl)
                 #try:
                 #    html = urlopen(docurl).read()
                 #except Exception as ex:
