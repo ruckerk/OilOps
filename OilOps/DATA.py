@@ -584,6 +584,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     PRODDATA.columns = PRODDATA.columns.str.replace(' ','_')
     PRODDATA['UWI10'] = PRODDATA.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
 
+    if not path.exists(path.join(adir,FOLDER)):
+        mkdir(path.join(adir,FOLDER))
+               
     PRODDATA.to_parquet(path.join(adir,FOLDER,PROD_FNAME+'.parquet') )
 
     PRODDATA.reset_index(inplace = True)
