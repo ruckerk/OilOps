@@ -99,7 +99,7 @@ def DF_UNSTRING(df_IN):
     #df_IN=df_IN.loc[:,~df_IN.columns.duplicated()]
 
     #DATES
-    DATECOLS = [col for col in df_IN.columns if 'DATE' in col.upper()]
+    DATECOLS = [col for col in df_IN.columns if 'DATE' in str(col).upper()]
 
     #for k in df_IN.keys():
     #print(k+" :: "+str(df_IN[k].dropna().iloc[0]))
