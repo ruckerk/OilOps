@@ -432,7 +432,7 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     output.index=output.index.astype(str)
     return output
 
-def GetAlias(las):
+def GetAlias(las,RETURN_ALIASDICT=False):
     # curve options = BIT,CALIPER,DEN_CORRECTION,SONIC_DTC
     # SONIC_DTS,GAMMA,SPECTRAL_K,SPECTRAL_U,SPECTRAL_TH,
     # NEUTRON_PHI,PHOTOELECTRIC,DENSITY,RDEEP,RMEDIUM,
@@ -580,6 +580,10 @@ def GetAlias(las):
                        "SPD":2,"SPDF":2,"SPDH":1,"SPH":1,"SPP":2,"SPSB":1,
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
                 }
+    
+    if RETURN_ALIASDICT:
+        return AliasDicts
+        
     alias={}
     for i in set(AliasDicts): alias[i]="NULL"
     for i in AliasDicts:
