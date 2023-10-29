@@ -477,8 +477,8 @@ def Alias_Dictionary():
                        "GRML":2,"GR-ML":2,"GRP":2,"GRPD":2,"GRR":2,"GR-R":2,
                        "GRSD":2,"GRSL":2,"GRZ":2,"GRZD":2,"HHGR":2,"HSGR":2,
                        "MGR":2,"RGR":2,"SGR":2,"SGRD":2,"GCPS":2,"GRM1":2,
-                       "P01LGR":3,"P02LGR":3,"P03LGR":3},
-                'SPEC_K':{"K":2,"POTA":1,"HPOT":1,"KCPS":1},
+                       "P01LGR":3,"P02LGR":3,"P03LGR":3,"GAMMA":3},
+                'SPEC_K':{"K":2,"POTA":1,"HPOT":1,"KCPS":1,"HFK":1},
                 'SPEC_U':{"HURA":1,"U":4,
                           "URAN":1,"UCPS":1,"UZ":1,"URAN":2},
                 'SPEC_TH':{"TH":1,"HTHO":1,"THOR":1,"TCPS":1},
@@ -494,7 +494,8 @@ def Alias_Dictionary():
                        "NPOR_LIM":4,"NPORLS":4,"NPRL":4,"POL":4,"POS":2,
                        "PRON":3,"QNP-1A":3,"QNP-5A":3,"RPOR":2,"SNP":2,
                        "TNPH":2,"TNPH_LIM":4,"TPHC":4,"CNPOR":4,"NLIM":2,
-                        "NPHI_100":2,"CNCFLS":5,"CNLS":5,"CNPOR1":4},
+                        "NPHI_100":2,"CNCFLS":5,"CNLS":5,"CNPOR1":4,"DNPH":3,"PHIN":5,
+			"NPRS":3,"NPRD":3,"NPES":2},
                 'PE':{"HPRA":1,"PEF8":1,"PEFZ":1,"2PEF":2,"HPEDN":1,"HPEF8":1,
                        "PDPE":1,"PE":1,
                        "PE2":1,"PE2QH":1,"PEDF":1,"PEDN":1,"PEF":1,
@@ -539,7 +540,7 @@ def Alias_Dictionary():
                        "CIL":10,"CILD":11,"CIPD":10,"CLLD":8,"COND":10,"DVC1":10,
                        "DVC2":10,"DVC4":10,"FC":10,"M0CX":10,"M1CX":10,"M2CC9":10,
                        "M2CCX":10,"M2CX":10,"M4CCX":10,"M4CX":10,"MVC2":10,"P34H_COND":10,
-                       "RO90":6,"RD":4,"RTAO":1,"AT90DS":2},
+                       "RO90":6,"RD":4,"RTAO":1,"AT90DS":2, "HART":6},
                 'RMED':{"AF30":2,"AHF30":2,"AHO30":2,"AHT30":1,"AIT30":1,"AO30":3,
                        "ASF30":2,"ASO30":3,"AST30":1,"AT30":1,"HILM":1,
                        "HLLS":1,"HRL3":1,"ILM":1,"ILM2":1,"ILM4":2,"IM":1,
@@ -640,11 +641,11 @@ def LogListAlias(Input:(str,list,tuple)):
         for k2 in v1.keys():
 	        AliasDict2.update({k2:k1})
     if isinstance(Input,str):
-        OUT = AliasDict2[Input]
+        OUT = AliasDict2.get(Input)
     if isinstance(Input,tuple):
-        OUT = (AliasDict2[x] for x in Input)
+        OUT = (AliasDict2.get(x) for x in Input)
     if isinstance(Input,list):
-        OUT = [AliasDict2[x] for x in Input]
+        OUT = [AliasDict2.get(x) for x in Input]
     return OUT
 
 def fancy_dendrogram(*args, **kwargs):
