@@ -432,13 +432,7 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     output.index=output.index.astype(str)
     return output
 
-def GetAlias(las,RETURN_ALIASDICT=False):
-    # curve options = BIT,CALIPER,DEN_CORRECTION,SONIC_DTC
-    # SONIC_DTS,GAMMA,SPECTRAL_K,SPECTRAL_U,SPECTRAL_TH,
-    # NEUTRON_PHI,PHOTOELECTRIC,DENSITY,RDEEP,RMEDIUM,
-    # RSHALLOW, SPONTANEOUS
-
-    # Dictionaries
+def ALIAS_DICTIONARY():
     AliasDicts={'BIT':{"BS":2,"BIT":1},
                 'CAL':{"CALI":1,"CAL":1,"CAL1":1,"C13":2,"C13A":2,
                        "C13-A":2,"C13H":2,"C13I":2,"C13L":2,"C13M":2,
@@ -580,10 +574,17 @@ def GetAlias(las,RETURN_ALIASDICT=False):
                        "SPD":2,"SPDF":2,"SPDH":1,"SPH":1,"SPP":2,"SPSB":1,
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
                 }
-    
-    if RETURN_ALIASDICT:
-        return AliasDicts
-        
+    return AliasDicts
+           
+def GetAlias(las):
+    # curve options = BIT,CALIPER,DEN_CORRECTION,SONIC_DTC
+    # SONIC_DTS,GAMMA,SPECTRAL_K,SPECTRAL_U,SPECTRAL_TH,
+    # NEUTRON_PHI,PHOTOELECTRIC,DENSITY,RDEEP,RMEDIUM,
+    # RSHALLOW, SPONTANEOUS
+
+    # Dictionaries
+    AliasDicts= ALIAS_DICTIONARY()
+           
     alias={}
     for i in set(AliasDicts): alias[i]="NULL"
     for i in AliasDicts:
