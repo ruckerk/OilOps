@@ -15,6 +15,7 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'SP_WORKFLOW',
            'DLOGR',
            'GetAlias',
+           'Alias_Dictionary',
            'R0_DLOGN',
            'Get_API',
            'Mechanics']
@@ -432,7 +433,7 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     output.index=output.index.astype(str)
     return output
 
-def ALIAS_DICTIONARY():
+def Alias_Dictionary():
     AliasDicts={'BIT':{"BS":2,"BIT":1},
                 'CAL':{"CALI":1,"CAL":1,"CAL1":1,"C13":2,"C13A":2,
                        "C13-A":2,"C13H":2,"C13I":2,"C13L":2,"C13M":2,
@@ -583,7 +584,7 @@ def GetAlias(las):
     # RSHALLOW, SPONTANEOUS
 
     # Dictionaries
-    AliasDicts= ALIAS_DICTIONARY()
+    AliasDicts= Alias_Dictionary()
            
     alias={}
     for i in set(AliasDicts): alias[i]="NULL"
@@ -632,6 +633,19 @@ def GetAlias(las):
                 #        alias[i]=alias_x
     return alias
 
+def LogListAlias(Input:(str,list,tuple)):
+    AliasDicts= Alias_Dictionary()
+    AliasDict2 = {}
+    for k1, v1 in AliasDicts.items():
+        for k2 in v1.keys():
+	        AliasDict2.update({k2:k1})
+    if isinstance(Input,str):
+        OUT = AliasDict2[Input]
+    if isinstance(Input,tuple):
+        OUT = (AliasDict2[x] for x in Input)
+    if isinstance(Input,list):
+        OUT = [AliasDict2[x] for x in Input]
+    return OUT
 
 def fancy_dendrogram(*args, **kwargs):
     max_d = kwargs.pop('max_d', None)
