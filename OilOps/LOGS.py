@@ -836,7 +836,7 @@ def DLOGR(LASfile):
                     if len(A.iloc[:,0])>50:
 
                         # Renumbered to label in depth order and associate outliers with nearest label
-                        c_num = hdbscan.HDBSCAN(min_cluster_size=100).fit_predict(A)
+                        c_num = HDBSCAN(min_cluster_size=100).fit_predict(A)
 
                         #clusters = hdbscan.HDBSCAN(min_cluster_size=n).fit_predict(A);A["Labels"]=clusters;plt.plot(A["Labels"],-A.index);plt.title("Clusters="+str(1+max(clusters)));plt.show()
                         if len(set(c_num))>0:
