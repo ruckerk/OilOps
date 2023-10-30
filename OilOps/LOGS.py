@@ -16,6 +16,7 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'DLOGR',
            'GetAlias',
            'Alias_Dictionary',
+	   'LogListAlias',
            'R0_DLOGN',
            'Get_API',
            'Mechanics']
