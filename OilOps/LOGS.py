@@ -366,11 +366,11 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
             dfx["NPHI_X"]=dfx[NPHI]+Phidelta
             PHI_0=np.float32(min(dfx["NPHI_X"]))
             PHI_F=np.float32(max(dfx["NPHI_X"]))
-        bin=10**np.arange(math.log10(PHI_0),math.log10(PHI_F),((math.log10(PHI_F)-math.log10(PHI_0))/20))
+        bin=10**np.arange(log10(PHI_0),log10(PHI_F),((log10(PHI_F)-log10(PHI_0))/20))
         r0_est = np.zeros((len(bin),5))
         for i in range(0,len(bin)-1):
             r0_est[i,0] = (bin[i]+bin[i+1])/2
-            r0_est[i,4] = math.log10((bin[i]+bin[i+1])/2)
+            r0_est[i,4] = log10((bin[i]+bin[i+1])/2)
             r0_est[i,1] = sum(((dfx["NPHI_X"]>=bin[i]) & (dfx["NPHI_X"]<bin[i+1])))
             #    bin_cent[i,1] = sum(np.nonzero((FM_NEU>=bin[i]) and (FM_NEU<bin[i+1])))
             data = dfx[RD].loc[((dfx["NPHI_X"]>=bin[i]) & (dfx["NPHI_X"]<bin[i+1]))]
@@ -378,11 +378,11 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
                 param = stats.gamma.fit(data)
                 r0_est[i,2]=stats.gamma.ppf(0.05,*param)
                 if r0_est[i,2] > 0:
-                    r0_est[i,3]=math.log10(r0_est[i,2])
+                    r0_est[i,3]=log10(r0_est[i,2])
                 else:
                     r0_est[i,2] = None
                     #r0_est[i,2]=(sorted(data)[0]*sorted(data)[1]*sorted(data)[2])**(1./3.)
-                    #r0_est[i,3]=math.log10((sorted(data)[0]*sorted(data)[1]*sorted(data)[2])**(1./3.))
+                    #r0_est[i,3]=log10((sorted(data)[0]*sorted(data)[1]*sorted(data)[2])**(1./3.))
         r0_est=r0_est[np.all(r0_est != 0, axis=1)]  # remove rows containing zero
         r0_est=r0_est[~np.isnan(r0_est).any(axis=1)] # remove rows containing nan
 
