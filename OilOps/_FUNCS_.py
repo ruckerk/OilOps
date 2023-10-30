@@ -60,7 +60,7 @@ import lasio
 import psutil
 import fnmatch
 
-from scipy import signal
+from scipy import signal, stats
 from scipy import interpolate
 from scipy.optimize import curve_fit, fmin_cobyla
 from scipy.stats.mstats import gmean
