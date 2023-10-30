@@ -38,6 +38,7 @@ import socket
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from matplotlib import colors
 import seaborn as sns
 
 import multiprocessing
