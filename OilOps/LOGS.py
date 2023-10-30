@@ -846,8 +846,8 @@ def DLOGR(LASfile):
                                 def_clusters=dict(zip(list(set(A.clusters)),stats.rankdata(list(map(lambda x: min(A[A["clusters"]==x].index.astype(float)),list(set(A.clusters))))).astype("int")))
                                 A["clusters"].replace(def_clusters,inplace=True)
                                 #A.loc[A.clusters==1,'clusters']=list(map(lambda x: round(x).astype(int),np.interp(A[A["clusters"]==1].index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
-                                A['clusters']=list(map(lambda x: round(x).astype(int),np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
-
+                                #A['clusters']=list(map(lambda x: round(x).astype(int),np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
+                                A['clusters'] = list(map(lambda x: round(x), np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
                             #df.LABEL=A.rename(index=str,columns={"clusters":"LABEL"}).LABEL
                             df.index=df.index.astype(str)
                             A.index=A.index.astype(str)
