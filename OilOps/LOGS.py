@@ -303,8 +303,8 @@ def SP_WORKFLOW(LASFILES,OUTFOLDER = 'SP_OUT'):
 
             df.loc[this_break:,'BreakPoints'] += 1
 
-        las.add_curve('SP_DETREND',df['SP_DETREND'].values, unit='mV', descr='SP log with trend removed')
-        las.add_curve('BKPTS',df['BreakPoints'].values, unit='NA', descr='Grouped between 10 depth series changepoints')
+        las.append_curve('SP_DETREND',df['SP_DETREND'].values, unit='mV', descr='SP log with trend removed')
+        las.append_curve('BKPTS',df['BreakPoints'].values, unit='NA', descr='Grouped between 10 depth series changepoints')
 
         NEWFILENAME = F.replace('.','_DETREND.')
         las.write(path.join(OUTFOLDER,NEWFILENAME), version = 2.0)
@@ -974,7 +974,7 @@ def DLOGR(LASfile):
 
                             #str(las.well["UWI"].value).zfill(14)
 
-                            exlas.add_curve('DEPT',df.DEPTH , unit='ft')
+                            exlas.append_curve('DEPT',df.DEPTH , unit='ft')
 
                             ##############
                             # CLAY MODEL #
@@ -1064,28 +1064,28 @@ def DLOGR(LASfile):
                                 #Vls=1-Vclay-Vss
                                 #Mlog = (las['RHOZ']/1000*(304800/las['DTCO'])**2)/1000
                                 #Mmod=120*Vls+60*Vss+Vclay*25
-                                exlas.add_curve('U_APPX', df.U_APPX, unit='barns/e', descr='Simplified Matrix Cross Section PE*RHOB')
-                                exlas.add_curve('WKR_UMAA', df.WKR_UMAA, unit='barns/e', descr='Apparent Matrix Cross Section')
+                                exlas.append_curve('U_APPX', df.U_APPX, unit='barns/e', descr='Simplified Matrix Cross Section PE*RHOB')
+                                exlas.append_curve('WKR_UMAA', df.WKR_UMAA, unit='barns/e', descr='Apparent Matrix Cross Section')
 
                             # set curves
-                            #exlas.add_curve('RHOB',df[Alias["DEN"]], unit='g/cc', descr='Density used for calculation')
-                            #exlas.add_curve('NPHI',df[Alias["NPHI"]], unit='v/v', descr='Nphi used for calculation')
-                            #exlas.add_curve('RDEEP',df[Alias["RDEEP"]], unit='ohm-m', descr='RDEEP used for calculation')
+                            #exlas.append_curve('RHOB',df[Alias["DEN"]], unit='g/cc', descr='Density used for calculation')
+                            #exlas.append_curve('NPHI',df[Alias["NPHI"]], unit='v/v', descr='Nphi used for calculation')
+                            #exlas.append_curve('RDEEP',df[Alias["RDEEP"]], unit='ohm-m', descr='RDEEP used for calculation')
 
-                            exlas.add_curve('WKR_LABEL',df.LABEL, unit='Int', descr='Clustering Group')
-                            exlas.add_curve('WKR_R0', df.R0, unit='Ohm-m', descr='Resistivity at Sw=1 from Nphi Crossplot')
-                            exlas.add_curve('WKR_DLOGRN', df.WKR_DLOGRN, unit='Ohm-m', descr='Log10 of excess resistivity by neutron method')
-                            exlas.add_curve('WKR_SW', df.SW, unit='v/v', descr='Water Saturation from N=2 & WKR_R0 for total porosity')
-                            exlas.add_curve('WKR_SW_N', df.SW_N, unit='v/v', descr='Water Saturation from PCA & WKR_R0 for total porosity')
-                            exlas.add_curve('WKR_RHOFL', df.WKR_RHOFL, unit='g/cc', descr='Fluid density using WKR_Sw')
-                            exlas.add_curve('WKR_DPHI_269', df.WKR_DPHI_269, unit='v/v', descr='Porosity using 2.69g/cc matrix and WKR_Rhofl')
-                            exlas.add_curve('WKR_DPHI_265', df.WKR_DPHI_265, unit='v/v', descr='Porosity using 2.65g/cc matrix and WKR_Rhofl')
-                            exlas.add_curve('WKR_DPHI_271', df.WKR_DPHI_271, unit='v/v', descr='Porosity using 2.71g/cc matrix and WKR_Rhofl')
-                            exlas.add_curve('WKR_BVW_269', df.WKR_BVW_269, unit='v/v', descr='Bulk volume water as Sw*WKR_DPHI_269')
-                            exlas.add_curve('WKR_BVH_269', df.WKR_BVH_269, unit='v/v', descr='Bulk volume hydrocarbon as (1-Sw)*WKR_DPHI_269')
-                            exlas.add_curve('WKR_ND_DIFF', df.ND_DIFF, unit='v/v', descr='Porosity separation between NPHI and DPHI_2.69')
-                            exlas.add_curve('WKR_Kirr', df.WKR_Kirr, unit='mD', descr='Perm assuming Sw=Swirr and N=2')
-                            exlas.add_curve('WKR_VCLAY', df.WKR_VCLAY, unit='v/v', descr='Clay volume by Neutron-Density')
+                            exlas.append_curve('WKR_LABEL',df.LABEL, unit='Int', descr='Clustering Group')
+                            exlas.append_curve('WKR_R0', df.R0, unit='Ohm-m', descr='Resistivity at Sw=1 from Nphi Crossplot')
+                            exlas.append_curve('WKR_DLOGRN', df.WKR_DLOGRN, unit='Ohm-m', descr='Log10 of excess resistivity by neutron method')
+                            exlas.append_curve('WKR_SW', df.SW, unit='v/v', descr='Water Saturation from N=2 & WKR_R0 for total porosity')
+                            exlas.append_curve('WKR_SW_N', df.SW_N, unit='v/v', descr='Water Saturation from PCA & WKR_R0 for total porosity')
+                            exlas.append_curve('WKR_RHOFL', df.WKR_RHOFL, unit='g/cc', descr='Fluid density using WKR_Sw')
+                            exlas.append_curve('WKR_DPHI_269', df.WKR_DPHI_269, unit='v/v', descr='Porosity using 2.69g/cc matrix and WKR_Rhofl')
+                            exlas.append_curve('WKR_DPHI_265', df.WKR_DPHI_265, unit='v/v', descr='Porosity using 2.65g/cc matrix and WKR_Rhofl')
+                            exlas.append_curve('WKR_DPHI_271', df.WKR_DPHI_271, unit='v/v', descr='Porosity using 2.71g/cc matrix and WKR_Rhofl')
+                            exlas.append_curve('WKR_BVW_269', df.WKR_BVW_269, unit='v/v', descr='Bulk volume water as Sw*WKR_DPHI_269')
+                            exlas.append_curve('WKR_BVH_269', df.WKR_BVH_269, unit='v/v', descr='Bulk volume hydrocarbon as (1-Sw)*WKR_DPHI_269')
+                            exlas.append_curve('WKR_ND_DIFF', df.ND_DIFF, unit='v/v', descr='Porosity separation between NPHI and DPHI_2.69')
+                            exlas.append_curve('WKR_Kirr', df.WKR_Kirr, unit='mD', descr='Perm assuming Sw=Swirr and N=2')
+                            exlas.append_curve('WKR_VCLAY', df.WKR_VCLAY, unit='v/v', descr='Clay volume by Neutron-Density')
                             filename = str(dir_add)+"\\"+str(Puwi)+"_WKR_DLOGR.las"
                             #if path.isfile(filename):
                             #    remove(filename)
@@ -1128,19 +1128,19 @@ def Mechanics(lasfile):
         exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
         exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
         exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
-        exlas.add_curve('DEPT',df.Depth , unit='ft')
+        exlas.append_curve('DEPT',df.Depth , unit='ft')
 
         # POPULATE EXPORT LAS
-        exlas.add_curve('WKR_Vp',df.Vp, unit='m/s', descr='Metric P Wave Velocity')
-        exlas.add_curve('WKR_Vs',df.Vs, unit='m/s', descr='Metric S Wave Velocity')
-        exlas.add_curve('WKR_ShearMod',df.ShearMod, unit='GPa', descr='Metric Shear Modulus')
-        exlas.add_curve('WKR_E_Youngs',df.E_Youngs, unit='GPa', descr='Metric Youngs Modulus')
-        exlas.add_curve('WKR_K_Bulk',df.K_Bulk, unit='GPa', descr='Metric Bulk Modulus')
-        exlas.add_curve('WKR_Poisson',df.Poisson, unit='None', descr='Poissons Ratio')
-        exlas.add_curve('WKR_MuRho',df.MuRho, unit='GPa*Kg/m3', descr='Metric Lame Mu * Den')
-        exlas.add_curve('WKR_LambdaMu',df.LambdaMu, unit='GPa*Gpa', descr='Metric Lame Mu * Lame Lambda')
-        exlas.add_curve('WKR_LambdaRho',df.LambdaRho, unit='GPa*Kg/m3', descr='Metric Lame Lambda * Den')    
-        exlas.add_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
+        exlas.append_curve('WKR_Vp',df.Vp, unit='m/s', descr='Metric P Wave Velocity')
+        exlas.append_curve('WKR_Vs',df.Vs, unit='m/s', descr='Metric S Wave Velocity')
+        exlas.append_curve('WKR_ShearMod',df.ShearMod, unit='GPa', descr='Metric Shear Modulus')
+        exlas.append_curve('WKR_E_Youngs',df.E_Youngs, unit='GPa', descr='Metric Youngs Modulus')
+        exlas.append_curve('WKR_K_Bulk',df.K_Bulk, unit='GPa', descr='Metric Bulk Modulus')
+        exlas.append_curve('WKR_Poisson',df.Poisson, unit='None', descr='Poissons Ratio')
+        exlas.append_curve('WKR_MuRho',df.MuRho, unit='GPa*Kg/m3', descr='Metric Lame Mu * Den')
+        exlas.append_curve('WKR_LambdaMu',df.LambdaMu, unit='GPa*Gpa', descr='Metric Lame Mu * Lame Lambda')
+        exlas.append_curve('WKR_LambdaRho',df.LambdaRho, unit='GPa*Kg/m3', descr='Metric Lame Lambda * Den')    
+        exlas.append_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
 
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_WKR_MECH.las"
         exlas.write(filename, version = 2.0)
