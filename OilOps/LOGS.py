@@ -998,12 +998,12 @@ def DLOGR(LASfile):
 
                             for i in df.LABEL.unique():
                                 N=(np.log10(df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW_N<1),'R0']/df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW<1),Alias['RDEEP']])/np.log10(df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW_N<1),'SW'])).mean(axis=0)
-                                cmap = matplotlib.cm.get_cmap('bwr');
-                                normalize = matplotlib.colors.Normalize(vmin=0, vmax=1);
+                                cmap = cm.get_cmap('bwr');
+                                normalize = colors.Normalize(vmin=0, vmax=1);
                                 swcolors = [cmap(normalize(value)) for value in (df.loc[df.LABEL==i,'SW_N'].dropna().clip(0,1))];
-                                cmap=matplotlib.cm.get_cmap('gist_rainbow')
+                                cmap=cm.get_cmap('gist_rainbow')
                                 try:
-                                    normalize = matplotlib.colors.Normalize(vmin=min(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()),
+                                    normalize = colors.Normalize(vmin=min(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()),
                                                                         vmax=max(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()))
                                     bvwcolors = [cmap(normalize(value)) for value in (df.loc[df.LABEL==i,'WKR_BVW_269'].dropna().clip(0,1))];
                                 except:
