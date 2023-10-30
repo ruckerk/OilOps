@@ -390,7 +390,7 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
         #plt.plot(las[NKEY][np.nonzero((las[0]>top) & (las[0] < base))],las[RKEY][np.nonzero((las[0]>top) & (las[0] < base))],'b.')
 
         try: 
-	    popt, pcov = scipy.optimize.curve_fit(func, r0_est[(r0_est[:,2])>0,4], r0_est[(r0_est[:,2])>0,3])
+            popt, pcov = scipy.optimize.curve_fit(func, r0_est[(r0_est[:,2])>0,4], r0_est[(r0_est[:,2])>0,3])
         except:
             popt = [-2,2]
 
