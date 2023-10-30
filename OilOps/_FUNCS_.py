@@ -49,6 +49,7 @@ import selenium
 import shapefile as shp #pyshp
 import sklearn as sk
 from sklearn.decomposition import PCA
+from sklearn.cluster import HDBSCAN 
 import sqlalchemy
 import sqlite3
 import urllib
