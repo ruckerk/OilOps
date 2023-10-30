@@ -338,14 +338,15 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     #pathname = path.dirname(sys.argv[0])
     #dir = path.abspath(pathname)
     #dir_add = dir+"\\DLOGR"
-    #if not path.exists(dir_add):
-    #    makedirs(dir_add)
     #alias = GetAlias(df)
     #df=las.df()[[alias["NPHI"],alias["RDEEP"]]].dropna()
     #Alias = GetAlias(las)
     LABEL='_'+str(LABEL)
     #dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\DLOGR"
-    dir_add = path.join(getcwd(),'DLOGR')       
+    dir_add = path.join(getcwd(),'DLOGR')  
+    if not path.exists(dir_add):
+        makedirs(dir_add)
+	    
     dfx=df.dropna()
     dfx["SW"]=None
     dfx["R0"]=None
@@ -388,7 +389,8 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
 
         #plt.plot(las[NKEY][np.nonzero((las[0]>top) & (las[0] < base))],las[RKEY][np.nonzero((las[0]>top) & (las[0] < base))],'b.')
 
-        try: popt, pcov = scipy.optimize.curve_fit(func, r0_est[(r0_est[:,2])>0,4], r0_est[(r0_est[:,2])>0,3])
+        try: 
+	    popt, pcov = scipy.optimize.curve_fit(func, r0_est[(r0_est[:,2])>0,4], r0_est[(r0_est[:,2])>0,3])
         except:
             popt = [-2,2]
 
