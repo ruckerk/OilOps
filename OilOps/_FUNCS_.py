@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup as BS
 from functools import partial
 from io import StringIO, BytesIO
 from adjustText import adjust_text
-from math import floor, cos, sin, tan, radians, atan2, acos, asin, degrees, sqrt, ceil, isnan, pi, log10
+from math import floor, cos, sin, tan, radians, atan, atan2, acos, asin, degrees, sqrt, ceil, isnan, pi, log10
 import statistics
 from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin, getcwd
 from requests import Session
@@ -982,3 +982,15 @@ def APPLY_DICT_TO_LIST(LIST_IN,DICT_IN):
             DICT_VAL = list(DICT_VAL)
         LIST_OUT = LIST_OUT + DICT_VAL
     return LIST_OUT
+
+def AziFromLatLon(LON1,LAT1,LON2,LAT2):
+    R = 6371
+    dLAT = LAT2-LAT1  #phi
+    dLON = LON2-LON1  #lambda
+    a = sin(dLAT/2*pi/180)**2 + cos(LAT1*pi/180)*cos(LAT2*pi/180)*sin(dLON/2*pi/180)**2
+    d = 2*R*atan2(sqrt(a),sqrt(1-a))
+    theta = atan2(sin(dLON*pi/180)*cos(LAT2*pi/180), cos(LAT1*pi/180)*sin(LAT2*pi/180)-sin(LAT1*pi/180)*cos(LAT2*pi/180)*cos(dLON*pi/180))
+    theta =  180/pi * theta
+    while theta<0:
+        theta += 360
+    return theta
