@@ -477,8 +477,9 @@ def FullFileScan(FILE):
     return OUT
     
 def get_driver():
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
+    #pathname = path.dirname(argv[0])
+    #adir = path.abspath(pathname)
+    adir = getcwd()
 
     ## initialize options
     #options = webdriver.ChromeOptions()
@@ -494,14 +495,14 @@ def get_driver():
     if bool(re.match(r'.*linux.*',platform, re.I)):
         P = subprocess.run(['whereis','firefox'], capture_output = True, text = True)
         P = P.stdout.strip()
-        P = re.split('\s+',P)[1:]
+        P = re.split(r'\s+',P)[1:]
         Possible_Locations = P
         # specific solution for SNAP Firefox
         if 'snap' in '_'.join(Possible_Locations).lower():
             opts.binary_location = subprocess.getoutput("find /snap/firefox -name firefox").split("\n")[-1]
             SNAP = True
         
-    if bool(re.match(r'.*windows.*',platform, re.I)):
+    if bool(re.match(r'.*win.*',platform, re.I)):
         Possible_Locations = FullFileScan(r'firefox.exe$')
     
     opts.set_preference("browser.download.folderList", 2)
@@ -519,7 +520,7 @@ def get_driver():
     try:
         if SNAP:
             driver = webdriver.Firefox(service =
-                     Service(executable_path = subprocess.getoutput("find /snap/firefox -name geckodriver").split("\n")[-1]),
+                     Service(executable_path = subprocess.getoutput(f"find {path.join('snap','firefox')} -name geckodriver").split("\n")[-1]),
                      options = opts)
         else:
             driver = Firefox(options=opts)
