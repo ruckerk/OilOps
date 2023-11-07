@@ -1993,8 +1993,9 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
            
     #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
-    pathname = path.dirname(argv[0])       
-    adir = path.abspath(pathname)
+    #pathname = path.dirname(argv[0])       
+    #adir = path.abspath(pathname)
+    adir = getcwd()
     if FOLDER == None:      
         dir_add = path.join(adir,"SURVEYS")
         if path.isdir(dir_add) == False:
@@ -2050,16 +2051,19 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                     try:
                         browser.get(docurl)
                     except Exception as ex:
-                        continue
                         print(f'Error connecting to {docurl}.')
+                        print(ex)
                         ERROR=1
+                        continue
                     browser.find_element_by_link_text('Document Name').click()
 
                     soup = BS(browser.page_source, 'lxml')
                     
                     try:
                         parsed_table = soup.find_all('table')[0]
-                    except:
+                    except Exception as ex::
+                        print(f'Error parsing {docurl}')
+                        print(ex)
                         continue
                 
                     pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
