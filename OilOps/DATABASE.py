@@ -68,7 +68,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     batch = min(5000,len(m))
     chunksize = max(int(len(m)/batch),1)
     mm=np.array_split(m,chunksize)
-
+    print(f'{len(m)} new survey files')
     for m1 in mm:
         OUT = pd.DataFrame(columns = S_KEYS)
         for D in DATA_df.loc[m1].values:
