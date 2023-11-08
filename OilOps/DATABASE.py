@@ -92,9 +92,11 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
             #OUT.rename(columns = {'UWI10':'UWI'}, inplace =True)
             #OUT['UWI10'] = OUT.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
             OUT.to_sql('SURVEYDATA',index = False, con = connection_obj, if_exists = 'append', chunksize = 5000)
-         
+    
+    print('New survey processing complete')
     SQL_UNDUPLICATE(connection_obj,'SURVEYDATA')
     
+    print('SQL survey duplicates removed')
     warnings.filterwarnings('default')
 
     #ALL_SURVEYS = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj)
@@ -126,6 +128,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     #ALL_SURVEYS.loc[~ALL_SURVEYS['FAVORED_SURVEY'].isin([-1,0]),'FAVORED_SURVEY'] = 0
 
     ALL_SURVEYS.FAVORED_SURVEY = ALL_SURVEYS.FAVORED_SURVEY.astype(int)
+
+    print('Favored survey assignment complete')
 
     #UWIs with new file or none assigned
     NEW_UWI = ALL_SURVEYS.loc[m_new,'UWI10'].unique().tolist()
@@ -187,6 +191,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
                 'Y': 'REAL',
                 'XFEET':'REAL',
                 'YFEET':'REAL'}
+    
     INIT_SQL_TABLE(connection_obj, 'SHL', LOC_COLS)
     LOC_DF[['UWI10','X','Y','XFEET','YFEET']].to_sql(name = 'SHL', con = connection_obj, if_exists='replace', index = False, dtype = LOC_COLS)
     connection_obj.commit()
