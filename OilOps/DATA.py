@@ -708,7 +708,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
 
 
 def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
-
+    # PASSING ERROR 
+           
     Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
                'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
                'TOTAL FLUID USED','MAX PRESSURE','TOTAL GAS USED','FLUID DENSITY','TYPE OF GAS',
@@ -787,8 +788,10 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
             else:
                 OUTPUT = pd.concat([OUTPUT,xSummary], axis = 0, ignore_index=True)
                 #OUTPUT=OUTPUT.append(xSummary,ignore_index=True)
-           
-    KEYS = list(OUTPUT.keys())
+    try:     
+        KEYS = list(OUTPUT.keys()) 
+    except:
+        continue
     KEYS = [re.sub(r'[^0-9a-zA-Z]','_',k) for k in KEYS]
     KEYS = [re.sub(r'1ST','FIRST',k) for k in KEYS]
     OUTPUT.columns = KEYS
