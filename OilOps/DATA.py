@@ -2064,7 +2064,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                     
                     try:
                         parsed_table = soup.find_all('table')[0]
-                    except Exception as ex::
+                    except Exception as ex:
                         print(f'Error parsing {docurl}')
                         print(ex)
                         continue
