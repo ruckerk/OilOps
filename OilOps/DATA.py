@@ -791,7 +791,8 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
     try:     
         KEYS = list(OUTPUT.keys()) 
     except:
-        continue
+        print(f'no OUTPUT for {UWIs[0]}:{UWIs[-1]}')
+        break
     KEYS = [re.sub(r'[^0-9a-zA-Z]','_',k) for k in KEYS]
     KEYS = [re.sub(r'1ST','FIRST',k) for k in KEYS]
     OUTPUT.columns = KEYS
