@@ -10,9 +10,10 @@ __all__ = ['CONSTRUCT_DB',
           'UPDATE_PROD']
 
 def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
-    
+    #pathname = path.dirname(argv[0])
+    #adir = path.abspath(pathname)
+    adir = getcwd()
+          
     connection_obj = sqlite3.connect(DB_NAME)
     c = connection_obj.cursor()
     SURVEY_FILE_FIELDS = {'FILENAME':['CHAR'],'FILE':['BLOB']}
@@ -267,12 +268,16 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         UWIlist = all_df.loc[(all_df.TEST!='both')*(all_df.FAVORED_SURVEY==1),'UWI10'].unique()     
      
         PTS0 = ALL_SURVEYS.loc[(ALL_SURVEYS.UWI10.isin(UWIlist)) * (ALL_SURVEYS.INC>88)*(ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0)[['EAST','NORTH']].agg(['first','mean','last'])
-        PTS0.reset_index(drop=True, inplace= True)
-        PTS0 = PTS0.apply(lambda x: [[x[0],x[1]], [x[2],x[3]], [x[4],x[5]]], axis = 1).tolist()
-        PTS0 = list(itertools.chain(*PTS0))
+        #PTS0.reset_index(drop=False, inplace= True)
+        PTS0['PTLIST'] = PTS0.apply(lambda x: [[x[0],x[1]], [x[2],x[3]], [x[4],x[5]]], axis = 1)              
+        #PTS0 = list(itertools.chain(*PTS0))
+              
         #REMOVE NAN
-        PTS0 = shapely.geometry.MultiPoint(PTS0)      
-        PTS0 = PTS0.buffer(10000)
+        #PTS0 = shapely.geometry.MultiPoint(PTS0)      
+        PTS0['MULTIPOINT'] = PTS0['PTLIST'].apply(shapely.geometry.MultiPoint)
+        PTS0['BUFFER'] = PTS0['MULTIPOINT'].apply(lambda x: x.buffer(5000))
+        BUFFER_GROUP = shapely.geometry.MultiPolygon(PTS0['BUFFER'].tolist())
+        #PTS0 = PTS0.buffer(10000)    # THIS CRASHES CPU ON MEMORY LIMIT
 
         # INTERSECT BUFFER
         #is it fast to create linestrings of each well and intersect?
@@ -282,13 +287,14 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         TEST = TEST.apply(lambda x: shapely.geometry.LineString(x))
         
         s = STRtree(TEST.tolist())
-        r = s.query(PTS0)  
+        r = s.query(BUFFER_GROUP)  
         TEST = pd.DataFrame(TEST)
         TEST['INTERSECTS_BUFFER'] = TEST.XY.apply(lambda x: x in r)
         TEST.reset_index(drop=False,inplace=True)
           
         # UWIlist for wells intersecting buffer  
         UWIlist = TEST.loc[TEST['INTERSECTS_BUFFER'],'UWI10'].unique().tolist()
+        UWIlist = [x for x in UWIlist if x>1e6]
 
         #PTS1.intersects(shapely.geometry.Point(PTS0[34]))
 
@@ -297,7 +303,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         # USE A SPATIAL FUNCTION HERE
         # BUFFER AROUND CHANGING SURVEY PTS
         # FIND ALL UWIS TOUCHING BUFFER AREAS
-        
+
         ALL_SURVEYS.loc[(ALL_SURVEYS.UWI10.isin(UWIlist)) * (ALL_SURVEYS.INC>88) * (ALL_SURVEYS.FAVORED_SURVEY==1),['UWI10','FILE','NORTH','EAST']].groupby(by=['UWI10','FILE'], axis = 0)[['EAST','NORTH']].first()
                                 
     else:
@@ -338,7 +344,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         XYZ = XYZ.loc[~(XYZ.iloc[:,:-1].isna().any(axis=1))]
 
         #FIX THIS SO IT UPDATES PROPERLY WITHOUT DUPLICATED UWIS  
-        XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='update', index = False, dtype = XYZ_COLS)
+        
+        XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
         connection_obj.commit()
     
                     
