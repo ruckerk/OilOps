@@ -21,6 +21,9 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'Get_API',
            'Mechanics']
 
+
+# Update clay model to consider Bhuyan and Passey, 1994 method + Nphi_fl and Rho_fl from RLOGR R0
+
 def TEMP_SUMMARY_LAS(_LASFILES_):
     SUMMARY = pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
     LASDATA = False
