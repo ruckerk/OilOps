@@ -53,6 +53,9 @@ import sklearn as sk
 from sklearn.decomposition import PCA
 from sklearn.cluster import HDBSCAN 
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+
 import sqlalchemy
 import sqlite3
 import urllib
