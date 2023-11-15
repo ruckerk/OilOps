@@ -412,7 +412,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     SCOUTTABLENAME = 'SCOUTDATA'  
     SCOUT_DATA = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(SCOUTTABLENAME),connection_obj)     
     SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
-    UWIlist = list(set(UWIlist.to_list())-set(SCOUT_DATA.UWI10.tolist()))
+    UWIlist = list(set(list(UWIlist))-set(SCOUT_DATA.UWI10.tolist()))
     #UWIlist = list()
     func = partial(Get_Scouts,
             db = DB_NAME,
@@ -457,7 +457,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
  
 def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SCOUTS'):
     pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
+    #adir = path.abspath(pathname)
+    adir = getcwd()
     udir = path.dirname(adir)
 
     CONN = sqlite3.connect(path.join(adir,DB_NAME))
