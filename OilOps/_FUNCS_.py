@@ -94,6 +94,16 @@ from .WELLAPI import WELLAPI as WELLAPI
 
 warnings.filterwarnings('ignore')
 
+def DF_GET_INDEX(df, strings):
+    df = df.copy()
+    df = df.astype(str)
+    
+    if isinstance(strings, str):
+        strings = [strings]
+    for st in strings:
+        
+        
+
 def DF_UNSTRING(df_IN):
     if df_IN.empty:
         return df_IN
@@ -275,17 +285,22 @@ def requests_retry_session(
 
 def Find_Str_Locs(df_in,string):
     # takes data table and finds index locations for all matches
-    if len(string[0])<=1:
+    if isinstance(string,str):
         string=[string]
+    df_in = df_in.astype(object)
     Output=pd.DataFrame({'Title':[],'Columns':[],'Rows':[]}).astype(object)
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     #Output.astype({'Title': 'object','Columns': 'object','Rows': 'object'}).dtypes
     Output.astype(object)
-    ii = -1
-    for item in string:
-        ii += 1
-        Output.at[ii,'Columns'] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns'),:].index.values ]
-        Output.at[ii,'Rows'] = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
+    for ii, item in enumerate(string):
+        Output.at[ii,'Columns'] = [] 
+        Output.at[ii,'Rows'] = []
+        rows = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns').replace(False,np.nan).dropna().index,:].index.values ]
+        for r in rows:
+            cols = [(lambda x: df_in.loc[r,:].index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
+            Output.at[ii,'Columns'] = Output.at[ii,'Columns'] + cols
+            Output.at[ii,'Rows'] = Output.at[ii,'Rows'] + [r]*len(cols)
+            # Output.at[ii,'Rows'] = [(lambda x: df_in.loc[:.c].index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
     Output.Title=pd.Series([w.replace(' ','_').replace('#','NUMBER').replace('^','') for w in string]).astype(str)
     return (Output)
 
