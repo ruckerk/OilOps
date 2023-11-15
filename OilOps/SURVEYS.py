@@ -38,7 +38,7 @@ def Find_API_Col(df_inAPI):
     lowlim = 10**(8)
     highlim = 10**14
     
-    df2 = df2.apply(lambda x:WELLAPI(x).str2num(), axis=1)
+    df2 = df2.applymap(lambda x:WELLAPI(x).str2num())
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
