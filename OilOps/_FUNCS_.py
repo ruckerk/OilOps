@@ -94,13 +94,7 @@ from .WELLAPI import WELLAPI as WELLAPI
 
 warnings.filterwarnings('ignore')
 
-def DF_GET_INDEX(df, strings):
-    df = df.copy()
-    df = df.astype(str)
-    
-    if isinstance(strings, str):
-        strings = [strings]
-    for st in strings:
+
         
         
 
