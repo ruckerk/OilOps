@@ -30,15 +30,24 @@ __all__ = ['Find_API_Col',
 
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
-    
+          
     #if 1==1:
     APIterms = ['API','UWI']
+    rAPIterms = '|'.join(APIterms)
     
     df2 = df_inAPI.copy(deep = True)
     lowlim = 10**(8)
     highlim = 10**14
-    
-    df2 = df2.applymap(lambda x:WELLAPI(x).str2num())
+    def STR2INT(INPUT):       
+        if bool(re.findall(r'[a-z]',str(INPUT),re.I)):
+            return None
+        try:
+            val = WELLAPI(INPUT).str2num()
+        except:
+            val = None
+        return val
+                  
+    df2 = df2.applymap(lambda x:STR2INT(x))
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
@@ -52,8 +61,8 @@ def Find_API_Col(df_inAPI):
     UWI = None
     
     for k in keys:        
-        # check for GT 100 rows per value
-        if df2[k].shape[0]/len(df2[k].unique()) > 100:
+        # check for GT 50 rows per value
+        if df2[k].shape[0]/len(df2[k].unique()) > 50:
             keylist.append(k)
         UWIlist = UWIlist.append(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
 
@@ -65,7 +74,10 @@ def Find_API_Col(df_inAPI):
             test = False
             # check for API/UWI key
             if any(x.upper() in k.upper() for x in APIterms):
-                test=True           
+                test=True   
+            elif df.iloc[:,-3].astype(str).str.contains(f'{rAPIterms}',case = False, flags=re.I, regex=True).max():
+                test = True
+
             # confirm numbers are > 10 and less than 14 digits
             df2[k] = df2[k].apply(lambda x:WELLAPI(x).str2num())
             if (df2.loc[(df2[k]<highlim) & (df2[k]>lowlim),k].dropna().shape[0] > longest):
@@ -163,7 +175,8 @@ def ExtractSurveyWrapper(df_in):
 def ExtractSurvey(df_in): #if True:
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
-    
+    ReadUWI = Find_API_Col(df_in)[0]
+          
     adf_in=df_in.copy(deep=True)
 
     try: 
