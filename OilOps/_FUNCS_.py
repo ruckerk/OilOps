@@ -96,7 +96,9 @@ warnings.filterwarnings('ignore')
 
 
         
-        
+def sigmoid(x, L ,x0, k, b):
+    y = L / (1 + np.exp(-k*(x-x0))) + b
+    return (y)
 
 def DF_UNSTRING(df_IN):
     if df_IN.empty:
