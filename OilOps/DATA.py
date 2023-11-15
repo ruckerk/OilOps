@@ -758,7 +758,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
             
             while RETRY<8:
                 try:
-                    pagedf=pd.read_html(docurl)[0]
+                    pagedf=pd.read_html(docurl)
                     RETRY=60
                 except:
                     pagedf=[]
