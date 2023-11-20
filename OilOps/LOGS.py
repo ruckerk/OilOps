@@ -1116,7 +1116,7 @@ def Mechanics(lasfile):
         df["Vs"]=304800/df[Alias["DTS"]]
         df["Zp"]=df[Alias["DEN"]]*df["Vp"]/1000
         df["Zs"]=df[Alias["DEN"]]*df["Vs"]/1000
-        df["Lame1"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-2*df["Vs"]**2)*10**(-9)
+        df["Lame1"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-2*df["Vs"]**2)*(10**(-9))
         df["ShearMod"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*10**(-9)
         df["E_Youngs"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*(3*df["Vp"]**2-4*df["Vs"]**2)/(df["Vp"]**2-df["Vs"]**2)*10**(-9)
         df["K_Bulk"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-4/3*df["Vs"]**2)*10**(-9)
@@ -1126,6 +1126,7 @@ def Mechanics(lasfile):
         df["LambdaMu"]=df["Lame1"]*df["ShearMod"]*10**18
         df["LambdaRho"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
         df["UCS_WFD"]=150.79*(304.8*df[Alias["DTC"]])**3.5
+	df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
 
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
@@ -1141,10 +1142,12 @@ def Mechanics(lasfile):
         exlas.append_curve('WKR_ShearMod',df.ShearMod, unit='GPa', descr='Metric Shear Modulus')
         exlas.append_curve('WKR_E_Youngs',df.E_Youngs, unit='GPa', descr='Metric Youngs Modulus')
         exlas.append_curve('WKR_K_Bulk',df.K_Bulk, unit='GPa', descr='Metric Bulk Modulus')
+        exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
         exlas.append_curve('WKR_Poisson',df.Poisson, unit='None', descr='Poissons Ratio')
         exlas.append_curve('WKR_MuRho',df.MuRho, unit='GPa*Kg/m3', descr='Metric Lame Mu * Den')
         exlas.append_curve('WKR_LambdaMu',df.LambdaMu, unit='GPa*Gpa', descr='Metric Lame Mu * Lame Lambda')
         exlas.append_curve('WKR_LambdaRho',df.LambdaRho, unit='GPa*Kg/m3', descr='Metric Lame Lambda * Den')    
+        exlas.append_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
         exlas.append_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
 
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_WKR_MECH.las"
