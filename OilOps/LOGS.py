@@ -1154,3 +1154,61 @@ def Mechanics(lasfile):
         exlas.write(filename, version = 2.0)
     else: exlas=False
     return exlas
+
+def EatonPP(lasfile):
+    exlas=lasio.LASFile()
+    dir_add = path.join(getcwd(),'EATON')
+    if not path.exists(dir_add):
+        mkdir(dir_add)
+                   
+    try: las=lasio.read(lasfile)
+    except: las=[[0]]
+    Alias=GetAlias(las)
+    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") :
+        df=las.df()
+        df['Depth'] = df.index       
+        df["Vp"]=304800/df[Alias["DTC"]]
+        df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
+
+        m = (df[ALIAS['DEN']]>1.7) * (df[ALIAS['DEN']]<3)
+        df['RHOB2'] = np.nan
+        df.loc[m,'RHOB2'] = df.loc[m,ALIAS['DEN']]
+        m = (df['RHOB2'].isna()) * (df.index<1000)
+        df.loc[m,'RHOB2'] = 1.7
+        df['RHOB2'].interpolate(inplace=True)
+        df['RHOB3'] = df['RHOB2'].ewm(span=10).mean()
+	    
+        df['DPHI269'] = (2.69-df[ALIAS['DEN']])/1.69
+        df['PHYD'] = df.TVD*0.433
+        df['OVERBURDEN'] = (df.RHOB3 * df.TVD.diff()).cumsum() * 30.48 / 70.3070
+
+        df["Vp"].interpolate(inplace=True) 
+        df['VpMod'].interpolate(inplace=True)
+        df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.2)
+        df['VP_VMOD_NPT'] = detrend_log(df.loc[:,['TVD','VP_MOD_2_200']],'TVD','VP_MOD_2_200',model_index=df.index[:])
+
+        df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
+
+        df['EATON_DT2']=df.OVERBURDEN-(df.OVERBURDEN-df.PHYD)*(df.Vp / df.Vp_NPT)**3    
+	    
+
+        # INITIALIZE EXPORT LAS
+        exlas.well=las.well
+        exlas.well.Date=str(datetime.datetime.today())
+        exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
+        exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
+        exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
+	
+        exlas.append_curve('DEPT',df.Depth , unit='ft')
+	
+
+        # POPULATE EXPORT LAS
+        exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
+        exlas.append_curve('PHYD',df.PHYD, unit='psi', descr='Hydrostatic pressure')
+        exlas.append_curve('PLITH',df.OVERBURDEN, unit='psi', descr='Lithostatic pressure')
+        exlas.append_curve('PPEM',df.EATON_DT2, unit='psi', descr='Eaton Pore Pressure using VpMod NPT')    
+
+        filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
+        exlas.write(filename, version = 2.0)
+    else: exlas=False
+    return exlas
