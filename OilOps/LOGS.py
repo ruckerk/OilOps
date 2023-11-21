@@ -1170,15 +1170,15 @@ def EatonPP(lasfile):
         df["Vp"]=304800/df[Alias["DTC"]]
         df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
 
-        m = (df[ALIAS['DEN']]>1.7) * (df[ALIAS['DEN']]<3)
+        m = (df[Alias['DEN']]>1.7) * (df[Alias['DEN']]<3)
         df['RHOB2'] = np.nan
-        df.loc[m,'RHOB2'] = df.loc[m,ALIAS['DEN']]
+        df.loc[m,'RHOB2'] = df.loc[m,Alias['DEN']]
         m = (df['RHOB2'].isna()) * (df.index<1000)
         df.loc[m,'RHOB2'] = 1.7
         df['RHOB2'].interpolate(inplace=True)
         df['RHOB3'] = df['RHOB2'].ewm(span=10).mean()
 	    
-        df['DPHI269'] = (2.69-df[ALIAS['DEN']])/1.69
+        df['DPHI269'] = (2.69-df[Alias['DEN']])/1.69
         df['PHYD'] = df.TVD*0.433
         df['OVERBURDEN'] = (df.RHOB3 * df.TVD.diff()).cumsum() * 30.48 / 70.3070
 
