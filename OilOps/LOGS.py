@@ -1126,7 +1126,7 @@ def Mechanics(lasfile):
         df["LambdaMu"]=df["Lame1"]*df["ShearMod"]*10**18
         df["LambdaRho"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
         df["UCS_WFD"]=150.79*(304.8*df[Alias["DTC"]])**3.5
-	df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
+        df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
 
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
