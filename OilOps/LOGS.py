@@ -23,6 +23,41 @@ __all__ = ['TEMP_SUMMARY_LAS',
 
 
 # Update clay model to consider Bhuyan and Passey, 1994 method + Nphi_fl and Rho_fl from RLOGR R0
+def decompose_log(df_in, p_thresh = None):
+    if p_thresh == None:
+        p_thresh = np.floor( df_in.dropna().shape[0]/2 )
+        p_thresh = int(p_thresh)
+    
+    decompose = seasonal_decompose(df_in.dropna(),model='additive', period= p_thresh)
+    return decompose.trend
+
+def detrend_log(df_in,xkey='index',ykey='SP',return_model = False,model_index = [], log = False):
+    if len(model_index) == 0:
+        model_index = df_in.index
+    if isinstance(df_in,pd.Series):
+        ykey = df_in.name
+        df_in['IDX'] = df_in.index
+        x = df_in.loc[model_index].dropna().index.values
+        y = df_in.loc[model_index].dropna().values   
+        xkey = 'IDX'
+    elif isinstance(df_in,pd.DataFrame):
+        m1 = df_in[[xkey,ykey]].dropna().index
+        m = model_index.intersection(m1)
+        df_in['IDX'] = df_in.index
+        x=df_in.loc[m,xkey].values
+        y=df_in.loc[m,ykey].values
+    if log:
+        y = np.log10(y)       
+    model = np.polyfit(x, y, 1)
+    pred=np.poly1d(model)
+    df_in[ykey+'_TREND'] = df_in[xkey].apply(lambda x: pred(x))
+    if log:
+        df_in[ykey+'_TREND'] = 10**df_in[ykey+'_TREND']
+    if return_model:
+        return pred
+    else:
+        return df_in[ykey+'_TREND']
+
 
 def TEMP_SUMMARY_LAS(_LASFILES_):
     SUMMARY = pd.DataFrame(columns = ['API','MNEMONIC','VALUE','DESCR','DEPTH','DATE','FILE'])
