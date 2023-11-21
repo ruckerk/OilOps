@@ -1160,7 +1160,9 @@ def EatonPP(lasfile):
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
         mkdir(dir_add)
-                   
+
+    ROLLINGWINDOW = 200
+	
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
