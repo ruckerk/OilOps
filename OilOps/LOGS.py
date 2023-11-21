@@ -1192,13 +1192,11 @@ def Mechanics(lasfile):
     else: exlas=False
     return exlas
 
-def EatonPP(lasfile):
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
-        mkdir(dir_add)
-
-    ROLLINGWINDOW = 200
+        mkdir(dir_add)    
 	
     try: las=lasio.read(lasfile)
     except: las=[[0]]
@@ -1224,8 +1222,8 @@ def EatonPP(lasfile):
         df["Vp"].interpolate(inplace=True) 
         df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(0.5)
         df['VpMod'].interpolate(inplace=True)
-        VPMODMAX = df['VpMod'].max()*1.1
-        df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.2)
+        VPMODMAX = df['VpMod'].max()*1.2
+        df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.8)
         df['DUMMY'] = VPMODMAX - df['VP_MOD_2_200']    
         df['VP_VMOD_NPT'] = VPMODMAX - detrend_log(df[['TVD','DUMMY']], 'TVD', 'DUMMY', log = True)
 
