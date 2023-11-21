@@ -1233,7 +1233,7 @@ def EatonPP(lasfile):
             fig, ax = plt.subplots()
             ax.plot(df['Vp'], df['Depth'], label = 'Vp_Log', color = 'saddlebrown')
             ax.plot(df['Vp_NPT'], df['Depth'], label = 'Vp_ModTrend', color = 'dodgerblue')
-            ax.xlim(0,30)		
+            ax.set_xlim([0,30])		
             plt.show()
 
 
@@ -1270,7 +1270,7 @@ def EatonPP(lasfile):
             ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
             ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
             ax.plot(df['EATON_DT_MW'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
-            ax.xlim(0,30)		
+            ax.set_xlim([0,30])		
             plt.show()
 
     else: exlas=False
