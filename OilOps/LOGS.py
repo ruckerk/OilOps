@@ -1225,9 +1225,8 @@ def EatonPP(lasfile):
         df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(0.5)
         df['VpMod'].interpolate(inplace=True)
         df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.2)
-        detrend_log(df.loc[:,['TVD','VP_MOD_2_200']], 'TVD', 'VP_MOD_2_200', log = True)
-	
-        df.rename(columns = {'VP_MOD_2_200_TREND':'VP_VMOD_NPT'}, inplace = True)
+        df['VP_VMOD_NPT'] = detrend_log(df[['TVD','VP_MOD_2_200']], 'TVD', 'VP_MOD_2_200', log = True)
+
         df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
 
         df['EATON_DT2']=df.OVERBURDEN-(df.OVERBURDEN-df.PHYD)*(df.Vp / df.Vp_NPT)**3    
