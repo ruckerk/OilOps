@@ -1233,7 +1233,7 @@ def EatonPP(lasfile):
             fig, ax = plt.subplots()
             ax.plot(df['Vp'], df['Depth'], label = 'Vp_Log', color = 'saddlebrown')
             ax.plot(df['Vp_NPT'], df['Depth'], label = 'Vp_ModTrend', color = 'dodgerblue')
-            ax.set_xlim([0,30])		
+            ax.set_xlim([0,df['Vp'].max()])		
             plt.show()
 
 
