@@ -23,6 +23,8 @@ __all__ = ['TEMP_SUMMARY_LAS',
 
 
 # Update clay model to consider Bhuyan and Passey, 1994 method + Nphi_fl and Rho_fl from RLOGR R0
+                   
+
 def decompose_log(df_in, p_thresh = None):
     if p_thresh == None:
         p_thresh = np.floor( df_in.dropna().shape[0]/2 )
@@ -1223,10 +1225,9 @@ def EatonPP(lasfile):
         df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(0.5)
         df['VpMod'].interpolate(inplace=True)
         df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.2)
-        df['VP_VMOD_NPT'] = detrend_log(df.loc[:,['TVD','VP_MOD_2_200']], 'TVD', 'VP_MOD_2_200', log=  True)
+        detrend_log(df.loc[:,['TVD','VP_MOD_2_200']], 'TVD', 'VP_MOD_2_200')
 	
-
-        #df.rename(columns = {'VP_MOD_2_200_TREND':'VP_VMOD_NPT'}, inplace = True)
+        df.rename(columns = {'VP_MOD_2_200_TREND':'VP_VMOD_NPT'}, inplace = True)
         df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
 
         df['EATON_DT2']=df.OVERBURDEN-(df.OVERBURDEN-df.PHYD)*(df.Vp / df.Vp_NPT)**3    
