@@ -74,6 +74,8 @@ from scipy.optimize import curve_fit, fmin_cobyla
 from scipy.stats.mstats import gmean
 from scipy.stats import circmean
 
+from statsmodels.tsa.seasonal import seasonal_decompose
+
 import openpyxl
 import xlsxwriter
 import shutil
