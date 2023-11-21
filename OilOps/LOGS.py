@@ -1224,8 +1224,10 @@ def EatonPP(lasfile):
         df["Vp"].interpolate(inplace=True) 
         df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(0.5)
         df['VpMod'].interpolate(inplace=True)
+	VPMODMAX = df_1['VP_MOD'].max()*1.1
         df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.2)
-        df['VP_VMOD_NPT'] = detrend_log(df[['TVD','VP_MOD_2_200']], 'TVD', 'VP_MOD_2_200', log = True)
+	df['DUMMY'] = VPMODMAX - df['VP_MOD_2_200']    
+        df['VP_VMOD_NPT'] = detrend_log(df[['TVD','DUMMY']], 'TVD', 'VP_MOD_2_200', log = True)
 
         df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
 
