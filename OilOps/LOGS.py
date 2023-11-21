@@ -1261,6 +1261,7 @@ def EatonPP(lasfile):
             ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
             ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
             ax.plot(df[EATON_DT_MW], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
+            plt.show()
 
     else: exlas=False
     return exlas
