@@ -1227,8 +1227,12 @@ def EatonPP(lasfile):
         df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
 
         df['EATON_DT2']=df.OVERBURDEN-(df.OVERBURDEN-df.PHYD)*(df.Vp / df.Vp_NPT)**3    
-	    
 
+	# Mud Weight Scales
+        df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
+        df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
+        df['EATON_DT_MW'] = df.EATON_DT2/df.TVD/0.05194805
+	    
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
         exlas.well.Date=str(datetime.datetime.today())
@@ -1244,8 +1248,19 @@ def EatonPP(lasfile):
         exlas.append_curve('PHYD',df.PHYD, unit='psi', descr='Hydrostatic pressure')
         exlas.append_curve('PLITH',df.OVERBURDEN, unit='psi', descr='Lithostatic pressure')
         exlas.append_curve('PPEM',df.EATON_DT2, unit='psi', descr='Eaton Pore Pressure using VpMod NPT')    
+        exlas.append_curve('PGHYD',df.PHYD_MW, unit='ppg', descr='Hydrostatic pressure gradient')
+        exlas.append_curve('PGLITH',df.OVERBURDEN_MW, unit='ppg', descr='Lithostatic pressure gradient')
+        exlas.append_curve('PPGEM',df.EATON_DT_MW, unit='ppg', descr='Eaton Pore Pressure gradient using VpMod NPT')    
+	    
 
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
         exlas.write(filename, version = 2.0)
+
+        if True:
+            fig, ax = plt.subplots()
+            ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
+            ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
+            ax.plot(df[EATON_DT_MW], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
+
     else: exlas=False
     return exlas
