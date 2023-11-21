@@ -1205,7 +1205,7 @@ def EatonPP(lasfile):
         df=las.df()
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
-        df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
+        df["VpMod"] = 1000 * df[Alias["DEN"]] * (df["Vp"]**2) * (10**(-9))
 
         m = (df[Alias['DEN']]>1.7) * (df[Alias['DEN']]<3)
         df['RHOB2'] = np.nan
@@ -1220,6 +1220,7 @@ def EatonPP(lasfile):
         df['OVERBURDEN'] = (df.RHOB3 * df.TVD.diff()).cumsum() * 30.48 / 70.3070
 
         df["Vp"].interpolate(inplace=True) 
+        df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(0.5)
         df['VpMod'].interpolate(inplace=True)
         df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.2)
         df['VP_VMOD_NPT'] = detrend_log(df.loc[:,['TVD','VP_MOD_2_200']],'TVD','VP_MOD_2_200',model_index=df.index[:])
@@ -1227,6 +1228,14 @@ def EatonPP(lasfile):
         df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
 
         df['EATON_DT2']=df.OVERBURDEN-(df.OVERBURDEN-df.PHYD)*(df.Vp / df.Vp_NPT)**3    
+
+        if True:
+            fig, ax = plt.subplots()
+            ax.plot(df['Vp'], df['Depth'], label = 'Vp_Log', color = 'saddlebrown')
+            ax.plot(df['Vp_NPT'], df['Depth'], label = 'Vp_ModTrend', color = 'dodgerblue')
+            ax.xlim(0,30)		
+            plt.show()
+
 
 	# Mud Weight Scales
         df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
@@ -1261,6 +1270,7 @@ def EatonPP(lasfile):
             ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
             ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
             ax.plot(df['EATON_DT_MW'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
+            ax.xlim(0,30)		
             plt.show()
 
     else: exlas=False
