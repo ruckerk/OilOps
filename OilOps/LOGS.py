@@ -1233,9 +1233,14 @@ def EatonPP(lasfile):
             fig, ax = plt.subplots()
             ax.plot(df['Vp'], df['Depth'], label = 'Vp_Log', color = 'saddlebrown')
             ax.plot(df['Vp_NPT'], df['Depth'], label = 'Vp_ModTrend', color = 'dodgerblue')
-            ax.set_xlim([0,df['Vp'].max()])		
+            ax.set_xlim([0,df['Vp'].max()*1.1])		
             plt.show()
-
+        if True:
+            fig, ax = plt.subplots()
+            ax.plot(df['VpMod'], df['Depth'], label = 'VpMod_Log', color = 'saddlebrown')
+            ax.plot(df['VP_VMOD_NPT'], df['Depth'], label = 'VpMod_Trend', color = 'dodgerblue')
+            ax.set_xlim([0,df['VpMod'].max()*1.1])		
+            plt.show()
 
 	# Mud Weight Scales
         df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
