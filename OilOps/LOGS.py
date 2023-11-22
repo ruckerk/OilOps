@@ -1229,7 +1229,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         ct = -1
         for i in np.arange(4,14,0.5):
             m = df.index[(df.WKR_UMAA> i)*(df.WKR_UMAA<(0.5+i))]
-        if len(m)>20:
+            if len(m)>20:
                 ct += 1
                 mod = detrend_log(df,'Depth','VpMod', True, m, log= True)
                 df2.at[ct,'U'] = df.loc[m,'WKR_UMAA'].mean()
