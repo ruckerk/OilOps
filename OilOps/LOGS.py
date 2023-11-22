@@ -1192,7 +1192,7 @@ def Mechanics(lasfile):
     else: exlas=False
     return exlas
 
-def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
@@ -1245,12 +1245,12 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         df['mod1'] = df['WKR_UMAA'].apply(lambda x: mod1(x))
         df['VpMod_NPT'] = 10**df[['mod0','mod1','Depth']].apply(lambda x: np.poly1d([x[1],x[0]])(x[2]), axis =1).dropna()
         df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
-        df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**3
+        df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**EATON_EXP
 
     # Mud Weight Scales
-        df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
-        df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
-        df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
+                   df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
+                   df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
+                   df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
         
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
@@ -1273,7 +1273,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
         exlas.write(filename, version = 2.0)
 
-        if True:
+        if PLOTS:
             fig, ax = plt.subplots()
             ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
             ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
