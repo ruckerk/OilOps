@@ -1237,6 +1237,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
                 df2.at[ct,'mod1'] = mod[1]
                 df['TEST'] = 10**df['Depth'].apply(lambda x: mod(x))
                 df.loc[m,'VpMod_Trends'] = decompose_log(df.loc[m,'VpMod'])
+
         mod0 = detrend_log(df2,'U','mod0',return_model = True)
         mod1 = detrend_log(df2,'U','mod1',return_model = True)    
         detrend_log(df2,'U','mod0')
@@ -1247,10 +1248,10 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
         df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**EATON_EXP
 
-    # Mud Weight Scales
-                   df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
-                   df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
-                   df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
+        # Mud Weight Scales
+        df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
+        df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
+        df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
         
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
