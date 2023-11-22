@@ -1192,7 +1192,7 @@ def Mechanics(lasfile):
     else: exlas=False
     return exlas
 
-def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5):
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
@@ -1220,35 +1220,37 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5):
         df['OVERBURDEN'] = (df.RHOB3 * df.TVD.diff()).cumsum() * 30.48 / 70.3070
 
         df["Vp"].interpolate(inplace=True) 
-        df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(0.5)
+        df['VP_200'] = df['Vp'].rolling(ROLLINGWINDOW).quantile(QUANTILE)
         df['VpMod'].interpolate(inplace=True)
         VPMODMAX = df['VpMod'].max()*1.2
-        df['VP_MOD_2_200'] = df['VpMod'].rolling(ROLLINGWINDOW).quantile(0.8)
-        df['DUMMY'] = VPMODMAX - df['VP_MOD_2_200']    
-        df['VP_VMOD_NPT'] = VPMODMAX - detrend_log(df[['TVD','DUMMY']], 'TVD', 'DUMMY', log = True)
 
-        df['Vp_NPT'] = (df['VP_VMOD_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
-
-        df['EATON_DT2']=df.OVERBURDEN-(df.OVERBURDEN-df.PHYD)*(df.Vp / df.Vp_NPT)**3    
-
-        if True:
-            fig, ax = plt.subplots()
-            ax.plot(df['Vp'], df['Depth'], label = 'Vp_Log', color = 'saddlebrown')
-            ax.plot(df['Vp_NPT'], df['Depth'], label = 'Vp_ModTrend', color = 'dodgerblue')
-            ax.set_xlim([0,df['Vp'].max()*1.1])		
-            plt.show()
-        if True:
-            fig, ax = plt.subplots()
-            ax.plot(df['VpMod'], df['Depth'], label = 'VpMod_Log', color = 'saddlebrown')
-            ax.plot(df['VP_MOD_2_200'], df['Depth'], label = 'VpMod_Roll', color = 'dodgerblue')
-            ax.plot(df['VP_VMOD_NPT'], df['Depth'], label = 'VpMod_Trend', color = 'firebrick')
-            ax.set_xlim([0,df['VpMod'].max()*1.1])		
-            plt.show()
+        df['VpMod_Trends'] = np.nan     
+        df2 = pd.DataFrame()
+        ct = -1
+        for i in np.arange(4,14,0.5):
+            m = df.index[(df.WKR_UMAA> i)*(df.WKR_UMAA<(0.5+i))]
+	    if len(m)>20:
+                ct += 1
+                mod = OilOps.LOGS.detrend_log(df,'Depth','VpMod', True, m, log= True)
+                df2.at[ct,'U'] = df.loc[m,'WKR_UMAA'].mean()
+                df2.at[ct,'mod0'] = mod[0]
+                df2.at[ct,'mod1'] = mod[1]
+                df['TEST'] = 10**df['Depth'].apply(lambda x: mod(x))
+                df.loc[m,'VpMod_Trends'] = decompose_log(df.loc[m,'VpMod'])
+        mod0 = OilOps.LOGS.detrend_log(df2,'U','mod0',return_model = True)
+        mod1 = OilOps.LOGS.detrend_log(df2,'U','mod1',return_model = True)    
+        detrend_log(df2,'U','mod0')
+        detrend_log(df2,'U','mod1')
+        df['mod0'] = df['WKR_UMAA'].apply(lambda x: mod0(x))
+	df['mod1'] = df['WKR_UMAA'].apply(lambda x: mod1(x))
+        df['VpMod_NPT'] = 10**df[['mod0','mod1','Depth']].apply(lambda x: np.poly1d([x[1],x[0]])(x[2]), axis =1).dropna()
+	df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
+	df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**3
 
 	# Mud Weight Scales
         df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
         df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
-        df['EATON_DT_MW'] = df.EATON_DT2/df.TVD/0.05194805
+        df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
 	    
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
@@ -1257,19 +1259,17 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5):
         exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
         exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
 	
-        exlas.append_curve('DEPT',df.Depth , unit='ft')
-	
+        exlas.append_curve('DEPT',df.Depth , unit='ft')	
 
         # POPULATE EXPORT LAS
         exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
         exlas.append_curve('PHYD',df.PHYD, unit='psi', descr='Hydrostatic pressure')
         exlas.append_curve('PLITH',df.OVERBURDEN, unit='psi', descr='Lithostatic pressure')
-        exlas.append_curve('PPEM',df.EATON_DT2, unit='psi', descr='Eaton Pore Pressure using VpMod NPT')    
+        exlas.append_curve('PPEM',df.Eaton_VpMod, unit='psi', descr='Eaton Pore Pressure using VpMod NPT')    
         exlas.append_curve('PGHYD',df.PHYD_MW, unit='ppg', descr='Hydrostatic pressure gradient')
         exlas.append_curve('PGLITH',df.OVERBURDEN_MW, unit='ppg', descr='Lithostatic pressure gradient')
-        exlas.append_curve('PPGEM',df.EATON_DT_MW, unit='ppg', descr='Eaton Pore Pressure gradient using VpMod NPT')    
+        exlas.append_curve('PPGEM',df.Eaton_VpMod_Mw, unit='ppg', descr='Eaton Pore Pressure gradient using VpMod NPT')    
 	    
-
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
         exlas.write(filename, version = 2.0)
 
@@ -1277,7 +1277,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5):
             fig, ax = plt.subplots()
             ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
             ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
-            ax.plot(df['EATON_DT_MW'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
+            ax.plot(df['Eaton_VpMod_Mw'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
             ax.set_xlim([0,30])		
             plt.show()
 
