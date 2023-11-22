@@ -618,6 +618,7 @@ def Alias_Dictionary():
                 'SP':{"HSP":1,"PCH1":2,"SP":1,"SPBR":2,"SPC":2,"SPCG":2,
                        "SPD":2,"SPDF":2,"SPDH":1,"SPH":1,"SPP":2,"SPSB":1,
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
+                'UMA':{}
                 }
     return AliasDicts
            
@@ -1201,7 +1202,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
-    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") :
+    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["PE"]!="NULL") :
         df=las.df()
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
@@ -1227,12 +1228,17 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         df['VpMod_Trends'] = np.nan     
         df2 = pd.DataFrame()
         ct = -1
+        if 'WKR_UMAA' in df.keys():
+           U_KEY = WKR_UMAA
+        else:
+           df['U_APPX'] = df[[Alias["DEN"],Alias["PE"]]].prod(axis=1, skipna=False).dropna()
+           U_KEY = 'U_APPX'
         for i in np.arange(4,14,0.5):
-            m = df.index[(df.WKR_UMAA> i)*(df.WKR_UMAA<(0.5+i))]
+            m = df.index[(df[U_KEY]> i)*(df[U_KEY]<(0.5+i))]
             if len(m)>20:
                 ct += 1
                 mod = detrend_log(df,'Depth','VpMod', True, m, log= True)
-                df2.at[ct,'U'] = df.loc[m,'WKR_UMAA'].mean()
+                df2.at[ct,'U'] = df.loc[m,U_KEY].mean()
                 df2.at[ct,'mod0'] = mod[0]
                 df2.at[ct,'mod1'] = mod[1]
                 df['TEST'] = 10**df['Depth'].apply(lambda x: mod(x))
@@ -1242,8 +1248,8 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         mod1 = detrend_log(df2,'U','mod1',return_model = True)    
         detrend_log(df2,'U','mod0')
         detrend_log(df2,'U','mod1')
-        df['mod0'] = df['WKR_UMAA'].apply(lambda x: mod0(x))
-        df['mod1'] = df['WKR_UMAA'].apply(lambda x: mod1(x))
+        df['mod0'] = df[U_KEY].apply(lambda x: mod0(x))
+        df['mod1'] = df[U_KEY].apply(lambda x: mod1(x))
         df['VpMod_NPT'] = 10**df[['mod0','mod1','Depth']].apply(lambda x: np.poly1d([x[1],x[0]])(x[2]), axis =1).dropna()
         df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
         df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**EATON_EXP
