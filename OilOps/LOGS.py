@@ -1280,6 +1280,6 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
             ax.plot(df['Eaton_VpMod_Mw'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
             ax.set_xlim([0,30])        
             plt.show()
-
+           
     else: exlas=False
     return exlas
