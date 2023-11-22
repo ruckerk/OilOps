@@ -16,7 +16,7 @@ __all__ = ['TEMP_SUMMARY_LAS',
            'DLOGR',
            'GetAlias',
            'Alias_Dictionary',
-	   'LogListAlias',
+       'LogListAlias',
            'R0_DLOGN',
            'Get_API',
            'Mechanics']
@@ -386,7 +386,7 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     dir_add = path.join(getcwd(),'DLOGR')  
     if not path.exists(dir_add):
         makedirs(dir_add)
-	    
+        
     dfx=df.dropna()
     dfx["SW"]=None
     dfx["R0"]=None
@@ -538,7 +538,7 @@ def Alias_Dictionary():
                        "PRON":3,"QNP-1A":3,"QNP-5A":3,"RPOR":2,"SNP":2,
                        "TNPH":2,"TNPH_LIM":4,"TPHC":4,"CNPOR":4,"NLIM":2,
                         "NPHI_100":2,"CNCFLS":5,"CNLS":5,"CNPOR1":4,"DNPH":3,"PHIN":5,
-			"NPRS":3,"NPRD":3,"NPES":2},
+            "NPRS":3,"NPRD":3,"NPES":2},
                 'PE':{"HPRA":1,"PEF8":1,"PEFZ":1,"2PEF":2,"HPEDN":1,"HPEF8":1,
                        "PDPE":1,"PE":1,
                        "PE2":1,"PE2QH":1,"PEDF":1,"PEDN":1,"PEF":1,
@@ -682,7 +682,7 @@ def LogListAlias(Input:(str,list,tuple)):
     AliasDict2 = {}
     for k1, v1 in AliasDicts.items():
         for k2 in v1.keys():
-	        AliasDict2.update({k2:k1})
+            AliasDict2.update({k2:k1})
     if isinstance(Input,str):
         OUT = AliasDict2.get(Input)
     if isinstance(Input,tuple):
@@ -1197,7 +1197,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
         mkdir(dir_add)    
-	
+    
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
@@ -1214,7 +1214,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         df.loc[m,'RHOB2'] = 1.7
         df['RHOB2'].interpolate(inplace=True)
         df['RHOB3'] = df['RHOB2'].ewm(span=10).mean()
-	    
+        
         df['DPHI269'] = (2.69-df[Alias['DEN']])/1.69
         df['PHYD'] = df.TVD*0.433
         df['OVERBURDEN'] = (df.RHOB3 * df.TVD.diff()).cumsum() * 30.48 / 70.3070
@@ -1229,7 +1229,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         ct = -1
         for i in np.arange(4,14,0.5):
             m = df.index[(df.WKR_UMAA> i)*(df.WKR_UMAA<(0.5+i))]
-	    if len(m)>20:
+        if len(m)>20:
                 ct += 1
                 mod = OilOps.LOGS.detrend_log(df,'Depth','VpMod', True, m, log= True)
                 df2.at[ct,'U'] = df.loc[m,'WKR_UMAA'].mean()
@@ -1247,19 +1247,19 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
         df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**3
 
-	# Mud Weight Scales
+    # Mud Weight Scales
         df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
         df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
         df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
-	    
+        
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
         exlas.well.Date=str(datetime.datetime.today())
         exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
         exlas.well["UWI"].value=str(las.well["UWI"].value).zfill(14)
         exlas.well["APIN"].value=str(las.well["APIN"].value).zfill(14)
-	
-        exlas.append_curve('DEPT',df.Depth , unit='ft')	
+    
+        exlas.append_curve('DEPT',df.Depth , unit='ft')    
 
         # POPULATE EXPORT LAS
         exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
@@ -1269,7 +1269,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         exlas.append_curve('PGHYD',df.PHYD_MW, unit='ppg', descr='Hydrostatic pressure gradient')
         exlas.append_curve('PGLITH',df.OVERBURDEN_MW, unit='ppg', descr='Lithostatic pressure gradient')
         exlas.append_curve('PPGEM',df.Eaton_VpMod_Mw, unit='ppg', descr='Eaton Pore Pressure gradient using VpMod NPT')    
-	    
+        
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
         exlas.write(filename, version = 2.0)
 
@@ -1278,7 +1278,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
             ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
             ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
             ax.plot(df['Eaton_VpMod_Mw'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
-            ax.set_xlim([0,30])		
+            ax.set_xlim([0,30])        
             plt.show()
 
     else: exlas=False
