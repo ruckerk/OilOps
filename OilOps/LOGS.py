@@ -1228,7 +1228,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         df2 = pd.DataFrame()
         ct = -1
         if 'WKR_UMAA' in df.keys():
-           U_KEY = WKR_UMAA
+           U_KEY = 'WKR_UMAA'
         else:
            df['U_APPX'] = df[[Alias["DEN"],Alias["PE"]]].prod(axis=1, skipna=False).dropna()
            U_KEY = 'U_APPX'
