@@ -618,7 +618,6 @@ def Alias_Dictionary():
                 'SP':{"HSP":1,"PCH1":2,"SP":1,"SPBR":2,"SPC":2,"SPCG":2,
                        "SPD":2,"SPDF":2,"SPDH":1,"SPH":1,"SPP":2,"SPSB":1,
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
-                'UMA':{}
                 }
     return AliasDicts
            
