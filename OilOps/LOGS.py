@@ -1242,10 +1242,10 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2):
         detrend_log(df2,'U','mod0')
         detrend_log(df2,'U','mod1')
         df['mod0'] = df['WKR_UMAA'].apply(lambda x: mod0(x))
-	df['mod1'] = df['WKR_UMAA'].apply(lambda x: mod1(x))
+        df['mod1'] = df['WKR_UMAA'].apply(lambda x: mod1(x))
         df['VpMod_NPT'] = 10**df[['mod0','mod1','Depth']].apply(lambda x: np.poly1d([x[1],x[0]])(x[2]), axis =1).dropna()
-	df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
-	df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**3
+        df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
+        df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**3
 
 	# Mud Weight Scales
         df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
