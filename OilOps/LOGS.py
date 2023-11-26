@@ -533,7 +533,7 @@ def Alias_Dictionary():
                        "HNPH":1,"HNPHI":2,"HNPLS":4,"HNPO":2,"HNPO_LIM":4,
                        "HNPS":1,"HTNP":1,"HTNP_LIM":4,"NCN":2,"NCNL":2,
                        "NPHI":2,"NPHI_LIM":4,"NPHIL":4,"NPHIS":1,"NPHL":4,
-                       "NPHS":1,"NPLS":4,"NPOR":2,"NPOR_":2,"NPOR_1":2,
+                       "NPHS":4,"NPLS":4,"NPOR":2,"NPOR_":2,"NPOR_1":2,
                        "NPOR_LIM":4,"NPORLS":4,"NPRL":4,"POL":4,"POS":2,
                        "PRON":3,"QNP-1A":3,"QNP-5A":3,"RPOR":2,"SNP":2,
                        "TNPH":2,"TNPH_LIM":4,"TPHC":4,"CNPOR":4,"NLIM":2,
