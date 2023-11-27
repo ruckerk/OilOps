@@ -1261,6 +1261,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
                 ax.scatter(df2['U'], df2[f'mod{j}_TREND'], label = f'Model param {j} Trend', color = 'dodgerblue')
                 ax.set_xlim([0,20])
                 ax.legend()
+                ax.invert_yaxis()
                 plt.show()
                        
         KEYS = [f'mod{j}' for j in np.arange(0,DEGREE_VP+1)]
@@ -1304,6 +1305,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
             ax.scatter(df['Vp_NPT'], df['Depth'], label = 'Vp_Model', linestyle = 'dashed', color = 'firebrick')
             ax.set_xlim([0,10000])
             ax.legend()
+            ax.invert_yaxis()
             plt.show()
 
         if PLOTS:
@@ -1313,6 +1315,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
             ax.scatter(df['Eaton_VpMod_Mw'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
             ax.set_xlim([0,30])
             ax.legend()
+            ax.invert_yaxis()
             plt.show()
            
     else: exlas=False
