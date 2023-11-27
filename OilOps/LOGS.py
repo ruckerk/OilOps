@@ -33,7 +33,7 @@ def decompose_log(df_in, p_thresh = None):
     decompose = seasonal_decompose(df_in.dropna(),model='additive', period= p_thresh)
     return decompose.trend
 
-def detrend_log(df_in,xkey='index',ykey='SP',return_model = False,model_index = [], log = False):
+def detrend_log(df_in,xkey='index', ykey='SP', return_model = False, model_index = [], log = False, fit_deg =1 ):
     if len(model_index) == 0:
         model_index = df_in.index
     if isinstance(df_in,pd.Series):
@@ -50,7 +50,7 @@ def detrend_log(df_in,xkey='index',ykey='SP',return_model = False,model_index = 
         y=df_in.loc[m,ykey].values
     if log:
         y = np.log10(y)       
-    model = np.polyfit(x, y, 1)
+    model = np.polyfit(x, y, fit_deg)
     pred=np.poly1d(model)
     df_in[ykey+'_TREND'] = df_in[xkey].apply(lambda x: pred(x))
     if log:
@@ -1192,7 +1192,7 @@ def Mechanics(lasfile):
     else: exlas=False
     return exlas
 
-def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False):
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
@@ -1227,29 +1227,42 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         df['VpMod_Trends'] = np.nan     
         df2 = pd.DataFrame()
         ct = -1
+               
         if 'WKR_UMAA' in df.keys():
            U_KEY = 'WKR_UMAA'
         else:
            df['U_APPX'] = df[[Alias["DEN"],Alias["PE"]]].prod(axis=1, skipna=False).dropna()
            U_KEY = 'U_APPX'
+                   
         for i in np.arange(4,14,0.5):
             m = df.index[(df[U_KEY]> i)*(df[U_KEY]<(0.5+i))]
-            if len(m)>20:
+            if len(m)>200:
                 ct += 1
-                mod = detrend_log(df,'Depth','VpMod', True, m, log= True)
+                mod = detrend_log(df,'Depth','VpMod', True, m, log= True, fit_deg = DEGREE_VP)
                 df2.at[ct,'U'] = df.loc[m,U_KEY].mean()
-                df2.at[ct,'mod0'] = mod[0]
-                df2.at[ct,'mod1'] = mod[1]
+                for j in np.arange(0,DEGREE_VP+1):
+                    df2.at[ct,f'mod{j}'] = mod[j]
                 df['TEST'] = 10**df['Depth'].apply(lambda x: mod(x))
                 df.loc[m,'VpMod_Trends'] = decompose_log(df.loc[m,'VpMod'])
-
-        mod0 = detrend_log(df2,'U','mod0',return_model = True)
-        mod1 = detrend_log(df2,'U','mod1',return_model = True)    
-        detrend_log(df2,'U','mod0')
-        detrend_log(df2,'U','mod1')
-        df['mod0'] = df[U_KEY].apply(lambda x: mod0(x))
-        df['mod1'] = df[U_KEY].apply(lambda x: mod1(x))
-        df['VpMod_NPT'] = 10**df[['mod0','mod1','Depth']].apply(lambda x: np.poly1d([x[1],x[0]])(x[2]), axis =1).dropna()
+                       
+        mod = []
+        for j in np.arange(0,DEGREE_VP+1):
+            mod.append(detrend_log(df2,'U',f'mod{j}',return_model = True, log = False, fit_deg = DEGREE_MOD))
+            detrend_log(df2,'U',f'mod{j}',return_model = False, log = False, fit_deg = DEGREE_MOD)
+            df[f'mod{j}'] = df[U_KEY].apply(lambda x: mod[j](x))
+                   
+            if PLOTS:
+                fig, ax = plt.subplots()
+                ax.scatter(df2['U'], df2[f'mod{j}'], label = f'Model param {j}', color = 'saddlebrown')
+                ax.scatter(df2['U'], df2[f'mod{j}_TREND'], label = f'Model param {j} Trend', color = 'dodgerblue')
+                ax.set_xlim([0,20])
+                ax.legend()
+                plt.show()
+                       
+        KEYS = [f'mod{j}' for j in np.arange(0,DEGREE_VP+1)]
+        KEYS.append('Depth')
+               
+        df['VpMod_NPT'] = 10**df[KEYS].apply(lambda x: np.poly1d([x[j] for j in np.arange(0,DEGREE_VP+1)[::-1]])(x[-1]), axis =1).dropna()
         df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
         df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**EATON_EXP
 
@@ -1268,6 +1281,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         exlas.append_curve('DEPT',df.Depth , unit='ft')    
 
         # POPULATE EXPORT LAS
+        exlas.append_curve('WKR_VpMod_NCT',df.VpMod_NPT, unit='GPa', descr='Metric Compression Modulus Normal Compaction Trend')
         exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
         exlas.append_curve('PHYD',df.PHYD, unit='psi', descr='Hydrostatic pressure')
         exlas.append_curve('PLITH',df.OVERBURDEN, unit='psi', descr='Lithostatic pressure')
@@ -1278,13 +1292,23 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
         exlas.write(filename, version = 2.0)
+               
+        if PLOTS:
+            fig, ax = plt.subplots()
+            ax.scatter(df['Vp'], df['Depth'], label = 'Vp Data', color = 'saddlebrown')
+            ax.scatter(df['VP_200'], df['Depth'], label = 'VP rolling', color = 'dodgerblue')
+            ax.scatter(df['Vp_NPT'], df['Depth'], label = 'Vp_Model', linestyle = 'dashed', color = 'firebrick')
+            ax.set_xlim([0,10000])
+            ax.legend()
+            plt.show()
 
         if PLOTS:
             fig, ax = plt.subplots()
-            ax.plot(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
-            ax.plot(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
-            ax.plot(df['Eaton_VpMod_Mw'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
-            ax.set_xlim([0,30])        
+            ax.scatter(df['OVERBURDEN_MW'], df['Depth'], label = 'OVERBURDEN', color = 'saddlebrown')
+            ax.scatter(df['PHYD_MW'], df['Depth'], label = 'HYDROSTATIC', color = 'dodgerblue')
+            ax.scatter(df['Eaton_VpMod_Mw'], df['Depth'], label = 'EST PORE PRESSURE (EATON)', linestyle = 'dashed', color = 'firebrick')
+            ax.set_xlim([0,30])
+            ax.legend()
             plt.show()
            
     else: exlas=False
