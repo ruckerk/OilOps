@@ -1234,7 +1234,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
            df['U_APPX'] = df[[Alias["DEN"],Alias["PE"]]].prod(axis=1, skipna=False).dropna()
            U_KEY = 'U_APPX'
                    
-        for i in np.arange(4,14,0.5):
+        for i in np.arange(4,12,0.5):
             m = df.index[(df[U_KEY]> i)*(df[U_KEY]<(0.5+i))]
             if len(m)>200:
                 ct += 1
