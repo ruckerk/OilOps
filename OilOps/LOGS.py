@@ -1192,7 +1192,7 @@ def Mechanics(lasfile):
     else: exlas=False
     return exlas
 
-def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1):
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1, MINIMUM_PTS = 100):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
@@ -1236,7 +1236,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
                    
         for i in np.arange(4,12,0.5):
             m = df.index[(df[U_KEY]> i)*(df[U_KEY]<(0.5+i))]
-            if len(m)>200:
+            if len(m)>MINIMUM_PTS:
                 ct += 1
                 mod = detrend_log(df,'Depth','VpMod', True, m, log= True, fit_deg = DEGREE_VP)
                 df2.at[ct,'U'] = df.loc[m,U_KEY].mean()
