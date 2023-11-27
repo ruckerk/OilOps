@@ -1201,7 +1201,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
-    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["PE"]!="NULL") :
+    if (len(las[0])>(MINIMUM_PTS*3)) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["PE"]!="NULL") :
         df=las.df()
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
@@ -1234,7 +1234,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
            df['U_APPX'] = df[[Alias["DEN"],Alias["PE"]]].prod(axis=1, skipna=False).dropna()
            U_KEY = 'U_APPX'
                    
-        for i in np.arange(4,12,0.5):
+        for i in np.arange(4,12,1):
             m = df.index[(df[U_KEY]> i)*(df[U_KEY]<(0.5+i))]
             if len(m)>MINIMUM_PTS:
                 ct += 1
