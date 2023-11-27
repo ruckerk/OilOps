@@ -1245,7 +1245,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
                 df['TEST'] = 10**df['Depth'].apply(lambda x: mod(x))
                 df.loc[m,'VpMod_Trends'] = decompose_log(df.loc[m,'VpMod'])
                        
-       if df2.shape[0]<4:
+        if df2.shape[0]<4:
             print('Too few passable points')
             return False         
                   
