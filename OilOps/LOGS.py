@@ -1233,17 +1233,21 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         else:
            df['U_APPX'] = df[[Alias["DEN"],Alias["PE"]]].prod(axis=1, skipna=False).dropna()
            U_KEY = 'U_APPX'
-                   
+
+        m2 = df['VpMod'].dropna().index
         for i in np.arange(4,12,1):
             m = df.index[(df[U_KEY]> i)*(df[U_KEY]<(0.5+i))]
-            if len(m)>MINIMUM_PTS:
+            if len(m.intersect(m2))>MINIMUM_PTS:
                 ct += 1
                 mod = detrend_log(df,'Depth','VpMod', True, m, log= True, fit_deg = DEGREE_VP)
                 df2.at[ct,'U'] = df.loc[m,U_KEY].mean()
                 for j in np.arange(0,DEGREE_VP+1):
                     df2.at[ct,f'mod{j}'] = mod[j]
                 df['TEST'] = 10**df['Depth'].apply(lambda x: mod(x))
-                df.loc[m,'VpMod_Trends'] = decompose_log(df.loc[m,'VpMod'])
+                try:                  
+                    df.loc[m,'VpMod_Trends'] = decompose_log(df.loc[m,'VpMod'])
+                except:
+                    pass
                        
         if df2.shape[0]<4:
             print('Too few passable points')
@@ -1288,12 +1292,12 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         # POPULATE EXPORT LAS
         exlas.append_curve('WKR_VpMod_NCT',df.VpMod_NPT, unit='GPa', descr='Metric Compression Modulus Normal Compaction Trend')
         exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
-        exlas.append_curve('PHYD',df.PHYD, unit='psi', descr='Hydrostatic pressure')
-        exlas.append_curve('PLITH',df.OVERBURDEN, unit='psi', descr='Lithostatic pressure')
-        exlas.append_curve('PPEM',df.Eaton_VpMod, unit='psi', descr='Eaton Pore Pressure using VpMod NPT')    
-        exlas.append_curve('PGHYD',df.PHYD_MW, unit='ppg', descr='Hydrostatic pressure gradient')
-        exlas.append_curve('PGLITH',df.OVERBURDEN_MW, unit='ppg', descr='Lithostatic pressure gradient')
-        exlas.append_curve('PPGEM',df.Eaton_VpMod_Mw, unit='ppg', descr='Eaton Pore Pressure gradient using VpMod NPT')    
+        exlas.append_curve('WKR_PHYD',df.PHYD, unit='psi', descr='Hydrostatic pressure')
+        exlas.append_curve('WKR_PLITH',df.OVERBURDEN, unit='psi', descr='Lithostatic pressure')
+        exlas.append_curve('WKR_PPEM',df.Eaton_VpMod, unit='psi', descr='Eaton Pore Pressure using VpMod NPT')    
+        exlas.append_curve('WKR_PGHYD',df.PHYD_MW, unit='ppg', descr='Hydrostatic pressure gradient')
+        exlas.append_curve('WKR_PGLITH',df.OVERBURDEN_MW, unit='ppg', descr='Lithostatic pressure gradient')
+        exlas.append_curve('WKR_PPGEM',df.Eaton_VpMod_Mw, unit='ppg', descr='Eaton Pore Pressure gradient using VpMod NPT')    
         
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_EATON.las"
         exlas.write(filename, version = 2.0)
