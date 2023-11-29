@@ -14,6 +14,8 @@ __all__ = ['CO_BASEDATA',
            'SUMMARIZE_COGCC_SQL']
 
 #Define Functions for multiprocessing iteration
+# Def function to add metrics to three stream rates (TMB, Norm, Cum)
+
 def ND_WELLSUMMARY(username, password, driver= None):
     if driver == None:
         driver = get_driver()
