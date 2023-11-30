@@ -126,7 +126,16 @@ def DF_UNSTRING(df_IN):
         #check if just strings
         if (df_IN[k].astype(str).str.replace(r'[0-9\._\-\/\\]','',regex=True).str.len().mean() > 5) and (df_IN[k].dropna().astype(str).str.replace(r'[A-Za-z\._\-\/\\]*','',regex=True).str.len().mean() > 5):
             continue
+        A = df_IN[k].dropna().astype(str).str.replace(r'[^\d*]','_', regex = True).str.split('_', expand=True).apply(pd.to_numeric, errors = 'ignore', axis =0).describe(percentiles = None)
+        YearTest = (A.loc['max']<3000) *(A.loc['min']>1000)
+        MonthTest = (A.loc['max']<12) *(A.loc['min']>0)
+        DayTest = (A.loc['max']<30) *(A.loc['min']>0)
 
+        #date condition test
+        if not (YearTest.max()>=1) * (MonthTest.max()>=1) * (DayTest.max()>=1) * ((MonthTest+DayTest).max()>=2)
+            # if not true then do not add k to DATECOLS
+            continue           
+            
         mask = df_IN[k].astype(str).str.count(pattern)>0
         mask = ~df_IN[k].isna() & mask
 
