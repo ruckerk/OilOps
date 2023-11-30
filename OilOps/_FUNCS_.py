@@ -103,8 +103,65 @@ warnings.filterwarnings('ignore')
 
         
 def sigmoid(x, L ,x0, k, b):
+    # L: max val
+    # x0: midpoint 
+    # k: steepness
+    # b: min val
     y = L / (1 + np.exp(-k*(x-x0))) + b
     return (y)
+
+def exponential(x, A, K, C):
+    y= A * np.exp(K * x) + C
+    return (y)
+
+def stretch_exponential(x,c,tau,beta,y_offset):
+    return c*(np.exp(-(x/tau)**beta))+y_offset
+
+def curve_fitter(X,Y, funct, split = 0.2, plot = False, logx = False, logy = False, **modargs):
+    m = np.isfinite(X)*np.isfinite(Y)
+    if sum(m)<=1:
+        return None
+    X=X[m].copy()
+    Y=Y[m].copy()
+
+    if logx:
+        X = np.log10(X)
+    if logy:
+        Y = np.log10(Y)
+    
+    if isinstance(split, (int, float)):
+        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size= split)
+    else:
+        X_train, X_test, y_train, y_train = X,X,Y,Y
+
+    if len(modargs)>0:
+        func = partial(funct, *ModelArgs)
+    else:
+        func = funct
+        
+    try:
+        popt, pcov = curve_fit(func, X_train, y_train)
+    except:
+        return None
+
+    x = np.linspace(min(X),max(X),100)
+    y = func(x, *popt)
+    if logx:
+        x = 10**x
+        X = 10**X        
+    if logy:
+        Y = 10**Y
+        y = 10**y
+
+    if plot:        
+        plt.plot(X, Y, 'o', label='data')
+        plt.plot(x,y, label='fit')
+        plt.legend(loc='best')
+       
+        plt.xlim((0.9*min(X),1.1*max(X)))
+        plt.ylim((0.9*min(Y),1.1*max(Y)))
+        plt.show()
+    return popt
 
 def DF_UNSTRING(df_IN):
     if df_IN.empty:
