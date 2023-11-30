@@ -362,76 +362,77 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ##############
     # SCOUT DATA #
     ##############
-    WELL_LOC.Spud_Date=pd.to_datetime(WELL_LOC.Spud_Date)
-    WELL_LOC.Stat_Date=pd.to_datetime(WELL_LOC.Stat_Date)
-    m_recent = ((datetime.datetime.now()-WELL_LOC['Stat_Date'])/pd.Timedelta(days=1))<=(365*2)
-    m_spud = WELL_LOC.Spud_Date.dt.year>1000
-    UWIlist = WELL_LOC.loc[m_recent + m_spud,'UWI10']      
-    
-    # if path.exists('SCOUTS'):
-        # pfiles = listdir('SCOUTS')
-        # pfiles = [f for f in pfiles if f.upper().endswith('PARQUET')]
-        # SCOUT_DATA = pd.DataFrame()
-        # for f in pfiles:
-            # x1=pd.read_parquet(path.join('SCOUTS',f))
-            # SCOUT_DATA = pd.concat([SCOUT_DATA,x1],ignore_index=True)
-        # SCOUT_DATA.drop_duplicates(inplace=True)
-        # SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
-        # DUPLICATED = SCOUT_DATA.loc[SCOUT_DATA['UWI10'].duplicated(),'UWI10'].to_list()
-        # for u in DUPLICATED:
-            # IDX = -1
-            # SCOUT_SUB = SCOUT_DATA.loc[SCOUT_DATA.UWI10 == u].copy()
-            # SCOUT_SUB = DF_UNSTRING(SCOUT_SUB)
-            # IDX_ALT = SCOUT_SUB.sort_values(by='STATUS_DATE', ascending = False).index[0]
-            # NA_LIMIT = SCOUT_SUB.isna().sum(axis=1).min()
-            # m = SCOUT_SUB.isna().sum(axis=1) == NA_LIMIT
-            # SCOUT_SUB =SCOUT_SUB.loc[m]
-            # m = (SCOUT_SUB == SCOUT_SUB.iloc[0]).min(axis=0)
-            # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
-            # m = SCOUT_SUB.isna().min(axis=0)
-            # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
-            # m=SCOUT_SUB.isna().min(axis=0)
-            # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
-            # SCOUT_SUB.drop_duplicates(inplace=True)
-            # if 'TREATMENT_SUMMARY' in SCOUT_SUB.keys():
-                # m = SCOUT_SUB['TREATMENT_SUMMARY'].str.len() == SCOUT_SUB['TREATMENT_SUMMARY'].str.len().max
-                # SCOUT_SUB= SCOUT_SUB.loc[m]   
-            # if (SCOUT_SUB.shape[0]==1) | (SCOUT_SUB.shape[1]==0):
-                # IDX = SCOUT_SUB.index[0]
-            # n = SCOUT_SUB.astype(float, errors='ignore').dtypes != object
-            # if n.any():
-                # m = (SCOUT_SUB.loc[:,n].astype(float).std()/SCOUT_SUB.loc[:,n].astype(float).mean()).abs() > 0.1
-                # if SCOUT_SUB.loc[:,m].shape[1]==0:
-                    # IDX = SCOUT_SUB.index[0]     
-            # if IDX == -1:
-                # IDX = IDX_ALT
-            # SCOUT_SUB = SCOUT_DATA.loc[SCOUT_DATA.UWI10 == u].copy()
-            # DROP_IDX = SCOUT_SUB.index[SCOUT_SUB.index != IDX]
-            # SCOUT_DATA.drop(DROP_IDX, axis=0, inplace= True)
-    
-    SCOUTTABLENAME = 'SCOUTDATA'  
-    SCOUT_DATA = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(SCOUTTABLENAME),connection_obj)     
-    SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
-    UWIlist = list(set(list(UWIlist))-set(SCOUT_DATA.UWI10.tolist()))
-    #UWIlist = list()
-    func = partial(Get_Scouts,
-            db = DB_NAME,
-            TABLE_NAME = SCOUTTABLENAME)  
-    SCOUT_df = pd.DataFrame()
-    if len(UWIlist) >2000:
-        chunksize = int(len(UWIlist)/processors)
-        chunksize = min(2000, chunksize)
-        batches = int(len(UWIlist)/chunksize)
-        data=np.array_split(UWIlist,batches)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
-            f = {executor.submit(func,a): a for a in data}
+    if False:
+        WELL_LOC.Spud_Date=pd.to_datetime(WELL_LOC.Spud_Date)
+        WELL_LOC.Stat_Date=pd.to_datetime(WELL_LOC.Stat_Date)
+        m_recent = ((datetime.datetime.now()-WELL_LOC['Stat_Date'])/pd.Timedelta(days=1))<=(365*2)
+        m_spud = WELL_LOC.Spud_Date.dt.year>1000
+        UWIlist = WELL_LOC.loc[m_recent + m_spud,'UWI10']      
         
-        for i in f.keys():
-            SCOUT_df = pd.concat([SCOUT_df,i.result()],ignore_index = True)
-            #SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
-    elif len(UWIlist)>0:
-        SCOUT_df =  Get_Scouts(UWIlist,DB_NAME)
+        # if path.exists('SCOUTS'):
+            # pfiles = listdir('SCOUTS')
+            # pfiles = [f for f in pfiles if f.upper().endswith('PARQUET')]
+            # SCOUT_DATA = pd.DataFrame()
+            # for f in pfiles:
+                # x1=pd.read_parquet(path.join('SCOUTS',f))
+                # SCOUT_DATA = pd.concat([SCOUT_DATA,x1],ignore_index=True)
+            # SCOUT_DATA.drop_duplicates(inplace=True)
+            # SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
+            # DUPLICATED = SCOUT_DATA.loc[SCOUT_DATA['UWI10'].duplicated(),'UWI10'].to_list()
+            # for u in DUPLICATED:
+                # IDX = -1
+                # SCOUT_SUB = SCOUT_DATA.loc[SCOUT_DATA.UWI10 == u].copy()
+                # SCOUT_SUB = DF_UNSTRING(SCOUT_SUB)
+                # IDX_ALT = SCOUT_SUB.sort_values(by='STATUS_DATE', ascending = False).index[0]
+                # NA_LIMIT = SCOUT_SUB.isna().sum(axis=1).min()
+                # m = SCOUT_SUB.isna().sum(axis=1) == NA_LIMIT
+                # SCOUT_SUB =SCOUT_SUB.loc[m]
+                # m = (SCOUT_SUB == SCOUT_SUB.iloc[0]).min(axis=0)
+                # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
+                # m = SCOUT_SUB.isna().min(axis=0)
+                # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
+                # m=SCOUT_SUB.isna().min(axis=0)
+                # SCOUT_SUB = SCOUT_SUB.loc[:,~m]
+                # SCOUT_SUB.drop_duplicates(inplace=True)
+                # if 'TREATMENT_SUMMARY' in SCOUT_SUB.keys():
+                    # m = SCOUT_SUB['TREATMENT_SUMMARY'].str.len() == SCOUT_SUB['TREATMENT_SUMMARY'].str.len().max
+                    # SCOUT_SUB= SCOUT_SUB.loc[m]   
+                # if (SCOUT_SUB.shape[0]==1) | (SCOUT_SUB.shape[1]==0):
+                    # IDX = SCOUT_SUB.index[0]
+                # n = SCOUT_SUB.astype(float, errors='ignore').dtypes != object
+                # if n.any():
+                    # m = (SCOUT_SUB.loc[:,n].astype(float).std()/SCOUT_SUB.loc[:,n].astype(float).mean()).abs() > 0.1
+                    # if SCOUT_SUB.loc[:,m].shape[1]==0:
+                        # IDX = SCOUT_SUB.index[0]     
+                # if IDX == -1:
+                    # IDX = IDX_ALT
+                # SCOUT_SUB = SCOUT_DATA.loc[SCOUT_DATA.UWI10 == u].copy()
+                # DROP_IDX = SCOUT_SUB.index[SCOUT_SUB.index != IDX]
+                # SCOUT_DATA.drop(DROP_IDX, axis=0, inplace= True)
+        
+        SCOUTTABLENAME = 'SCOUTDATA'  
+        SCOUT_DATA = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(SCOUTTABLENAME),connection_obj)     
+        SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
+        UWIlist = list(set(list(UWIlist))-set(SCOUT_DATA.UWI10.tolist()))
+        #UWIlist = list()
+        func = partial(Get_Scouts,
+                db = DB_NAME,
+                TABLE_NAME = SCOUTTABLENAME)  
+        SCOUT_df = pd.DataFrame()
+        if len(UWIlist) >2000:
+            chunksize = int(len(UWIlist)/processors)
+            chunksize = min(2000, chunksize)
+            batches = int(len(UWIlist)/chunksize)
+            data=np.array_split(UWIlist,batches)
+    
+            with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
+                f = {executor.submit(func,a): a for a in data}
+            
+            for i in f.keys():
+                SCOUT_df = pd.concat([SCOUT_df,i.result()],ignore_index = True)
+                #SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
+        elif len(UWIlist)>0:
+            SCOUT_df =  Get_Scouts(UWIlist,DB_NAME)
 
     ###################
     # FRAC FOCUS DATA #
@@ -683,7 +684,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
 
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
            #f = {executor.submit(CO_Get_Surveys,a): a for a in data
-           f = {executor.submit(func,a): a for a in data}
+           f = {executor.submit(func,a): a for a in data}                
     elif len(UWIlist)>0:
         func(UWIlist)
         #CO_Get_Surveys(UWIlist)
