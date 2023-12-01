@@ -9,6 +9,84 @@ __all__ = ['CONSTRUCT_DB',
           'UPDATE_SURVEYS',
           'UPDATE_PROD']
 
+def ONELINE(DB_NAME = 'FIELD_DATA.db'):
+    WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
+    WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLLINE_LOC = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'] == 500000000)]
+    WELLLINE_LOC['X'] = WELLLINE_LOC.coords.apply(lambda x:x[0][0])
+    WELLLINE_LOC['Y'] = WELLLINE_LOC.coords.apply(lambda x:x[0][1])
+    WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
+    WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
+    #UWIlist = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'].isin(SCOUT_UWI)), 'UWI10']
+    UWIlist = WELLLINE_LOC.loc['UWI10']
+          
+    CONN = sqlite3.connect(DB_NAME)
+    PROD = pd.read_sql('SELECT * FROM PRODDATA', CONN, chunksize = 100000)
+    CONN.close()
+
+    p_old = pd.DataFrame()
+    OUTPUT = pd.DataFrame()
+    UWILIST = []
+          
+    for p in PROD:
+        p['UWI10'] = p['UWI'].apply(lambda x: WELLAPI(x).API2INT(10))        
+        ULIST = list(set(p['UWI10']).intersection(set(WELLLINE_LOC['UWI10'])))
+        p = p.loc[p.UWI10.isin(ULIST)]
+        
+        p = DF_UNSTRING(p)
+        if not p_old.empty:
+            UWILIST = list(set(p_old.UWI10).intersection(set(p.UWI10)))
+            m = p_old.index[p_old.UWI10.isin(UWILIST)]
+        else:
+            m = p_old.index
+        p_use = pd.concat([p_old.loc[m],p],axis = 0, join = 'outer')
+        
+        mm = p_use[['Oil_Produced','Gas_Produced','Water_Volume']].astype(float, errors = 'ignore').replace(0.0,np.nan).dropna(how='all',axis = 0).index
+        p_use = p_use.loc[mm,:].copy()
+        p_use.shape
+        if len(mm)>20:
+            p_use['NORM_OIL'] = p_use['Oil_Produced']/p_use.groupby(['UWI10'])['Oil_Produced'].cummax(skipna=True)
+            p_use['NORM_GAS'] = p_use['Gas_Produced']/p_use.groupby(['UWI10'])['Gas_Produced'].cummax(skipna=True)
+            p_use['NORM_WTR'] = p_use['Water_Volume']/p_use.groupby(['UWI10'])['Water_Volume'].cummax(skipna=True)
+            p_use['CUM_OIL'] = p_use.groupby(['UWI10'])['Oil_Produced'].cumsum(skipna=True)
+            p_use['CUM_GAS'] = p_use.groupby(['UWI10'])['Gas_Produced'].cumsum(skipna=True)       
+            p_use['CUM_WTR'] = p_use.groupby(['UWI10'])['Water_Volume'].cumsum(skipna=True)
+            p_use['CUM_GOR'] = p_use['CUM_GAS'] * 1000 / p_use['CUM_OIL']
+            p_use['CUM_WOC'] = p_use['CUM_WTR'] * 1000 / (p_use['CUM_OIL'] + p_use['CUM_WTR'])
+            p_use['TMB_OIL'] = p_use['CUM_OIL']/p_use['Oil_Produced']
+            p_use['TMB_GAS'] = p_use['CUM_GAS']/p_use['Gas_Produced']
+            p_use['TMB_WTR'] = p_use['CUM_WTR']/p_use['Water_Volume']
+            p_use['WOC'] = p_use['Water_Volume']/(p_use['Oil_Produced']+p_use['Water_Volume'])
+            p_use['PROD_DAYS'] = p_use.groupby(['UWI10'])['Days_Produced'].cumsum(skipna=True)
+            p_use = DF_UNSTRING(p_use)
+            
+            mm_o95 = p_use.index[p_use['NORM_OIL']<0.95]
+            mm_g95 = p_use.index[p_use['NORM_GAS']<0.95]
+            mm_w95 = p_use.index[p_use['NORM_WTR']<0.95]
+            mm_otmb200 = p_use.index[p_use['TMB_OIL']<200]
+            mm_gtmb200 = p_use.index[p_use['TMB_GAS']<200]
+            mm_wtmb200 = p_use.index[p_use['TMB_WTR']<200]
+ 
+            PAIRS = [('TMB_OIL','NORM_OIL', True, False, mm_o95.intersection(mm_otmb200), stretch_exponential),
+                     ('TMB_GAS','NORM_GAS', True, False, mm_g95.intersection(mm_gtmb200), stretch_exponential),
+                     ('TMB_WTR','NORM_WTR', True, False, mm_w95.intersection(mm_otmb200), stretch_exponential),
+                     ('TMB_GAS','CUM_GOR', True, False, mm_g95, sigmoid),
+                     ('TMB_WTR','OWC', True, False, mm_w95, sigmoid)]
+            OUTPUT = OUTPUT.loc[~OUTPUT.index.isin(UWILIST)]
+            MODELS = pd.DataFrame()
+            for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
+                try:
+                    MODEL = p_use.loc[mm,['UWI10',Xkey,Ykey]].dropna(how='any',axis=0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                    NAME = '_'.join([Xkey,Ykey])
+                    MODELS[NAME] = MODEL
+                except:
+                    pass
+            OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
+            print(f'OUTPUT SHAPE: {OUTPUT.shape}')
+        p_old = p
+              
+    return OUTPUT
+
 def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     #pathname = path.dirname(argv[0])
     #adir = path.abspath(pathname)
