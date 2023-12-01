@@ -75,6 +75,7 @@ from scipy.stats.mstats import gmean
 from scipy.stats import circmean
 
 from statsmodels.tsa.seasonal import seasonal_decompose
+import  statsmodels.api as sm
 
 import openpyxl
 import xlsxwriter
@@ -162,6 +163,24 @@ def curve_fitter(X,Y, funct, split = 0.2, plot = False, logx = False, logy = Fal
         plt.ylim((0.9*min(Y),1.1*max(Y)))
         plt.show()
     return popt
+
+def run_sm_ols(df_in,YKEY =None):
+    if YKEY == None:
+        YKEY = df_in.keys()[0]
+    XKEYS = df_in.keys().tolist()
+    XKEYS.remove(YKEY)
+        
+    # Run statsmodel ols
+    ols_results = sm.OLS(df_in.loc[:,YKEY], df_in.loc[:,XKEYS]).fit()
+    
+    # Unpack variables
+    results = ols_results.params
+
+    labels = [f'b{i}' for i in np.arange(0,len(results))] 
+    labels.insert(0,'intercept')
+    
+    # Return to apply call as a series (3 separate columns)
+    return pd.Series(results, index=labels)
 
 def DF_UNSTRING(df_IN):
     if df_IN.empty:
