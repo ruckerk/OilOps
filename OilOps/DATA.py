@@ -1899,11 +1899,15 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         pdf.loc[PRODGAS,'TMB_GAS'] = pdf.loc[PRODGAS,'CUMGAS'] / pdf.loc[PRODGAS,GAS]
         pdf.loc[PRODWTR,'TMB_WTR'] = pdf.loc[PRODWTR,'CUMWTR'] / pdf.loc[PRODWTR,WTR]      
 
+        pdf['NORM_OIL'] = pdf[OIL]/pdf.groupby(['UWI10'])[OIL].cummax(skipna=True)
+        pdf['NORM_GAS'] = pdf[GAS]/pdf.groupby(['UWI10'])[GAS].cummax(skipna=True)
+        pdf['NORM_WTR'] = pdf[WTR]/pdf.groupby(['UWI10'])[WTR].cummax(skipna=True)
+               
         #pdf[['GOR','OWR','WOR','OWC','WOC']] = np.nan
         pdf.loc[PRODOIL,'GOR'] = pdf.loc[PRODOIL,GAS]*1000/pdf.loc[PRODOIL,OIL]
         pdf.loc[PRODWTR,'OWR'] = pdf.loc[PRODWTR,OIL]/pdf.loc[PRODWTR,WTR]
         pdf.loc[PRODOIL,'WOR'] = pdf.loc[PRODOIL,WTR]/pdf.loc[PRODOIL,OIL]
-        
+      
         m2 = PRODOIL.join(PRODWTR,how='outer')
         pdf.loc[m2,'OWC'] = pdf.loc[m2,OIL]/(pdf.loc[m2,WTR]+pdf.loc[m2,OIL])
         pdf.loc[m2,'WOC'] = pdf.loc[m2,WTR]/(pdf.loc[m2,WTR]+pdf.loc[m2,OIL])
@@ -1963,6 +1967,9 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                     OUTPUT.at[UWI,'GOR_Final'] = pdf.loc[LATEGAS, GAS].sum() / pdf.loc[LATEGAS, OIL].sum() * 1000
                 if len(LATEWATER)>3:
                     OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
+                
+                dd   
+                   
 
             if len(pdf[DATE].dropna())>10:
                 MONTH1 = pdf.loc[(pdf[DAYSON]>14) & (pdf[OIL]>0),DATE].min()
@@ -1986,8 +1993,36 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                             if pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum() > 0: 
                                 OUTPUT.at[UWI,'OWR_MO'+str(i_dwn)+'_'+str(i_up)]  = pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),OIL].sum() / pdf.loc[(pdf['EM_PRODMONTH']>=i_dwn) & (pdf['EM_PRODMONTH']<=i_up),WTR].sum()
 
-        OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
-        #pdf.loc[m,'UWI'] = UWI
+    # CALCULATE SLOPES
+    # Should add check for additional completions
+    mm_nOIL = pdf.index[(pdf['NORM_OIL']>0.1)*(pdf['NORM_OIL']<0.9)]
+    mm_nGAS = pdf.index[(pdf['NORM_GAS']>0.1)*(pdf['NORM_GAS']<0.9)]
+    mm_nWTR = pdf.index[(pdf['NORM_WTR']>0.1)*(pdf['NORM_WTR']<0.9)]
+    
+    
+    # CALCULATE MODEL_PARAMETERS
+    mm_o95 = pdf.index[pdf['NORM_OIL']<0.95]
+    mm_g95 = pdf.index[pdf['NORM_GAS']<0.95]
+    mm_w95 = pdf.index[pdf['NORM_WTR']<0.95]
+    mm_otmb200 = pdf.index[pdf['TMB_OIL']<200]
+    mm_gtmb200 = pdf.index[pdf['TMB_GAS']<200]
+    mm_wtmb200 = pdf.index[pdf['TMB_WTR']<200]
+    PAIRS = [('TMB_OIL','NORM_OIL', True, False, mm_o95.intersection(mm_otmb200), stretch_exponential),
+             ('TMB_GAS','NORM_GAS', True, False, mm_g95.intersection(mm_gtmb200), stretch_exponential),
+             ('TMB_WTR','NORM_WTR', True, False, mm_w95.intersection(mm_otmb200), stretch_exponential),
+             ('TMB_GAS','CUM_GOR', True, False, mm_g95, sigmoid),
+             ('TMB_WTR','OWC', True, False, mm_w95, sigmoid)]
+    MODELS = pd.DataFrame()
+    for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
+            try:
+                MODEL = p_use.loc[mm,['UWI10',Xkey,Ykey]].dropna(how='any',axis=0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                NAME = '_'.join([Xkey,Ykey])
+                MODELS[NAME] = MODEL
+            except:
+                pass
+    OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
+    OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
+    #pdf.loc[m,'UWI'] = UWI
            
     if ADD_RATIOS:
         return OUTPUT, pdf
