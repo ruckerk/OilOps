@@ -100,8 +100,6 @@ import base64
 from .WELLAPI import WELLAPI as WELLAPI
 
 warnings.filterwarnings('ignore')
-
-
         
 def sigmoid(x, L ,x0, k, b):
     # L: max val
@@ -118,6 +116,10 @@ def exponential(x, A, K, C):
 def stretch_exponential(x,c,tau,beta,y_offset):
     return c*(np.exp(-(x/tau)**beta))+y_offset
 
+def linear(x,yint,slope):
+    y = slope*x+yint
+    return (y)
+        
 def curve_fitter(X,Y, funct, split = 0.2, plot = False, logx = False, logy = False, **modargs):
     m = np.isfinite(X)*np.isfinite(Y)
     if sum(m)<=1:
