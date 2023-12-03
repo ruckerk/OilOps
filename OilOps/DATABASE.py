@@ -66,18 +66,22 @@ def ONELINE(DB_NAME = 'FIELD_DATA.db'):
             mm_otmb200 = p_use.index[p_use['TMB_OIL']<200]
             mm_gtmb200 = p_use.index[p_use['TMB_GAS']<200]
             mm_wtmb200 = p_use.index[p_use['TMB_WTR']<200]
+            mm_o2080 = p_use.index[(p_use['NORM_OIL']<=0.80)*(p_use['NORM_OIL']>=0.20)]
  
-            PAIRS = [('TMB_OIL','NORM_OIL', True, False, mm_o95.intersection(mm_otmb200), stretch_exponential),
-                     ('TMB_GAS','NORM_GAS', True, False, mm_g95.intersection(mm_gtmb200), stretch_exponential),
-                     ('TMB_WTR','NORM_WTR', True, False, mm_w95.intersection(mm_otmb200), stretch_exponential),
-                     ('TMB_GAS','CUM_GOR', True, False, mm_g95, sigmoid),
-                     ('TMB_WTR','OWC', True, False, mm_w95, sigmoid)]
+            PAIRS = [('TMB_OIL','NORM_OIL', True, False, mm_o95.intersection(mm_otmb200), stretch_exponential, 'TMB_NORM_OIL'),
+                     ('TMB_GAS','NORM_GAS', True, False, mm_g95.intersection(mm_gtmb200), stretch_exponential, 'TMB_NORM_GAS'),
+                     ('TMB_WTR','NORM_WTR', True, False, mm_w95.intersection(mm_otmb200), stretch_exponential, 'TMB_NORM_WTR'),
+                     ('TMB_GAS','CUM_GOR', True, False, mm_g95, sigmoid, 'TMBGAS_GOR'),
+                     ('TMB_WTR','OWC', True, False, mm_w95, sigmoid, 'TMBWTR_OWC'),
+                     ('TMB_OIL', 'NORM_OIL', True, True, p_use.index, linear,'TMB_NORM_SLOPE2080'),
+                     ('TMB_OIL', 'PROD_DAYS', True, True, p_use.index, linear, 'TMBOIL_DAYS'),
+                    ]
             OUTPUT = OUTPUT.loc[~OUTPUT.index.isin(UWILIST)]
             MODELS = pd.DataFrame()
-            for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
+            for (Xkey, Ykey, logx_bool, logy_bool, mm, func, NAME) in PAIRS:
                 try:
                     MODEL = p_use.loc[mm,['UWI10',Xkey,Ykey]].dropna(how='any',axis=0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
-                    NAME = '_'.join([Xkey,Ykey])
+                    #NAME = '_'.join([Xkey,Ykey])
                     MODELS[NAME] = MODEL
                 except:
                     pass
