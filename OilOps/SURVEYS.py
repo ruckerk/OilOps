@@ -992,10 +992,12 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     OUTPUT = pd.DataFrame(col_type,index=[])
 
     COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*PROD.*DATE|.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*|.*FIRST.*DATE.*|.*SPUD.*DATE.*', regex=True, case=False,na=False)].keys()
-    df_UWI['MAX_COMPLETION_DATE'] = df_UWI[COMPDATES].fillna(datetime.datetime(1900,1,1)).max(axis=1)
+    df_UWI[COMPDATES] = DF_UNSTRING(df_UWI[COMPDATES])
+    df_UWI['MAX_COMPLETION_DATE'] = df_UWI[COMPDATES].max(axis=1)
+    df_UWI['MAX_COMPLETION_DATE'].fillna(datetime.datetime.now(), inplace = True)
     COMPDATEdfd = df_UWI.keys().get_loc('MAX_COMPLETION_DATE')
 
-    xxdf = xxdf.rename(columns = SurveyCols(xxdf.head(5)))
+    xxdf.rename(columns = SurveyCols(xxdf.head(5)), inplace = True)
     
     # MAKE KEY COLUMNS NUMERIC
     for k in SurveyCols(xxdf):
@@ -1039,8 +1041,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
 
     xxdf['UWI10'] = xxdf.iloc[:,UWICOL].apply(lambda x: WELLAPI(x).API2INT(10))
     
-    for xUWI10 in xxUWI10:
-        ix+=1
+    for ix,xUWI10 in enumerate(xxUWI10):
         xUWI10=WELLAPI(xUWI10).API2INT(10)
               
         xdf = xxdf.copy(deep=True)
@@ -1123,8 +1124,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
             LOCAL_LIMIT = 505
             LOCAL_UWI = 1
             
-            for well in set(xdf.UWI10):
-                j+=1
+            for j,well in enumerate(set(xdf.UWI10)):
                 overlap = max(xdf.Xfit[xdf.UWI10==well])-min(xdf.Xfit[xdf.UWI10==well])
                 gmeandistance = gmean(abs(xdf.Yfit[xdf.UWI10==well]))*np.sign(statistics.mean(xdf.Yfit[xdf.UWI10==well]))
                 #gmeandepth = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==well]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==well]))-refTVD
@@ -1186,9 +1186,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                   
             OUTPUT = pd.concat([OUTPUT,NewRow],axis = 0, ignore_index= True)
 
-    outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
-
-    OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
+    #outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
+    #OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
     return OUTPUT
                    
 def MIN_CURVATURE(df_survey):
