@@ -18,11 +18,10 @@ def ONELINE(DB_NAME = 'FIELD_DATA.db'):
     WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
     WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
     #UWIlist = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'].isin(SCOUT_UWI)), 'UWI10']
-    UWIlist = WELLLINE_LOC.loc['UWI10']
+    UWIlist = WELLLINE_LOC['UWI10'].unique().tolist()
           
     CONN = sqlite3.connect(DB_NAME)
     PROD = pd.read_sql('SELECT * FROM PRODDATA', CONN, chunksize = 100000)
-    CONN.close()
 
     p_old = pd.DataFrame()
     OUTPUT = pd.DataFrame()
@@ -78,17 +77,23 @@ def ONELINE(DB_NAME = 'FIELD_DATA.db'):
                     ]
             OUTPUT = OUTPUT.loc[~OUTPUT.index.isin(UWILIST)]
             MODELS = pd.DataFrame()
+
+            # add recompletion detection by TMBOIL vs DAYS
             for (Xkey, Ykey, logx_bool, logy_bool, mm, func, NAME) in PAIRS:
                 try:
                     MODEL = p_use.loc[mm,['UWI10',Xkey,Ykey]].dropna(how='any',axis=0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                    MODEL = pd.DataFrame(MODEL.tolist())
+                    MODEL['FUNCTION'] =  func.__name__ 
                     #NAME = '_'.join([Xkey,Ykey])
-                    MODELS[NAME] = MODEL
+                    MODELS[NAME] = MODEL.apply(list,axis =1)
                 except:
                     pass
             OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
             print(f'OUTPUT SHAPE: {OUTPUT.shape}')
         p_old = p
-              
+
+    # split OUTPUT params
+
     return OUTPUT
 
 def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
@@ -495,7 +500,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         SCOUTTABLENAME = 'SCOUTDATA'  
         SCOUT_DATA = pd.read_sql('SELECT DISTINCT UWI FROM {}'.format(SCOUTTABLENAME),connection_obj)     
         SCOUT_DATA['UWI10'] = SCOUT_DATA.UWI.apply(lambda x:WELLAPI(x).API2INT(10)) 
-        UWIlist = list(set(list(UWIlist))-set(SCOUT_DATA.UWI10.tolist()))
+        #UWIlist = list(set(list(UWIlist))-set(SCOUT_DATA.UWI10.tolist()))
+        
         #UWIlist = list()
         func = partial(Get_Scouts,
                 db = DB_NAME,
