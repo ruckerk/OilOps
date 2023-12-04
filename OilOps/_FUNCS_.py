@@ -97,6 +97,8 @@ from scipy.special import logsumexp
 
 import base64 
 
+import difflib
+
 from .WELLAPI import WELLAPI as WELLAPI
 
 warnings.filterwarnings('ignore')
@@ -377,7 +379,7 @@ def requests_retry_session(
     return session
 
 def Find_Str_Locs(df_in,string):
-    # takes data table and finds index locations for all matches
+    # takes data table and finds index locations for all matches  #if True:
     if isinstance(string,str):
         string=[string]
     df_in = df_in.astype(object)
@@ -393,7 +395,8 @@ def Find_Str_Locs(df_in,string):
         except:
             continue
         for r in rows:
-            cols = [(lambda x: df_in.loc[r,:].index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
+            #cols = [(lambda x: df_in.loc[r,:].index.get_loc(x))(i) for i in df_in.loc[r,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
+            cols = [(lambda x: df_in.loc[r,:].index.get_loc(x))(i) for i in df_in.loc[r,(df_in.astype(str).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
             Output.at[ii,'Columns'] = Output.at[ii,'Columns'] + cols
             Output.at[ii,'Rows'] = Output.at[ii,'Rows'] + [r]*len(cols)
             # Output.at[ii,'Rows'] = [(lambda x: df_in.loc[:.c].index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
