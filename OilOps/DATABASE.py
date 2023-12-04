@@ -449,7 +449,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ##############
     # SCOUT DATA #
     ##############
-    if False:
+    if True:
         WELL_LOC.Spud_Date=pd.to_datetime(WELL_LOC.Spud_Date)
         WELL_LOC.Stat_Date=pd.to_datetime(WELL_LOC.Stat_Date)
         m_recent = ((datetime.datetime.now()-WELL_LOC['Stat_Date'])/pd.Timedelta(days=1))<=(365*2)
