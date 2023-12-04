@@ -1,4 +1,4 @@
-# requires xlrd, openpyxl
+ # requires xlrd, openpyxl
 
 from bs4 import BeautifulSoup as BS
 from functools import partial
@@ -388,7 +388,10 @@ def Find_Str_Locs(df_in,string):
     for ii, item in enumerate(string):
         Output.at[ii,'Columns'] = [] 
         Output.at[ii,'Rows'] = []
-        rows = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns').replace(False,np.nan).dropna().index,:].index.values ]
+        try:
+            rows = [(lambda x: df_in.index.get_loc(x))(i) for i in df_in.loc[(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='columns').replace(False,np.nan).dropna().index,:].index.values ]
+        except:
+            continue
         for r in rows:
             cols = [(lambda x: df_in.loc[r,:].index.get_loc(x))(i) for i in df_in.loc[:,(df_in.select_dtypes(include=[object]).stack().str.contains(f'.*{item}.*', regex=True, case=False,na=False).unstack()==True).any(axis='rows')].keys().values]
             Output.at[ii,'Columns'] = Output.at[ii,'Columns'] + cols
@@ -410,7 +413,8 @@ def Summarize_Page(df_in,string):
             #itemlist=list(dict.fromkeys(itemlist))
         try:
             itemlist=itemlist.remove('')
-        except: None
+        except: 
+            pass
         itemlist = pd.Series(itemlist).dropna().sort_values().tolist()
         itemlist = list(set(itemlist))
         Summary.loc[:len(itemlist)-1,item]=itemlist
