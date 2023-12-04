@@ -710,16 +710,23 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
 
 
 def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
-    # PASSING ERROR 
+    # PASSING ERROR if True:
            
     Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
                'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
                'TOTAL FLUID USED','MAX PRESSURE','TOTAL GAS USED','FLUID DENSITY','TYPE OF GAS',
                'NUMBER OF STAGED INTERVALS','TOTAL ACID USED','MIN FRAC GRADIENT','RECYCLED WATER USED',
                'TOTAL FLOWBACK VOLUME','PRODUCED WATER USED','TOTAL PROPPANT USED',
-               'TUBING SIZE','TUBING SETTING DEPTH','# OF HOLES','INTERVAL TOP','INTERVAL BOTTOM','^HOLE SIZE','FORMATION NAME','1ST PRODUCTION DATE',
+               'TUBING SIZE','TUBING SETTING DEPTH','# OF HOLES','INTERVAL TOP','INTERVAL BOTTOM',r'^HOLE SIZE','FORMATION NAME','1ST PRODUCTION DATE',
                'BBLS_H2O','BBLS_OIL','CALC_GOR', 'GRAVITY_OIL','BTU_GAS','TREATMENT SUMMARY']
-
+    Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
+               'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
+               'TOTAL FLUID USED','MAX PRESSURE','TOTAL GAS USED','FLUID DENSITY',
+               'NUMBER OF STAGED INTERVALS','TOTAL ACID USED','MIN FRAC GRADIENT','RECYCLED WATER USED',
+               'TOTAL FLOWBACK VOLUME','PRODUCED WATER USED','TOTAL PROPPANT USED',
+               'TUBING SIZE','TUBING SETTING DEPTH','# OF HOLES','INTERVAL TOP','INTERVAL BOTTOM',r'^HOLE SIZE','FORMATION NAME','1ST PRODUCTION DATE',
+               'TREATMENT SUMMARY']
+           
     status_pat = re.compile(r'Status:([\sA-Z]*)[0-9]{1,2}/[0-9]{1,2}/[0-9]{1,2}', re.I)
 
     OUTPUT=[]
@@ -742,11 +749,13 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
     elif isinstance(UWIs,list) == False:
         UWIs = list(UWIs)
 
+    UWIs = [WELLAPI(x).STRING(10) for x in UWIs]
+
     for UWI in UWIs:
         #if 1==1:
         UWI = str(UWI)
-        if len(UWI)%2 == 1:
-            UWI = UWI.zfill(len(UWI)+1)
+        #if len(UWI)%2 == 1:
+        #    UWI = UWI.zfill(len(UWI)+1)
 
         print(UWI+" "+datetime.datetime.now().strftime("%d/%m/%Y_%H:%M:%S"))
         docurl = None
@@ -767,23 +776,57 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                     RETRY += 1
                     sleep(10)
 
+        xSummary = pd.DataFrame()
         if len(pagedf)>0:
-            xSummary = Summarize_Page(pagedf,Strings) 
+            page_dict = {}
+            for i,j in enumerate(pagedf):
+                page_dict.update({i:j})
+            page_merge = pd.DataFrame()
+            for s in page_dict:
+                page_merge = pd.concat([page_merge,page_dict[s]])
+                
+            page_merge.reset_index(drop=True, inplace = True)
+            LOCS = Find_Str_Locs(page_merge,Strings)
+            mm = (LOCS[['Columns','Rows']].applymap(len)!=0).product(axis =1).replace(0,np.nan).dropna().index
+            LOCS = LOCS.loc[mm,:]
+            
+            for i in LOCS.index:
+                T = str(LOCS.loc[i,'Title']).upper()
+                C = LOCS.loc[i,'Columns']
+                R = LOCS.loc[i,'Rows']
+                score0 = 0
+                for j in np.arange(0,len(C)):
+                    TEST_STR = str(page_merge.iloc[R[j],C[j]]).upper()
+                    score1 = difflib.SequenceMatcher(None, T, TEST_STR).ratio()
+                    if score1 > score0:
+                        score0 = score1
+                        R0 = R[j]
+                        C0 = C[j]
+                    elif (score1 == score0) * (len(TEST_STR)< len(str(page_merge.iloc[R0,C0]))):
+                        score0 = score1
+                        R0 = R[j]
+                        C0 = C[j]
+                        
+                xSummary.at[UWI,T] = page_merge.iloc[R0,C0+1]
+                   
+            #xSummary = Summarize_Page(pagedf,Strings) 
             xSummary['UWI']=UWI
 
             # Status code
             STAT_CODE = None
             try:
-                status = status_pat.search(pagedf.iloc[1,0])
+                status = status_pat.search(page_merge.iloc[1,0])
                 status = status.group(1)
                 STAT_CODE = status.strip()
             except:
                 print('status error')
+                STAT_CODE = 'ERR'
                 pass
 
-            xSummary['WELL_STATUS'] = STAT_CODE
+            xSummary.at[UWI,'WELL_STATUS'] = STAT_CODE
+            
 
-            xSummary = pd.DataFrame([xSummary.values],columns= xSummary.index.tolist())
+            #xSummary = pd.DataFrame([xSummary.values],columns= xSummary.index.tolist())
 
             if type(OUTPUT)==list:
                 OUTPUT=xSummary
