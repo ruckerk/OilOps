@@ -991,7 +991,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     
     OUTPUT = pd.DataFrame(col_type,index=[])
 
-    COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*PROD.*DATE|.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*|.*FIRST.*DATE.*|.*SPUD.*DATE.*', regex=True, case=False,na=False)].keys()
+    COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*PROD.*DATE|.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*|.*FIRST.*(PROD|DATE).*|.*SPUD.*DATE.*', regex=True, case=False,na=False)].keys()
     df_UWI[COMPDATES] = DF_UNSTRING(df_UWI[COMPDATES])
     df_UWI['MAX_COMPLETION_DATE'] = df_UWI[COMPDATES].max(axis=1)
     df_UWI['MAX_COMPLETION_DATE'].fillna(datetime.datetime.now(), inplace = True)
@@ -1186,7 +1186,14 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                   
             OUTPUT = pd.concat([OUTPUT,NewRow],axis = 0, ignore_index= True)
 
-    #outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
+    if SAVE:
+        outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
+        adir = getcwd()
+        if not path.exists(path.join(adir,'XYZ')):
+            mkdir(path.join(adir,'XYZ'))
+        OUTPUT = DF_UNSTRING(OUTPUT)
+        OUTPUT.to_parquet(path.join(adir,'XYZ',outfile+'.parquet'))
+        OUTPUT.to_csv(path.join(adir,'XYZ',outfile+'.csv'))
     #OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
     return OUTPUT
                    
