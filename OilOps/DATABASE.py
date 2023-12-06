@@ -373,7 +373,7 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
         TEST = TEST[TEST.apply(len)>1]
         TEST = TEST.apply(lambda x: shapely.geometry.LineString(x))
         
-        s = STRtree(TEST.tolist())
+        s = shapely.strtree.STRtree(TEST.tolist())
         r = s.query(BUFFER_GROUP)  
         TEST = pd.DataFrame(TEST)
         TEST['INTERSECTS_BUFFER'] = TEST.XY.apply(lambda x: x in r)
