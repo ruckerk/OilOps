@@ -288,9 +288,14 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                 else:
                     COMPLETION="00"
                 COMPLETIONCODE64 = base64.b64encode(str(COMPLETION).encode('ascii')).decode().replace('=','')                           
-                docurl=re.sub('XNUMBERX',COWELL64,URL_BASE)
-                docurl=re.sub('XCOUNTYX',COUNTYCODE64,docurl)
-                docurl=re.sub('XCOMPLETIONX',COMPLETIONCODE64,docurl)
+                #docurl=re.sub('XNUMBERX',COWELL64,URL_BASE)
+                #docurl=re.sub('XCOUNTYX',COUNTYCODE64,docurl)
+                #docurl=re.sub('XCOMPLETIONX',str(UWI[2:5]),docurl)
+                
+                docurl=re.sub('XNUMBERX',COWELL,URL_BASE)
+                docurl=re.sub('XCOUNTYX',str(UWI[2:5],docurl)
+                docurl=re.sub('XCOMPLETIONX',COMPLETION,docurl)
+                
                 #try:
                 #    html = urlopen(docurl).read()
                 #except Exception as ex:
@@ -719,6 +724,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                'TOTAL FLOWBACK VOLUME','PRODUCED WATER USED','TOTAL PROPPANT USED',
                'TUBING SIZE','TUBING SETTING DEPTH','# OF HOLES','INTERVAL TOP','INTERVAL BOTTOM',r'^HOLE SIZE','FORMATION NAME','1ST PRODUCTION DATE',
                'BBLS_H2O','BBLS_OIL','CALC_GOR', 'GRAVITY_OIL','BTU_GAS','TREATMENT SUMMARY']
+    
     Strings = ['WELL NAME/NO', 'OPERATOR', 'STATUS DATE','FACILITYID','COUNTY','LOCATIONID','LAT/LON','ELEVATION',
                'SPUD DATE','JOB DATE','JOB END DATE','TOP PZ','BOTTOM HOLE LOCATION',#r'COMPLETED.*INFORMATION.*FORMATION',
                'TOTAL FLUID USED','MAX PRESSURE','TOTAL GAS USED','FLUID DENSITY',
@@ -781,7 +787,9 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
             page_dict = {}
             for i,j in enumerate(pagedf):
                 page_dict.update({i:j})
+                
             page_merge = pd.DataFrame()
+            
             for s in page_dict:
                 page_merge = pd.concat([page_merge,page_dict[s]])
                 
@@ -795,17 +803,20 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                 C = LOCS.loc[i,'Columns']
                 R = LOCS.loc[i,'Rows']
                 score0 = 0
-                for j in np.arange(0,len(C)):
+                score1 = -1
+                R0 = 0
+                C0 = 0
+                for j,c in enumerate(C):
                     TEST_STR = str(page_merge.iloc[R[j],C[j]]).upper()
                     score1 = difflib.SequenceMatcher(None, T, TEST_STR).ratio()
                     if score1 > score0:
                         score0 = score1
                         R0 = R[j]
-                        C0 = C[j]
-                    elif (score1 == score0) * (len(TEST_STR)< len(str(page_merge.iloc[R0,C0]))):
+                        C0 = c
+                    elif (score1>0) * (score1 == score0) * (len(TEST_STR)< len(str(page_merge.iloc[R0,C0]))):
                         score0 = score1
                         R0 = R[j]
-                        C0 = C[j]
+                        C0 = c
                         
                 xSummary.at[UWI,T] = page_merge.iloc[R0,C0+1]
                    
@@ -1906,7 +1917,42 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         return None
     
     ppdf[DATE] = pd.to_datetime(ppdf[DATE]).dt.date
-           
+
+    PRODOIL = ppdf[OIL].dropna().index
+    PRODGAS = ppdf[GAS].dropna().index
+    PRODWTR = ppdf[WTR].dropna().index
+
+    # CUM VALUES
+    ppdf['CUMOIL'] = ppdf[[UWIKEY,OIL]].groupby([UWIKEY])[OIL].cummax(skipna=True)
+    ppdf['CUMGAS'] = ppdf[[UWIKEY,GAS]].groupby([UWIKEY])[GAS].cummax(skipna=True)
+    ppdf['CUMWTR'] = ppdf[[UWIKEY,WTR]].groupby([UWIKEY])[WTR].cummax(skipna=True)
+
+    #MASS BALANCE TIME
+    ppdf.loc[PRODOIL,'TMB_OIL'] = ppdf.loc[PRODOIL,'CUMOIL'] / ppdf.loc[PRODOIL,OIL]
+    ppdf.loc[PRODGAS,'TMB_GAS'] = ppdf.loc[PRODGAS,'CUMGAS'] / ppdf.loc[PRODGAS,GAS]
+    ppdf.loc[PRODWTR,'TMB_WTR'] = ppdf.loc[PRODWTR,'CUMWTR'] / ppdf.loc[PRODWTR,WTR]      
+    
+    # RATES
+    ppdf['OIL_RATE'] = ppdf[OIL]/ppdf[DAYSON]
+    ppdf['GAS_RATE'] = ppdf[GAS]/ppdf[DAYSON]
+    ppdf['WTR_RATE'] = ppdf[WTR]/ppdf[DAYSON]
+    ppdf['PROD_DAYS'] = ppdf[['UWI10',DAYSON]].groupby([UWIKEY]).cumsum()
+
+    # NORM PARAMS
+    ppdf[['NORM_OIL','NORM_GAS','NORM_WTR']] = np.nan
+    ppdf['NORM_OIL'] = ppdf[OIL]/ppdf.groupby([UWIKEY])[OIL].cummax(skipna=True)
+    ppdf['NORM_GAS'] = ppdf[GAS]/ppdf.groupby([UWIKEY])[GAS].cummax(skipna=True)
+    ppdf['NORM_WTR'] = ppdf[WTR]/ppdf.groupby([UWIKEY])[WTR].cummax(skipna=True)
+
+    #pdf[['GOR','OWR','WOR','OWC','WOC']] = np.nan
+    ppdf.loc[PRODOIL,'GOR'] = ppdf.loc[PRODOIL,GAS]*1000/ppdf.loc[PRODOIL,OIL]
+    ppdf.loc[PRODWTR,'OWR'] = ppdf.loc[PRODWTR,OIL]/ppdf.loc[PRODWTR,WTR]
+    ppdf.loc[PRODOIL,'WOR'] = ppdf.loc[PRODOIL,WTR]/ppdf.loc[PRODOIL,OIL]
+
+    m2 = PRODOIL.join(PRODWTR,how='outer')
+    ppdf.loc[m2,'OWC'] = ppdf.loc[m2,OIL]/(ppdf.loc[m2,WTR]+ppdf.loc[m2,OIL])
+    ppdf.loc[m2,'WOC'] = ppdf.loc[m2,WTR]/(ppdf.loc[m2,WTR]+ppdf.loc[m2,OIL])
+
     for UWI in ppdf[UWIKEY].unique():
         pdf = ppdf.loc[ppdf[UWIKEY] == UWI,:].copy()
         pdf.sort_values(by= 'First_of_Month', ascending = True).reset_index(drop=True, inplace = True)
@@ -1927,33 +1973,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         PRODGAS = pdf[GAS].dropna().index
         PRODWTR = pdf[WTR].dropna().index
 
-        pdf['OIL_RATE'] = pdf[OIL]/pdf[DAYSON]
-        pdf['GAS_RATE'] = pdf[GAS]/pdf[DAYSON]
-        pdf['WTR_RATE'] = pdf[WTR]/pdf[DAYSON]
-        pdf['PROD_DAYS'] = pdf[DAYSON].cumsum()
-        
-        pdf['CUMOIL'] = pdf[OIL].cumsum()
-        pdf['CUMGAS'] = pdf[GAS].cumsum()
-        pdf['CUMWTR'] = pdf[WTR].cumsum()
-
-        #pdf[['TMB_OIL','TMB_GAS','TMB_WTR']] = np.nan
-        
-        pdf.loc[PRODOIL,'TMB_OIL'] = pdf.loc[PRODOIL,'CUMOIL'] / pdf.loc[PRODOIL,OIL]
-        pdf.loc[PRODGAS,'TMB_GAS'] = pdf.loc[PRODGAS,'CUMGAS'] / pdf.loc[PRODGAS,GAS]
-        pdf.loc[PRODWTR,'TMB_WTR'] = pdf.loc[PRODWTR,'CUMWTR'] / pdf.loc[PRODWTR,WTR]      
-
-        pdf['NORM_OIL'] = pdf[OIL]/pdf.groupby(['UWI10'])[OIL].cummax(skipna=True)
-        pdf['NORM_GAS'] = pdf[GAS]/pdf.groupby(['UWI10'])[GAS].cummax(skipna=True)
-        pdf['NORM_WTR'] = pdf[WTR]/pdf.groupby(['UWI10'])[WTR].cummax(skipna=True)
-               
-        #pdf[['GOR','OWR','WOR','OWC','WOC']] = np.nan
-        pdf.loc[PRODOIL,'GOR'] = pdf.loc[PRODOIL,GAS]*1000/pdf.loc[PRODOIL,OIL]
-        pdf.loc[PRODWTR,'OWR'] = pdf.loc[PRODWTR,OIL]/pdf.loc[PRODWTR,WTR]
-        pdf.loc[PRODOIL,'WOR'] = pdf.loc[PRODOIL,WTR]/pdf.loc[PRODOIL,OIL]
-      
         m2 = PRODOIL.join(PRODWTR,how='outer')
-        pdf.loc[m2,'OWC'] = pdf.loc[m2,OIL]/(pdf.loc[m2,WTR]+pdf.loc[m2,OIL])
-        pdf.loc[m2,'WOC'] = pdf.loc[m2,WTR]/(pdf.loc[m2,WTR]+pdf.loc[m2,OIL])
         
         if pdf[[API]].dropna(how='any').shape[0]>3:
             OUTPUT.at[UWI,'API_MEAN']         = pdf[API].astype('float').describe()[1]
@@ -2011,8 +2031,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                 if len(LATEWATER)>3:
                     OUTPUT.at[UWI,'OWC_Final'] =  pdf.loc[LATEWATER, OIL].sum() / (pdf.loc[LATEWATER, OIL].sum()+pdf.loc[LATEWATER, WTR].sum())
                 
-                dd   
-                   
+                OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].astype(str).str.replace(r'\d','',regex = True).replace('',np.nan).dropna().unique())
 
             if len(pdf[DATE].dropna())>10:
                 MONTH1 = pdf.loc[(pdf[DAYSON]>14) & (pdf[OIL]>0),DATE].min()
@@ -2038,18 +2057,17 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
 
     # CALCULATE SLOPES
     # Should add check for additional completions
-    mm_nOIL = pdf.index[(pdf['NORM_OIL']>0.1)*(pdf['NORM_OIL']<0.9)]
-    mm_nGAS = pdf.index[(pdf['NORM_GAS']>0.1)*(pdf['NORM_GAS']<0.9)]
-    mm_nWTR = pdf.index[(pdf['NORM_WTR']>0.1)*(pdf['NORM_WTR']<0.9)]
-    
+    mm_nOIL = ppdf.index[(ppdf['NORM_OIL']>0.1)*(ppdf['NORM_OIL']<0.9)]
+    mm_nGAS = ppdf.index[(ppdf['NORM_GAS']>0.1)*(ppdf['NORM_GAS']<0.9)]
+    mm_nWTR = ppdf.index[(ppdf['NORM_WTR']>0.1)*(ppdf['NORM_WTR']<0.9)]
     
     # CALCULATE MODEL_PARAMETERS
-    mm_o95 = pdf.index[pdf['NORM_OIL']<0.95]
-    mm_g95 = pdf.index[pdf['NORM_GAS']<0.95]
-    mm_w95 = pdf.index[pdf['NORM_WTR']<0.95]
-    mm_otmb200 = pdf.index[pdf['TMB_OIL']<200]
-    mm_gtmb200 = pdf.index[pdf['TMB_GAS']<200]
-    mm_wtmb200 = pdf.index[pdf['TMB_WTR']<200]
+    mm_o95 = ppdf.index[ppdf['NORM_OIL']<0.95]
+    mm_g95 = ppdf.index[ppdf['NORM_GAS']<0.95]
+    mm_w95 = ppdf.index[ppdf['NORM_WTR']<0.95]
+    mm_otmb200 = ppdf.index[ppdf['TMB_OIL']<200]
+    mm_gtmb200 = ppdf.index[ppdf['TMB_GAS']<200]
+    mm_wtmb200 = ppdf.index[ppdf['TMB_WTR']<200]
     PAIRS = [('TMB_OIL','NORM_OIL', True, False, mm_o95.intersection(mm_otmb200), stretch_exponential),
              ('TMB_GAS','NORM_GAS', True, False, mm_g95.intersection(mm_gtmb200), stretch_exponential),
              ('TMB_WTR','NORM_WTR', True, False, mm_w95.intersection(mm_otmb200), stretch_exponential),
@@ -2058,17 +2076,23 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     MODELS = pd.DataFrame()
     for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
             try:
-                MODEL = p_use.loc[mm,['UWI10',Xkey,Ykey]].dropna(how='any',axis=0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                MODEL = ppdf.loc[mm,['UWI10',Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                params = int(MODEL.dropna().apply(len).mode())
+                MODEL.dropna(inplace = True)
                 NAME = '_'.join([Xkey,Ykey])
-                MODELS[NAME] = MODEL
+                param_names = [f'{NAME}_{func.__name__}_{x}' for x in np.arange(0,params)]
+                MODEL2 = pd.DataFrame(MODEL.tolist(), columns = param_names, index = MODEL.index)
+
+                #MODELS[NAME] = MODEL
+                MODELS = pd.merge(MODELS,MODEL2,how = 'outer',left_index = True,right_index=True)
             except:
                 pass
-    OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
-    OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
-    #pdf.loc[m,'UWI'] = UWI
+    #OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
+    OUTPUT = pd.merge(OUTPUT,MODELS, how = 'left', on = 'UWI10')
+    #OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
            
     if ADD_RATIOS:
-        return OUTPUT, pdf
+        return OUTPUT, ppdf
     else:
         return OUTPUT
 
@@ -2082,7 +2106,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
     adir = getcwd()
     if FOLDER == None:      
         dir_add = path.join(adir,"SURVEYS")
-        if path.isdir(dir_add) == False:
+        if path.isdir(dir_add) == False:    
            mkdir(dir_add)
     else:
         if path.exists(FOLDER):
