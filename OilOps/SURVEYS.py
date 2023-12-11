@@ -1191,9 +1191,18 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         adir = getcwd()
         if not path.exists(path.join(adir,'XYZ')):
             mkdir(path.join(adir,'XYZ'))
-        OUTPUT = DF_UNSTRING(OUTPUT)
-        OUTPUT.to_parquet(path.join(adir,'XYZ',outfile+'.parquet'))
-        OUTPUT.to_csv(path.join(adir,'XYZ',outfile+'.csv'))
+        try:
+            OUTPUT = DF_UNSTRING(OUTPUT)
+        except:
+            pass
+        try:
+            OUTPUT.to_parquet(path.join(adir,'XYZ',outfile+'.parquet'))
+        except:
+            pass
+        try:
+            OUTPUT.to_csv(path.join(adir,'XYZ',outfile+'.csv'))
+        except:
+            pass
     #OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
     return OUTPUT
                    
