@@ -3040,3 +3040,36 @@ def SUMMARIZE_COGCC_SQL(SAVE = True, SAVEDB= 'FIELD_DATA.db',TABLE_NAME = 'CO_SQ
                        dtype=SCHEMA)
     return ULT
 #!! not all rows have a state producing key
+
+def PROD_FEATURES(df_in):
+    KEYS = {}
+    KEYS['OIL'] = GetKey(df_in,r'(?=.*oil)(?=.*(vol|prod))')[0]
+    KEYS['GAS'] = GetKey(df_in,r'(?=.*GAS)(?=.*(vol|prod))')[0]
+
+    KEYS['WTR'] = GetKey(df_in,r'(?=.*wa*te*r)(?=.*(vol|prod))')[0]
+
+    KEYS['PROD_DAYS'] = GetKey(df_in,r'(?=.*DAYS)(?=.*PRODUCED)')[0]
+
+    KEYS['DATE'] = GetKey(df_in,r'(?=.*first)(?=.*(month|date))')[0]
+    KEYS['UWI'] = GetKey(df_in,r'UWI|API')[0]
+    df_in.sort_values(by = [KEYS['UWI'],KEYS['DATE']], inplace = True)
+    df_in['OIL_RATE'] = df_in[KEYS['OIL']] / df_in[KEYS['PROD_DAYS']]
+    df_in['GAS_RATE'] = df_in[KEYS['GAS']] / df_in[KEYS['PROD_DAYS']]
+    df_in['WTR_RATE'] = df_in[KEYS['WTR']] / df_in[KEYS['PROD_DAYS']]
+    df_in.sort_values(by = KEYS['DATE'], ascending = True, inplace=True)
+    df_in['TOTALDAYS'] = df_in.groupby(['UWI10'])[KEYS['OIL']].cumsum(skipna=True)
+    df_in['CUMOIL'] = df_in.groupby(['UWI10'])[KEYS['OIL']].cumsum(skipna=True)
+    df_in['CUMGAS'] = df_in.groupby(['UWI10'])[KEYS['GAS']].cumsum(skipna=True)
+    df_in['CUMWTR'] = df_in.groupby(['UWI10'])[KEYS['WTR']].cumsum(skipna=True)
+    df_in['TMB_OIL'] = df_in['CUMOIL']/df_in[KEYS['OIL']]
+    df_in['TMB_GAS'] = df_in['CUMGAS']/df_in[KEYS['GAS']]
+    df_in['TMB_WTR'] = df_in['CUMWTR']/df_in[KEYS['WTR']]
+    df_in['GOR'] = df_in[KEYS['GAS']] / df_in[KEYS['OIL']] * 1000
+    df_in['OWC'] = df_in[KEYS['OIL']] / (df_in[KEYS['OIL']]+df_in[KEYS['WTR']])
+    df_in['WOR'] = df_in[KEYS['WTR']] / df_in[KEYS['OIL']]
+    df_in['WOC'] = df_in[KEYS['OIL']] / (df_in[KEYS['OIL']]+df_in[KEYS['WTR']])                                        
+    df_in['CUMGOR'] = df_in['CUMGAS'] / df_in['CUMOIL'] * 1000
+    df_in['CUMOWC'] = df_in['CUMOIL'] / (df_in['CUMOIL']+df_in['CUMWTR'])
+    df_in['CUMWOC'] = df_in['CUMWTR'] / (df_in['CUMOIL']+df_in['CUMWTR'])
+    df_in['CUMWOR'] = df_in['CUMWTR'] / df_in['CUMOIL']
+    return df_in
