@@ -313,7 +313,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
     # make headers strings
     if isinstance(xl,dict):
         for i in xl:
-        	xl[i].columns = [str(s) for s in xl[i].columns]
+            xl[i].columns = [str(s) for s in xl[i].columns]
     elif isinstance(xl,pd.DataFrame):
         xl.columns = [str(s) for s in xl.columns]
 
@@ -324,8 +324,18 @@ def survey_from_excel(file, ERRORS = True): #if True:
             shutil.move(file, ERR_FOLDER)
         RUNERROR = True
         return None   
+
+    if isinstance(xl,dict):
+        R_LIST = []
+        for x in xl:
+            R_LIST.append(APIfromFrame(xl[x]))
+        R_LIST = [WELLAPI(x).API2INT(14) for x in R_LIST if x != None]
+        R_LIST = list(set(R_LIST))
+        if len(R_LIST)>0:
+            READUWI = R_LIST[0]     
+    else:
+        READUWI = APIfromFrame(xl)
         
-    READUWI = APIfromFrame(xl)
     if TUPLE_TEST:
         FILENAMEUWI =  APIfromString(FNAME,BlockT2 = True)
     else:
