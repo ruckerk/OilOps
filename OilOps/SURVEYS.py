@@ -994,6 +994,10 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     COMPDATES = df_UWI.iloc[0,df_UWI.keys().str.contains('.*PROD.*DATE|.*JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*|.*FIRST.*(PROD|DATE).*|.*SPUD.*DATE.*', regex=True, case=False,na=False)].keys()
     df_UWI[COMPDATES] = DF_UNSTRING(df_UWI[COMPDATES])
     df_UWI['MAX_COMPLETION_DATE'] = df_UWI[COMPDATES].max(axis=1)
+
+    # INILL WELLS WITH MISSING DATES
+    xxdf.UWI10.isin(df_UWI['UWI10'])
+    
     df_UWI['MAX_COMPLETION_DATE'].fillna(datetime.datetime.now(), inplace = True)
     COMPDATEdfd = df_UWI.keys().get_loc('MAX_COMPLETION_DATE')
 
@@ -1021,8 +1025,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         UWICOL = xxdf.keys().get_loc('UWI10')
     else:
         UWICOL      = xxdf.keys().get_loc(xxdf.iloc[0,xxdf.keys().str.contains('.*UWI.*', regex=True, case=False,na=False)].keys()[0])
-  #  XPATH       = xxdf.keys().get_loc(list(SCOLS)[5])
-  #  YPATH       = xxdf.keys().get_loc(list(SCOLS)[4])
+    #XPATH     = xxdf.keys().get_loc(list(SCOLS)[5])
+    #YPATH     = xxdf.keys().get_loc(list(SCOLS)[4])
     #XPATH       = xxdf.keys().get_loc(list(SCOLS)[5])
     #YPATH       = xxdf.keys().get_loc(list(SCOLS)[4])       
     TVD         = xxdf.keys().get_loc(list(SCOLS)[3])
@@ -1047,25 +1051,26 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         xdf = xxdf.copy(deep=True)
         xdf = xdf.loc[xdf[list(SurveyCols(xdf).keys())].dropna().index,:]
         #print(str(xxUWI10.index(xUWI10)),' / ',str(len(xxUWI10)),' ')
+        
         if ix/10 == floor(ix/10):
             print(str(ix) + '/' + str(len(xxUWI10)))
                   
         OUTPUT=pd.concat([OUTPUT,pd.Series(name=ix,dtype='int64')], axis= 0, ignore_index = True)
         
-
         # Check for lateral survey points for reference well
         if xdf.loc[(xdf['UWI10']==xUWI10),:].shape[0]<=5:
             continue
-
-        xFILE = xdf.loc[xdf.UWI10==xUWI10,'FILE'].values[0]
+            
+        xFILE = xdf.loc[xdf.UWI10==xUWI10,'FILE'].values[0]        
         
         # PCA is 2 vector components
         pca = PCA(n_components=2)
+        
         # add comp date filter at step 1
         try: 
             datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+datetime.timedelta(days =DATELIMIT)).values[0]
         except:
-            continue
+            datecondition = datetime.datetime.now()
 
         UWI10list=df_UWI[(df_UWI[df_UWI.keys()[COMPDATEdfd]])<=datecondition].UWI10
         # filter on dates
@@ -1075,6 +1080,18 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         
         if refXYZ.shape[0]<5:
             continue
+            
+        # CALC DESCRIPTIVE PARAMETERS
+        OUTPUT.loc[ix,'UWI10']     = xUWI10
+        OUTPUT.loc[ix,['LatLen']]  = (refXYZ[[XPATH_NAME,YPATH_NAME]].iloc[[0,-1],-2:].diff(axis=0).dropna()**2).sum(axis=1)**0.5      
+        OUTPUT.loc[ix,['MeanTVD']] = statistics.mean(refXYZ[SCOLS['TVD']])
+        OUTPUT.loc[ix,['MeanX']]   = statistics.mean(refXYZ[XPATH_NAME])
+        OUTPUT.loc[ix,['MeanY']]   = statistics.mean(refXYZ[YPATH_NAME])
+        OUTPUT.loc[ix,'MeanAZI']   = (circmean(refXYZ.iloc[:,[AZI]]*pi/180) * 180/pi) % 180
+        OUTPUT.loc[ix,'MAX_MD']    = max(refXYZ[MD_NAME].dropna())
+        OUTPUT.loc[ix,'XYZFILE']   = xFILE
+
+
         #reference well TVD approximation
         # if 1==1:
         #refTVD = gmean(abs(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))*np.sign(statistics.mean(xdf.iloc[:,TVD][xdf.UWI10==xUWI10]))
@@ -1131,7 +1148,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                 meandepth = statistics.mean(xdf.iloc[:,TVD][(xdf.UWI10==well)])
                 try:
                     deltadays =  np.timedelta64(refdate-(df_UWI[df_UWI['UWI10']==well][df_UWI.keys()[COMPDATEdfd]]).values[0],'D').astype(float)
-                except: deltadays = None
+                except: 
+                    deltadays = None
                 
                 df_calc.loc[j,'UWI10']=well
                 df_calc.loc[j,'overlap']=overlap
@@ -1151,40 +1169,6 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
                 uwi='UWI'+str(j+1)
                 days = 'Days'+str(j+1)
                 OUTPUT.loc[ix,[ol,dz,dxy,uwi,days]]=df_calc[df_calc.UWI10==sort_list.iloc[j]][['overlap','dz','dxy','UWI10','DAYS']].values[0]
-       
-        OUTPUT.loc[ix,'UWI10']=xUWI10
-                  
-        #calc lat len 
-        OUTPUT.loc[ix,['LatLen']] =abs(RefXMax-RefXMin)    
-        OUTPUT.loc[ix,['MeanTVD']] = refTVD
-        OUTPUT.loc[ix,['MeanX']]  =statistics.mean(refXYZ[XPATH_NAME])
-        OUTPUT.loc[ix,['MeanY']]  =statistics.mean(refXYZ[YPATH_NAME])
-        OUTPUT.loc[ix,'MAX_MD']   = max(refXYZ[MD_NAME].dropna())
-        OUTPUT.loc[ix,'XYZFILE'] = xFILE
-        
-        m =refXYZ.index
-        OUTPUT.loc[ix,'MeanAZI']   = circmean(xxdf.loc[m,refXYZ.keys()[AZI]]*pi/180) * 180/pi
-        if OUTPUT.loc[ix,'MeanAZI'] >= 180:
-            OUTPUT.loc[ix,'MeanAZI180'] = OUTPUT.loc[ix,'MeanAZI'] - 180
-        else:
-            OUTPUT.loc[ix,'MeanAZI180'] = OUTPUT.loc[ix,'MeanAZI']
-
-        if OUTPUT.shape[0]<1:
-            m =refXYZ.index
-            MEANAZI = statistics.mean(xxdf.loc[m,df.keys()[AZI]])
-            if MEANAZI >= 180:
-                MEANAZI_180 = MEANAZI - 180
-
-            NewRow = pd.Series({'UWI10':xUWI10,
-                                  'LatLen':abs(RefXMax-RefXMin),
-                                  'MeanTVD':meandepth,
-                                  'MeanX':statistics.mean(refXYZ[XPATH_NAME]),
-                                  'MeanY':statistics.mean(refXYZ[YPATH_NAME]),
-                                  'MAX_MD':max(refXYZ[MD_NAME].dropna()),
-                                  'MeanAZI': MEANAZI,
-                                  'MeanAZI180': MEANAZI_180})
-                  
-            OUTPUT = pd.concat([OUTPUT,NewRow],axis = 0, ignore_index= True)
 
     if SAVE:
         outfile = 'XYZ_'+str(int(xxUWI10[0]))+'_'+str(int(xxUWI10[-1]))
@@ -1203,7 +1187,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
             OUTPUT.to_csv(path.join(adir,'XYZ',outfile+'.csv'))
         except:
             pass
-    #OUTPUT['XYZFILE'] = OUTPUT['XYZFILE'].astype(str)
+
     return OUTPUT
                    
 def MIN_CURVATURE(df_survey):
