@@ -331,8 +331,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             R_LIST.append(APIfromFrame(xl[x]))
         R_LIST = [WELLAPI(x).API2INT(14) for x in R_LIST if x != None]
         R_LIST = list(set(R_LIST))
-        if len(R_LIST)>0:
-            READUWI = R_LIST[0]     
+        READUWI = R_LIST[0] 
     else:
         READUWI = APIfromFrame(xl)
         
