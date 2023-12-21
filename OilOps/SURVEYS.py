@@ -1083,7 +1083,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
             
         # CALC DESCRIPTIVE PARAMETERS
         OUTPUT.loc[ix,'UWI10']     = xUWI10
-        OUTPUT.loc[ix,['LatLen']]  = (refXYZ[[XPATH_NAME,YPATH_NAME]].iloc[[0,-1],-2:].diff(axis=0).dropna()**2).sum(axis=1)**0.5      
+        OUTPUT.loc[ix,['LatLen']]  = (refXYZ[[XPATH_NAME,YPATH_NAME]].iloc[[0,-1],-2:].diff(axis=0).dropna()**2).sum().sum()**0.5      
         OUTPUT.loc[ix,['MeanTVD']] = statistics.mean(refXYZ[SCOLS['TVD']])
         OUTPUT.loc[ix,['MeanX']]   = statistics.mean(refXYZ[XPATH_NAME])
         OUTPUT.loc[ix,['MeanY']]   = statistics.mean(refXYZ[YPATH_NAME])
