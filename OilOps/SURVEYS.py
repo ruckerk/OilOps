@@ -245,7 +245,7 @@ def ExtractSurvey(df_in): #if True:
     ##                        outdf_in.rename(columns ={df_in.keys()[APICOL]:'UWI'},inplace=True)
     ##                    else:
     ##                        outdf_in = df_in[cols].copy(deep=True)
-    ##                        if ReadUWI != None:
+    ##                        if (ReadUWI != None) & (ReadUWI != 0):
     ##                            outdf_in['UWI'] = ReadUWI
 
                         # WAS GOING TO BUILD A CHECK THAT LAST ROW IN KEY COLUMNS DOES NOT CONTAIN VALUES
@@ -290,6 +290,7 @@ def CheckUWI(df_in):
 
 def survey_from_excel(file, ERRORS = True): #if True:
     TUPLE_TEST = isinstance(file, tuple)
+    READUWI = None
     if TUPLE_TEST:
           FNAME = file[0]
           file = file[1]
@@ -345,7 +346,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
     READUWI2 = WELLAPI(READUWI).API2INT()
     FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
     if (FILENAMEUWI2 == READUWI2) & (FILENAMEUWI2 > 1e8):
-        UWI = READUWI
+        UWI = READUWI2
     elif (READUWI2 == 0) & (FILENAMEUWI2 >1e8):
         UWI = FILENAMEUWI2
     elif (FILENAMEUWI2 == 0) & (READUWI2 >1e8):
