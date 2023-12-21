@@ -175,8 +175,9 @@ def ExtractSurveyWrapper(df_in):
 def ExtractSurvey(df_in): #if True:
     outdf_in = pd.DataFrame()
     ReadUWI = APIfromFrame(df_in)
-    ReadUWI = Find_API_Col(df_in)[0]
-          
+    if len(Find_API_Col(df_in)) >0:
+        ReadUWI = Find_API_Col(df_in)[0]
+              
     adf_in=df_in.copy(deep=True)
 
     try: 
@@ -331,7 +332,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
             R_LIST.append(APIfromFrame(xl[x]))
         R_LIST = [WELLAPI(x).API2INT(14) for x in R_LIST if x != None]
         R_LIST = list(set(R_LIST))
-        READUWI = R_LIST[0] 
+        if len(R_LIST) > 0:
+            READUWI = R_LIST[0] 
     else:
         READUWI = APIfromFrame(xl)
         
