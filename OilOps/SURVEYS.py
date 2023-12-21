@@ -340,19 +340,17 @@ def survey_from_excel(file, ERRORS = True): #if True:
         FILENAMEUWI =  APIfromString(FNAME,BlockT2 = True)
     else:
         FILENAMEUWI =  APIfromString(file,BlockT2 = True)
+              
     READUWI2 = WELLAPI(READUWI).API2INT()
     FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
-    if FILENAMEUWI2==READUWI2:
+    if (FILENAMEUWI2==READUWI2) & (FILENAMEUWI2 > 1e8):
         UWI = READUWI
-    l = [str(FILENAMEUWI),str(READUWI)]
-    while 'None' in l:
-        l.remove('None')
-    while '0' in l:
-        l.remove('0')
-    if len(l)>=1:
-        UWI=l[0]
+    elif (READUWI2 = 0) & (FILENAMEUWI2 >1e8):
+        UWI = FILENAMEUWI2
+    elif (FILENAMEUWI2 = 0) & (READUWI2 >1e8):
+        UWI = READUWI2    
     else:
-        UWI = None        
+        UWI = None     
         
     if isinstance(xl,dict): # test if file read delivered a dictionary
         for k in xl.keys(): # for each sheet  #if True:
