@@ -1070,7 +1070,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         try: 
             datecondition=(df_UWI.loc[df_UWI['UWI10']==xUWI10][df_UWI.keys()[COMPDATEdfd]]+datetime.timedelta(days =DATELIMIT)).values[0]
         except:
-            datecondition = datetime.datetime.now()
+            datecondition = datetime.datetime.now() 
 
         UWI10list=df_UWI[(df_UWI[df_UWI.keys()[COMPDATEdfd]])<=datecondition].UWI10
         # filter on dates
@@ -1175,14 +1175,14 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
         adir = getcwd()
         if not path.exists(path.join(adir,'XYZ')):
             mkdir(path.join(adir,'XYZ'))
-        try:
-            OUTPUT = DF_UNSTRING(OUTPUT)
-        except:
-            pass
-        try:
-            OUTPUT.to_parquet(path.join(adir,'XYZ',outfile+'.parquet'))
-        except:
-            pass
+        #try:
+        #    OUTPUT = DF_UNSTRING(OUTPUT)
+        #except:
+        #    pass
+        #try:
+        #    OUTPUT.to_parquet(path.join(adir,'XYZ',outfile+'.parquet'))
+        #except:
+        #    pass
         try:
             OUTPUT.to_csv(path.join(adir,'XYZ',outfile+'.csv'))
         except:
