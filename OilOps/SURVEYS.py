@@ -343,11 +343,11 @@ def survey_from_excel(file, ERRORS = True): #if True:
               
     READUWI2 = WELLAPI(READUWI).API2INT()
     FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
-    if (FILENAMEUWI2==READUWI2) & (FILENAMEUWI2 > 1e8):
+    if (FILENAMEUWI2 == READUWI2) & (FILENAMEUWI2 > 1e8):
         UWI = READUWI
-    elif (READUWI2 = 0) & (FILENAMEUWI2 >1e8):
+    elif (READUWI2 == 0) & (FILENAMEUWI2 >1e8):
         UWI = FILENAMEUWI2
-    elif (FILENAMEUWI2 = 0) & (READUWI2 >1e8):
+    elif (FILENAMEUWI2 == 0) & (READUWI2 >1e8):
         UWI = READUWI2    
     else:
         UWI = None     
