@@ -3073,3 +3073,56 @@ def PROD_FEATURES(df_in):
     df_in['CUMWOC'] = df_in['CUMWTR'] / (df_in['CUMOIL']+df_in['CUMWTR'])
     df_in['CUMWOR'] = df_in['CUMWTR'] / df_in['CUMOIL']
     return df_in
+
+def ABS_LOC():
+    DB_NAME = 'FIELD_DATA.db'
+    CONN = sqlite3.connect(DB_NAME)
+           
+    # CREATE ABSOLUTE LOCATION TABLE if True:
+    WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
+    
+    WELL_LOC['UWI10'] = WELL_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELL_LOC = WELL_LOC.loc[~(WELL_LOC['UWI10'] == 500000000)]
+    WELL_LOC['X'] = WELL_LOC.coords.apply(lambda x:x[0][0])
+    WELL_LOC['Y'] = WELL_LOC.coords.apply(lambda x:x[0][1])
+    WELL_LOC['XBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][0])
+    WELL_LOC['YBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][1])
+
+    WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
+    WELLPLAN_LOC['UWI10'] = WELLPLAN_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLPLAN_LOC = WELLPLAN_LOC.loc[~(WELLPLAN_LOC['UWI10'] == 500000000)]
+    WELLPLAN_LOC['X'] = WELLPLAN_LOC.coords.apply(lambda x:x[0][0])
+    WELLPLAN_LOC['Y'] = WELLPLAN_LOC.coords.apply(lambda x:x[0][1])
+    WELLPLAN_LOC['XBHL'] = WELLPLAN_LOC.coords.apply(lambda x:x[-1][0])
+    WELLPLAN_LOC['YBHL'] = WELLPLAN_LOC.coords.apply(lambda x:x[-1][1])
+
+    WELLLINE_LOC = read_shapefile(shp.Reader('Directional_Lines.shp'))
+    WELLLINE_LOC['UWI10'] = WELLLINE_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
+    WELLLINE_LOC = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'] == 500000000)]
+    WELLLINE_LOC['X'] = WELLLINE_LOC.coords.apply(lambda x:x[0][0])
+    WELLLINE_LOC['Y'] = WELLLINE_LOC.coords.apply(lambda x:x[0][1])
+    WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
+    WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
+    
+    LOC_COLS = ['UWI10','X','Y','XBHL','YBHL']
+    LOC_DF = WELLLINE_LOC[LOC_COLS].drop_duplicates()
+    m = WELLPLAN_LOC.index[~(WELLPLAN_LOC.UWI10.isin(LOC_DF.UWI10))]
+    LOC_DF = pd.concat([LOC_DF,WELLPLAN_LOC.loc[m,LOC_COLS].drop_duplicates()])
+    m = WELL_LOC.index[~(WELL_LOC.UWI10.isin(LOC_DF.UWI10))]
+    LOC_DF = pd.concat([LOC_DF,WELL_LOC.loc[m,LOC_COLS].drop_duplicates()])
+    LOC_DF.UWI10.shape[0]-len(LOC_DF.UWI10.unique())
+    
+    LOC_DF[['XFEET','YFEET']] = pd.DataFrame(convert_XY(LOC_DF.X,LOC_DF.Y,26913,2231)).T.values
+    LOC_DF[['XBHLFEET','YBHLFEET']] = pd.DataFrame(convert_XY(LOC_DF.XBHL,LOC_DF.YBHL,26913,2231)).T.values
+ 
+    LOC_DF['DELTA'] = ((LOC_DF['YBHLFEET'] - LOC_DF['YFEET'])**2 +  (LOC_DF['XBHLFEET'] - LOC_DF['XFEET'])**2)**0.5
+           
+    LOC_COLS = {'UWI10': 'INTEGER',
+                'X': 'REAL',
+                'Y': 'REAL',
+                'XFEET':'REAL',
+                'YFEET':'REAL'}
+
+    INIT_SQL_TABLE(connection_obj, 'SHL', LOC_COLS)
+    LOC_DF[['UWI10','X','Y','XFEET','YFEET']].to_sql(name = 'SHL', con = CONN, if_exists='replace', index = False, dtype = LOC_COLS)
+    return LOC_DF
