@@ -270,8 +270,11 @@ def GROUP_IN_TC_AREA(tc,wells):
     out['TEST'] = wells.apply(lambda x: IN_TC_AREA(x,tc),axis=1)
     return(out)
 
-def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326):
-    CRS0 = pyproj.CRS.from_epsg(EPSG_OLD)
+def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326, CRS_OLD = None):
+    if CRS_OLD == None:
+        CRS0 = pyproj.CRS.from_epsg(EPSG_OLD)
+    else:
+        CRS0 = CRS_OLD
     CRS1 = pyproj.CRS.from_epsg(EPSG_NEW)
     transformer = pyproj.Transformer.from_crs(CRS0,CRS1,always_xy =True)
     X2, Y2 = None, None
