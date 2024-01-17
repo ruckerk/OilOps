@@ -242,7 +242,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     WELL_LOC['Y'] = WELL_LOC.coords.apply(lambda x:x[0][1])
     WELL_LOC['XBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][0])
     WELL_LOC['YBHL'] = WELL_LOC.coords.apply(lambda x:x[-1][1])
-
+    WELL_LOC[['XFEET','YFEET']] = pd.DataFrame(convert_XY(WELL_LOC.X,WELL_LOC.Y,26913,2231)).T.values 
+          
     WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
     WELLPLAN_LOC['UWI10'] = WELLPLAN_LOC.API.apply(lambda x:WELLAPI('05'+str(x)).API2INT(10))
     WELLPLAN_LOC = WELLPLAN_LOC.loc[~(WELLPLAN_LOC['UWI10'] == 500000000)]
