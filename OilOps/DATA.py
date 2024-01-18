@@ -260,6 +260,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         UWIs=[UWIs]
         print(UWIs[0])
 
+    UWIs = [x for x in UWIs if x[0:2]=='05']
+
     PRODDATA = pd.DataFrame()
     ct = 0
     t1 = perf_counter()
@@ -486,7 +488,8 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     OUTPUT=OUTPUT.dropna(how='all')
     OUTPUT.index.name = 'UWI'   
     OUTPUT.reset_index(inplace = True)
-    OUTPUT = DF_UNSTRING(OUTPUT)
+    if not OUTPUT.empty:
+        OUTPUT = DF_UNSTRING(OUTPUT)
     OUTPUT['UWI10'] = OUTPUT.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
            
     SQL_COLS = '''([UWI] INTEGER PRIMARY KEY
@@ -587,6 +590,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     
     print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
+    PRODDATA[DATE] = pd.to_datetime(PRODDATA[DATE])
     PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
     PRODDATA.columns = PRODDATA.columns.str.replace(' ','_')
     PRODDATA['UWI10'] = PRODDATA.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
