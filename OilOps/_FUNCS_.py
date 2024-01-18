@@ -217,7 +217,7 @@ def DF_UNSTRING(df_IN):
         DayTest = (A.loc['max']<30) *(A.loc['min']>0)
 
         #date condition test
-        if not (YearTest.max()>=1) * (MonthTest.max()>=1) * (DayTest.max()>=1) * ((MonthTest+DayTest).max()>=2):
+        if not (YearTest.max()>=1) * (MonthTest.max()>=1) * (DayTest.max()>=1) * ((MonthTest+DayTest).sum()>=2):
             # if not true then do not add k to DATECOLS
             continue           
             
