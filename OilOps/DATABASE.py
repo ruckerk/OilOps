@@ -792,6 +792,7 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     if not FULL_UPDATE:
         QRY = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY UWI10 ORDER BY FIRST_OF_MONTH DESC) AS RANK_NO FROM PRODDATA) P1 WHERE P1.RANK_NO=1 AND P1.WELL_STATUS IN (\'PA\',\'AB\')'
         df_prod = pd.read_sql(QRY, connection_obj)  
+        df_prod.First_of_Month = pd.to_datetime(df_prod.First_of_Month)
           
     QRY = '''SELECT DISTINCT printf('%014d',APINumber) as API14 FROM FRAC_FOCUS WHERE SUBSTR(API14,1,2)='05' '''
     FF_LIST = pd.read_sql(QRY,connection_obj)
@@ -812,6 +813,7 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
 
     if not FULL_UPDATE:                    
         df_prod = DF_UNSTRING(df_prod)
+        df_prod.First_of_Month = pd.to_datetime(df_prod.First_of_Month)      
         df_prod['DAYS_SINCE_LAST_PROD'] = (datetime.datetime.now()-df_prod.First_of_Month).dt.days
 
         if df_prod['DAYS_SINCE_LAST_PROD'].min() > 180:
