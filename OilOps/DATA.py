@@ -600,7 +600,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                
     PRODDATA.to_parquet(path.join(adir,FOLDER,PROD_FNAME+'.parquet') )
 
-    PRODDATA.reset_index(inplace = True)
+    PRODDATA.reset_index(drop = True, inplace = True)
            
     if (OUTPUT.shape[0] > 0) & (SQLFLAG != 0):
         conn = sqlite3.connect(file)
