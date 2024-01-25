@@ -705,6 +705,7 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
      
     if not df.empty:      
         df = DF_UNSTRING(df)
+        df.Month1 = pd.to_datetime(df.Month1)
         OLD_UWI = df.loc[df.Month1.dt.year<OLD_YEAR, 'UWI10'].tolist()
         NEW_UWI = df.loc[df.Month1.dt.year>OLD_YEAR, 'UWI10'].tolist()
     else:
