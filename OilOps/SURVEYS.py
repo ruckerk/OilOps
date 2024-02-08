@@ -92,8 +92,11 @@ def Find_API_Col(df_inAPI):
         if len(UWI)>1:
             return (None,None)
             #raise Exception('Found more than one UWI in Find_API_Col')
-        UWI = int(UWI)
-        
+        try:
+            UWI = int(UWI[0])
+        except:
+            print('Could not find useable API')
+            UWI = None        
     return(UWI,knum)
 
 
