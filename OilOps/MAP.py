@@ -397,7 +397,7 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY
     ITEMS['coords_old'] = ITEMS['coords']
     POLYS['coords_old'] = POLYS['coords']
     
-    NAMES = POLYS.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+    NAMES = POLYS.map(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
     NAMES = POLYS[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False).index[0]
         
     for i in POLYS.index:   
@@ -421,7 +421,7 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
     POLY = shp.Reader(POLYGON_SHAPEFILE)
     POLY = read_shapefile(POLY)
     
-    NAMES = POLY.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+    NAMES = POLY.map(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
     NAMES = POLY[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False)
     MAXITEMS = NAMES.max()
     
