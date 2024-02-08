@@ -64,7 +64,7 @@ def Find_API_Col(df_inAPI):
         # check for GT 50 rows per value
         if df2[k].shape[0]/len(df2[k].unique()) > 50:
             keylist.append(k)
-        UWIlist = UWIlist.append(pd.Series((df2[k].dropna().unique()).tolist()),ignore_index=True)
+        UWIlist = UWIlist.add(pd.Series((df2[k].dropna().unique())),ignore_index=True)
 
     if len(keylist) > 0:
         longest = 0
