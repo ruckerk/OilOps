@@ -694,8 +694,8 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
         df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
     
         UWIKEY = GetKey(df,'UWI')
-        UWIKEY = df[UWIKEY].dropna(how='all',axis=0).applymap(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index.tolist()
-        UWIKEY = df[UWIKEY].applymap(lambda x: bool(re.search(r'[a-zA-Z\\\/]',str(x)))).sum(axis=0).sort_values(ascending=True).index[0]
+        UWIKEY = df[UWIKEY].dropna(how='all',axis=0).map(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index.tolist()
+        UWIKEY = df[UWIKEY].map(lambda x: bool(re.search(r'[a-zA-Z\\\/]',str(x)))).sum(axis=0).sort_values(ascending=True).index[0]
               
         df['UWI10'] = df[UWIKEY].apply(lambda x: WELLAPI(x).API2INT(10))
         
