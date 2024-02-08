@@ -109,7 +109,7 @@ def STAIR_PLOT(ULIST,df, ProdKey= None,ReverseY=True):
     #WELLDATE = df.loc[m,WELLDATE].keys()[(df.loc[m,WELLDATE].isna().sum(axis=0) == df.loc[m,WELLDATE].isna().sum(axis=0).min())].tolist()
     #WELLDATE = df.loc[m,WELLDATE].dropna().apply(lambda x:x[WELLDATE] == max(x[WELLDATE]), axis =1).max(axis=0).sort_values(ascending = False).keys()[0]
     WELL_LABEL = GetKey(df,r'WELL.*(NAME|LABEL|NO)')
-    test = df.loc[m,WELL_LABEL].applymap(lambda x: len(str(x)))
+    test = df.loc[m,WELL_LABEL].map(lambda x: len(str(x)))
     for k in test.keys():
         test[k] = (test[k] == test.max(axis=1))
     WELL_LABEL = test.sum(axis=0).sort_values(ascending =False).keys()[0]
