@@ -799,7 +799,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                 
             page_merge.reset_index(drop=True, inplace = True)
             LOCS = Find_Str_Locs(page_merge,Strings)
-            mm = (LOCS[['Columns','Rows']].applymap(len)!=0).product(axis =1).replace(0,np.nan).dropna().index
+            mm = (LOCS[['Columns','Rows']].map(len)!=0).product(axis =1).replace(0,np.nan).dropna().index
             LOCS = LOCS.loc[mm,:]
             
             for i in LOCS.index:
@@ -1719,7 +1719,7 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
     else:
         UWIKEY = Find_Str_Locs(pdf,'UWI|API')
         try:
-            UWIKEY = pdf[UWIKEY].applymap(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+            UWIKEY = pdf[UWIKEY].map(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
         except:
             print('NO UWI COLUMN!')
             return None
@@ -1899,7 +1899,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     else:
         UWIKEY = Find_Str_Locs(ppdf,'UWI|API')
         try:
-            UWIKEY = ppdf[UWIKEY].applymap(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+            UWIKEY = ppdf[UWIKEY].map(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
         except:
             print('NO UWI COLUMN!')
             return None
