@@ -191,7 +191,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     ALL_SURVEYS= pd.DataFrame()
     READ = pd.read_sql_query('SELECT * FROM SURVEYDATA',connection_obj, chunksize = 50000)
     for i in READ:
-         ALL_SURVEYS = pd.concat([ALL_SURVEYS,i],axis = 0, join = 'outer', ignore_index = True)
+        i2 = i.dropna(axis=0,how='all').dropna(axis=1,how='all')
+        ALL_SURVEYS = pd.concat([ALL_SURVEYS,i2],axis = 0, join = 'outer', ignore_index = True)
           
     ALL_SURVEYS['UWI10'] = ALL_SURVEYS.UWI.apply(lambda x:WELLAPI(x).API2INT(10))
            
