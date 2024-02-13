@@ -425,15 +425,15 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
     
     if ~XYZ.empty:
         XYZ = DF_UNSTRING(XYZ)    
-        XYZ_COLS = FRAME_TO_SQL_TYPES(XYZ)
+        
         
         if not XYZ_OLD.empty:
             XYZ = pd.concat([XYZ, XYZ_OLD.loc[~XYZ_OLD.UWI10.isin(XYZ.UWI10)]], axis = 0, join = 'outer', ignore_index = True)
           
-        XYZ = XYZ.loc[~(XYZ.iloc[:,:-1].isna().any(axis=1))]
+        #XYZ = XYZ.loc[~(XYZ.iloc[:,:-1].isna().any(axis=1))]
 
         #FIX THIS SO IT UPDATES PROPERLY WITHOUT DUPLICATED UWIS  
-        
+        XYZ_COLS = FRAME_TO_SQL_TYPES(XYZ)
         XYZ.to_sql(name = 'SPACING', con = connection_obj, if_exists='replace', index = False, dtype = XYZ_COLS)
         connection_obj.commit()
     
