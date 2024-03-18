@@ -422,8 +422,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
     return outdf
 
 def FIND_SURVEY_HEADER(df_in, return_header = False):
-    for n in np.arange(0,min(100, df_in.shape[0])):
-        for i,j in enumerate(df_in.index[0:10]):
+    for n in np.arange(0,4):
+        for i,j in enumerate(df_in.index[0:min(100, df_in.shape[0])]):
             try:
                 HEADER = df_in.loc[j:j+n,:].fillna('').astype(str).apply('_'.join,axis=0).tolist()
                 x=SurveyCols(HEADER, False)
