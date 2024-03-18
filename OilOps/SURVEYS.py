@@ -697,7 +697,7 @@ def JoinSurveysInFolder(SAVE = True, FILESTRING = None):
     data = np.array_split(FLIST,splits)
     del df
     
-    func = partial(Survey_Join, None)
+    func = partial(Survey_Join, None, ERRORS = False)
 
     #for f in FLIST:
     #    func(f)
