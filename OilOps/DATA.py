@@ -50,8 +50,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
 
     #Frac Focus
     if FRACFOCUS:
-        #https://www.fracfocus.org/index.php?p=data-download
-        url = 'https://fracfocusdata.org/digitaldownload/FracFocusCSV.zip'
+        url = 'https://www.fracfocusdata.org/digitaldownload/FracFocusCSV.zip'
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1])    
            
