@@ -843,7 +843,7 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     data = [list(a) for a in data]
           
     #print (f'batch = {batch}')
-    func = partial(Get_ProdData,file=DB,SQLFLAG=1, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY')
+    func = partial(Get_ProdData,file=DB,SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY')
     with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
         f = {executor.submit(func,a): a for a in data}
     
