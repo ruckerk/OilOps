@@ -692,8 +692,10 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
         UWIPROD = pd.read_sql(QRY, connection_obj)
         UWIPROD = UWIPROD.UWI10.tolist()
 
-        df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
-    
+        #df = pd.read_sql('SELECT * FROM PRODUCTION_SUMMARY', connection_obj)
+        df = pd.read_sql('SELECT UWI10, min(date(First_of_Month)) as Month1 FROM PRODDATA GROUP BY UWI10', connection_obj)
+        df = df.dropna()
+              
         UWIKEY = GetKey(df,'UWI')
         UWIKEY = df[UWIKEY].dropna(how='all',axis=0).map(lambda x: len(str(x))).max(axis=0).sort_values(ascending=False).index.tolist()
         UWIKEY = df[UWIKEY].map(lambda x: bool(re.search(r'[a-zA-Z\\\/]',str(x)))).sum(axis=0).sort_values(ascending=True).index[0]
