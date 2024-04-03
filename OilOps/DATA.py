@@ -2166,8 +2166,9 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         print(ex)
                         ERROR=1
                         continue
-                    browser.find_element_by_link_text('Document Name').click()
-
+                    
+                    browser.find_element(By.LINK_TEXT, "Document Name").click()
+                           
                     soup = BS(browser.page_source, 'lxml')
                     
                     try:
