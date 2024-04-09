@@ -1868,6 +1868,8 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
         return OUTPUT
 
 def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
+    ppdf = ppdf.copy()
+           
     warnings.filterwarnings('ignore')
     adir = getcwd()
 
@@ -1897,7 +1899,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         UWIKEY = 'UWI10'
     else:
         #UWIKEY = ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =False).index.tolist()
-        UWIKEY = (ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =True)>(0.5*df.shape[0])).replace(False, np.nan).dropna().index.tolist()
+        UWIKEY = (ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =True)>(0.5*df.shape[0])).replace(True, np.nan).dropna().index.tolist()
         if len(UWIKEY) == 1:
            UWIKEY = UWIKEY[0]
         else:
@@ -1922,7 +1924,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         print(f'Cannot parse tables')
         ERROR = 1
         return None
-    
+               
     ppdf[DATE] = pd.to_datetime(ppdf[DATE]).dt.date
 
     PRODOIL = ppdf[OIL].dropna().index
@@ -1962,11 +1964,12 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
 
     for UWI in ppdf[UWIKEY].unique():
         pdf = ppdf.loc[ppdf[UWIKEY] == UWI,:].copy()
-        pdf.sort_values(by= 'First_of_Month', ascending = True).reset_index(drop=True, inplace = True)
+        pdf.sort_values(by= DATE, ascending = True).reset_index(drop=True, inplace = True)
            
         if pdf[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
            #print('NO PRODUCTION')
            continue
+                   
         OUTPUT.at[UWI,'UWI'] = UWI
         OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
            
@@ -2083,7 +2086,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     MODELS = pd.DataFrame()
     for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
             try:
-                MODEL = ppdf.loc[mm,['UWI10',Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                MODEL = ppdf.loc[mm,[UWIKEY,Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby([UWIKEY]).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
                 params = int(MODEL.dropna().apply(len).mode())
                 MODEL.dropna(inplace = True)
                 NAME = '_'.join([Xkey,Ykey])
@@ -2094,6 +2097,14 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                 MODELS = pd.merge(MODELS,MODEL2,how = 'outer',left_index = True,right_index=True)
             except:
                 pass
+    MODELS.reset_index(drop=False,inplace=True)
+    MODELS.index = MODELS[UWIKEY].apply(lambda x:WELLAPI(x).API2INT(10))
+    MODELS.index.rename('UWI10',inplace = True)
+    try:
+        MODELS.drop(UWIKEY,axis =1, inplace = True)
+    except:
+        pass
+    
     #OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
     OUTPUT = pd.merge(OUTPUT,MODELS, how = 'left', on = 'UWI10')
     #OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
