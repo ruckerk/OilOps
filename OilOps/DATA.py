@@ -1932,9 +1932,9 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     PRODWTR = ppdf[WTR].dropna().index
 
     # CUM VALUES
-    ppdf['CUMOIL'] = ppdf[[UWIKEY,OIL]].groupby([UWIKEY])[OIL].cummax(skipna=True)
-    ppdf['CUMGAS'] = ppdf[[UWIKEY,GAS]].groupby([UWIKEY])[GAS].cummax(skipna=True)
-    ppdf['CUMWTR'] = ppdf[[UWIKEY,WTR]].groupby([UWIKEY])[WTR].cummax(skipna=True)
+    ppdf['CUMOIL'] = ppdf[[UWIKEY,OIL]].groupby([UWIKEY])[OIL].cumsum(skipna=True)
+    ppdf['CUMGAS'] = ppdf[[UWIKEY,GAS]].groupby([UWIKEY])[GAS].cumsum(skipna=True)
+    ppdf['CUMWTR'] = ppdf[[UWIKEY,WTR]].groupby([UWIKEY])[WTR].cumsum(skipna=True)
 
     #MASS BALANCE TIME
     ppdf.loc[PRODOIL,'TMB_OIL'] = ppdf.loc[PRODOIL,'CUMOIL'] / ppdf.loc[PRODOIL,OIL]
