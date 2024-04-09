@@ -1896,12 +1896,16 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     if 'UWI10' in ppdf.keys():
         UWIKEY = 'UWI10'
     else:
-        UWIKEY = ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =False).index[0]
-        try:
-            UWIKEY = ppdf[UWIKEY].map(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
-        except:
-            print('NO UWI COLUMN!')
-            return None
+        #UWIKEY = ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =False).index.tolist()
+        UWIKEY = (ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =True)>(0.5*df.shape[0])).replace(False, np.nan).dropna().index.tolist()
+        if len(UWIKEY) == 1:
+           UWIKEY = UWIKEY[0]
+        else:
+            try:
+                UWIKEY = ppdf[UWIKEY].map(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+            except:
+                print('NO UWI COLUMN!')
+                return None
            
     try: 
         DATE     = ppdf.iloc[:,ppdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
