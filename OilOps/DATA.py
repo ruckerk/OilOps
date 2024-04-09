@@ -1943,7 +1943,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     ppdf['OIL_RATE'] = ppdf[OIL]/ppdf[DAYSON]
     ppdf['GAS_RATE'] = ppdf[GAS]/ppdf[DAYSON]
     ppdf['WTR_RATE'] = ppdf[WTR]/ppdf[DAYSON]
-    ppdf['PROD_DAYS'] = ppdf[['UWI10',DAYSON]].groupby([UWIKEY]).cumsum()
+    ppdf['PROD_DAYS'] = ppdf[[UWIKEY,DAYSON]].groupby([UWIKEY]).cumsum()
 
     # NORM PARAMS
     ppdf[['NORM_OIL','NORM_GAS','NORM_WTR']] = np.nan
