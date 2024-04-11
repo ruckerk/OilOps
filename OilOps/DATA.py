@@ -1868,8 +1868,6 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
         return OUTPUT
 
 def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
-    ppdf = ppdf.copy()
-           
     warnings.filterwarnings('ignore')
     adir = getcwd()
 
@@ -1898,16 +1896,12 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     if 'UWI10' in ppdf.keys():
         UWIKEY = 'UWI10'
     else:
-        #UWIKEY = ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =False).index.tolist()
-        UWIKEY = (ppdf[GetKey(ppdf,r'UWI|API')].isna().sum().sort_values(ascending =True)>(0.5*df.shape[0])).replace(True, np.nan).dropna().index.tolist()
-        if len(UWIKEY) == 1:
-           UWIKEY = UWIKEY[0]
-        else:
-            try:
-                UWIKEY = ppdf[UWIKEY].map(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
-            except:
-                print('NO UWI COLUMN!')
-                return None
+        UWIKEY = Find_Str_Locs(ppdf,'UWI|API')
+        try:
+            UWIKEY = ppdf[UWIKEY].map(lambda x:WELLAPI.API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+        except:
+            print('NO UWI COLUMN!')
+            return None
            
     try: 
         DATE     = ppdf.iloc[:,ppdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
@@ -1924,7 +1918,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         print(f'Cannot parse tables')
         ERROR = 1
         return None
-               
+    
     ppdf[DATE] = pd.to_datetime(ppdf[DATE]).dt.date
 
     PRODOIL = ppdf[OIL].dropna().index
@@ -1932,9 +1926,9 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     PRODWTR = ppdf[WTR].dropna().index
 
     # CUM VALUES
-    ppdf['CUMOIL'] = ppdf[[UWIKEY,OIL]].groupby([UWIKEY])[OIL].cumsum(skipna=True)
-    ppdf['CUMGAS'] = ppdf[[UWIKEY,GAS]].groupby([UWIKEY])[GAS].cumsum(skipna=True)
-    ppdf['CUMWTR'] = ppdf[[UWIKEY,WTR]].groupby([UWIKEY])[WTR].cumsum(skipna=True)
+    ppdf['CUMOIL'] = ppdf[[UWIKEY,OIL]].groupby([UWIKEY])[OIL].cummax(skipna=True)
+    ppdf['CUMGAS'] = ppdf[[UWIKEY,GAS]].groupby([UWIKEY])[GAS].cummax(skipna=True)
+    ppdf['CUMWTR'] = ppdf[[UWIKEY,WTR]].groupby([UWIKEY])[WTR].cummax(skipna=True)
 
     #MASS BALANCE TIME
     ppdf.loc[PRODOIL,'TMB_OIL'] = ppdf.loc[PRODOIL,'CUMOIL'] / ppdf.loc[PRODOIL,OIL]
@@ -1945,7 +1939,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     ppdf['OIL_RATE'] = ppdf[OIL]/ppdf[DAYSON]
     ppdf['GAS_RATE'] = ppdf[GAS]/ppdf[DAYSON]
     ppdf['WTR_RATE'] = ppdf[WTR]/ppdf[DAYSON]
-    ppdf['PROD_DAYS'] = ppdf[[UWIKEY,DAYSON]].groupby([UWIKEY]).cumsum()
+    ppdf['PROD_DAYS'] = ppdf[['UWI10',DAYSON]].groupby([UWIKEY]).cumsum()
 
     # NORM PARAMS
     ppdf[['NORM_OIL','NORM_GAS','NORM_WTR']] = np.nan
@@ -1964,12 +1958,11 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
 
     for UWI in ppdf[UWIKEY].unique():
         pdf = ppdf.loc[ppdf[UWIKEY] == UWI,:].copy()
-        pdf.sort_values(by= DATE, ascending = True).reset_index(drop=True, inplace = True)
+        pdf.sort_values(by= 'First_of_Month', ascending = True).reset_index(drop=True, inplace = True)
            
         if pdf[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
            #print('NO PRODUCTION')
            continue
-                   
         OUTPUT.at[UWI,'UWI'] = UWI
         OUTPUT.at[UWI,'UWI10'] = WELLAPI(UWI).API2INT(10)
            
@@ -2086,7 +2079,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     MODELS = pd.DataFrame()
     for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
             try:
-                MODEL = ppdf.loc[mm,[UWIKEY,Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby([UWIKEY]).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                MODEL = ppdf.loc[mm,['UWI10',Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
                 params = int(MODEL.dropna().apply(len).mode())
                 MODEL.dropna(inplace = True)
                 NAME = '_'.join([Xkey,Ykey])
@@ -2097,14 +2090,6 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                 MODELS = pd.merge(MODELS,MODEL2,how = 'outer',left_index = True,right_index=True)
             except:
                 pass
-    MODELS.reset_index(drop=False,inplace=True)
-    MODELS.index = MODELS[UWIKEY].apply(lambda x:WELLAPI(x).API2INT(10))
-    MODELS.index.rename('UWI10',inplace = True)
-    try:
-        MODELS.drop(UWIKEY,axis =1, inplace = True)
-    except:
-        pass
-    
     #OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
     OUTPUT = pd.merge(OUTPUT,MODELS, how = 'left', on = 'UWI10')
     #OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
@@ -2193,7 +2178,8 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         print(ex)
                         continue
                 
-                    pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
+                    pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)
+                    pdf = [p for p in pdf if 'Download' in p.keys()][0]
                     links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
                     pdf['LINK']=None
                     pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
