@@ -26,7 +26,8 @@ __all__ = ['Find_API_Col',
           'COGCC_SURVEY_CLEANUP',
           'APIfromFrame',
           'Condense_Surveys',
-          'XYZSpacing']
+          'XYZSpacing',
+          'LeftRightSpacing']
 
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
@@ -1243,3 +1244,39 @@ def MIN_CURVATURE(df_survey):
         df.loc[idx1, ['TVD','NORTH_dY','EAST_dX']] = [TVD,NORTH,EAST]
     df.drop(['INC_RAD','AZI_RAD'], axis=1, inplace = True) 
     return df      
+
+def LeftRightSpacing(df_in):
+    
+    for i in [1,2,3,4,5]:
+        xykey = GetKey(df_in,f'dxy{i}')[0]
+        zkey = GetKey(df_in,f'dz{i}')[0]
+        df_in[f'dxyz{i}'] = (df_in[xykey]**2+df_in[zkey]**2)**0.5
+
+
+    xy_keys  = GetKey(df_in,'dxy\d')
+    z_keys   = GetKey(df_in,'dz\d')
+    xyz_keys = GetKey(df_in,'dxyz\d')
+
+    xy_keys.sort()
+    z_keys.sort()
+
+    df_in[['left_dxy','left_dz','right_dxy','right_dz']]=np.nan
+
+    for idx in df_in.index:
+        xyz_order  = df_in.loc[idx,xyz_keys].sort_values(ascending =True).index.tolist()
+        xyz_order  = [xyz_keys.index(x) for x in xyz_order]
+
+        left_cols  = (df_in.loc[idx,xy_keys]  < 0).values.tolist()
+        right_cols = (df_in.loc[idx,xy_keys] > 0).values.tolist()
+
+        for i in xyz_order:
+            if left_cols[i]:
+                df_in.loc[idx,'left_dxy'] = df_in.loc[idx,xy_keys[i]]
+                df_in.loc[idx,'left_dz']  = df_in.loc[idx,z_keys[i]]
+                break
+        for i in xyz_order:
+            if right_cols[i]:
+                df_in.loc[idx,'right_dxy'] = df_in.loc[idx,xy_keys[i]]
+                df_in.loc[idx,'right_dz']  = df_in.loc[idx,z_keys[i]]
+                break
+    return("finished")
