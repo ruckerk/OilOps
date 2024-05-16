@@ -411,7 +411,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             return None
         if not(UWI is None):            
             outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).API2INT())
-            outdf = outdf.map(str2num)
+            outdf = outdf.applymap(str2num)
             outdf = outdf.apply(pd.to_numeric, errors='coerce')
             outdf['UWI'].fillna(0,inplace=True)
             UWI_df = outdf['UWI'].max()
