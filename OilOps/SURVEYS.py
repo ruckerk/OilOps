@@ -360,6 +360,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
         UWI = None     
         
     if isinstance(xl,dict): # test if file read delivered a dictionary
+        outdf = pd.DataFrame()
         for k in xl.keys(): # for each sheet  #if True:
             df_s = xl[k].copy(deep=True)
             df_s = df_s.dropna(how='all',axis=0).dropna(how='all',axis=1)
@@ -382,7 +383,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             #else:
             #    UWI = set(list(outdf.UWI.apply(str2num)))
                 
-            #outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
+            outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
             
             #print(ext_df.keys())
             
