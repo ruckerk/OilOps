@@ -155,7 +155,7 @@ def ExtractSurveyWrapper(df_in):
     except:
         try:
             R = FIND_SURVEY_HEADER(adf,False)
-            if R!=None:
+            if isinstance(R, np.ndarray):
                 H = FIND_SURVEY_HEADER(adf,True)
                 adf = adf.loc[R[-1]:,:].iloc[1:,:]
                 adf.columns = H
@@ -407,7 +407,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
     if isinstance(xl,pd.DataFrame):
         try:
             R = FIND_SURVEY_HEADER(xl)
-            if R!=None:         
+            if isinstance(R, np.ndarray):         
                 xl.columns = xl.iloc[R,:].astype(str).agg('_'.join,axis =0)
                 xl = xl.iloc[(max(R)+1):,:]             
             else:
