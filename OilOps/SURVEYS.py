@@ -375,9 +375,9 @@ def survey_from_excel(file, ERRORS = True): #if True:
             #for kkey in SurveyCols().keys():
             #    list(SurveyCols(df_s).values())
 
-            if len(list((ext_df).values)) > 5:
-                outdf = ext_df
-                break
+       #     if len(list((ext_df).values)) > 5:
+       #         outdf = ext_df
+       #         break
             #else:
             #    UWI = set(list(outdf.UWI.apply(str2num)))
                 
