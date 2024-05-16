@@ -367,9 +367,13 @@ def survey_from_excel(file, ERRORS = True): #if True:
 
             ext_df=pd.DataFrame()
 
+            R = FIND_SURVEY_HEADER(df_s)
+            ext_df = df_s.iloc[(max(R)+1):,:]
+            ext_df.columns = df_s.columns = df_s.iloc[R,:].astype(str).agg('_'.join,axis =0)
+                  
             try:
-                ext_df = (df_s)
-                ext_df = pd.DataFrame(ext_df)
+                #ext_df = (df_s)
+                #ext_df = pd.DataFrame(df_s)
                 ext_df = ExtractSurveyWrapper(ext_df)      
             except:
                 continue
