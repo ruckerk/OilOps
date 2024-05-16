@@ -318,11 +318,11 @@ def survey_from_excel(file, ERRORS = True): #if True:
             RUNERROR = True
     
     # make headers strings
-    if isinstance(xl,dict):
-        for i in xl:
-            xl[i].columns = [str(s) for s in xl[i].columns]
-    elif isinstance(xl,pd.DataFrame):
-        xl.columns = [str(s) for s in xl.columns]
+    #if isinstance(xl,dict):
+    #    for i in xl:
+    #        xl[i].columns = [str(s) for s in xl[i].columns]
+    #elif isinstance(xl,pd.DataFrame):
+    #    xl.columns = [str(s) for s in xl.columns]
 
     if len(xl)==0:
         #print('FILE XL READ ERROR IN: '+ file)
@@ -369,8 +369,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
 
             R = FIND_SURVEY_HEADER(df_s)
             if R!=None:         
-                ext_df = df_s.iloc[(max(R)+1):,:]
-                ext_df.columns = df_s.columns = df_s.iloc[R,:].astype(str).agg('_'.join,axis =0)
+                ext_df = df_s.loc[(max(R)+1):,:]
+                ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
             else:
                 continue
             try:
@@ -406,6 +406,13 @@ def survey_from_excel(file, ERRORS = True): #if True:
 
     if isinstance(xl,pd.DataFrame):
         try:
+            R = FIND_SURVEY_HEADER(xl)
+            if R!=None:         
+                xl.columns = xl.iloc[R,:].astype(str).agg('_'.join,axis =0)
+                xl = xl.iloc[(max(R)+1):,:]             
+            else:
+                pass          
+                  
             outdf = ExtractSurveyWrapper(xl)
             outdf = pd.DataFrame(outdf)
             if not 'UWI' in  outdf.keys():
