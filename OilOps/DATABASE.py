@@ -1,5 +1,4 @@
 from ._FUNCS_ import *
-from .WELLAPI import *
 from .DATA import *
 from .SURVEYS import *
 from .MAP import convert_XY
