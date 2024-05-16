@@ -368,7 +368,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             ext_df=pd.DataFrame()
 
             R = FIND_SURVEY_HEADER(df_s)
-            if R!=None:         
+            if isinstance(R, np.ndarray):         
                 ext_df = df_s.loc[(max(R)+1):,:]
                 ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
             else:
