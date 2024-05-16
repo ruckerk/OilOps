@@ -48,7 +48,8 @@ def Find_API_Col(df_inAPI):
             val = None
         return val
                   
-    df2 = df2.map(lambda x:STR2INT(x))
+    #df2 = df2.apply(lambda x:STR2INT(x))
+    df2 = df2.applymap(STR2INT)
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
@@ -204,7 +205,7 @@ def ExtractSurvey(df_in): #if True:
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
                 
-            outdf_in = outdf_in.map(str2num)
+            outdf_in = outdf_in.applymap(str2num)
             #outdf_in = DF_UNSTRING(outdf_in)
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                     
@@ -260,7 +261,7 @@ def ExtractSurvey(df_in): #if True:
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.map(lambda x:WELLAPI(x).str2num())
                         #outdf_in = DF_UNSTRING(outdf_in)
-                        outdf_in = outdf_in.map(str2num)
+                        outdf_in = outdf_in.applymap(str2num)
                         outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                               
                               
@@ -563,7 +564,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
                 rdf=rdf.rename(columns=SurveyCols(rdf))
             
                 # all columns to numeric while catching decimals in strings
-                rdf = rdf.map(str2num)
+                rdf = rdf.applymap(str2num)
 
                 if rdf.shape[0]==0 or rdf.empty:
                     continue
