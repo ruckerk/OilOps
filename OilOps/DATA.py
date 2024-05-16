@@ -1,6 +1,5 @@
 # update base files
 from ._FUNCS_ import *
-from .WELLAPI import WELLAPI as WELLAPI
 
 __all__ = ['CO_BASEDATA',
            'Get_LAS',
