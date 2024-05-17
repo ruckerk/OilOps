@@ -419,7 +419,8 @@ def CONSTRUCT_DB(DB_NAME = 'FIELD_DATA.db', SURVEYFOLDER = 'SURVEYFOLDER'):
             f = {executor.submit(func,a): a for a in data}
         
         for i in f.keys():
-            XYZ = XYZ.append(i.result(), ignore_index = True)
+            #XYZ = XYZ.append(i.result(), ignore_index = True)
+            XYZ = pd.concat([XYZ,i.result()], ignore_index = True)
     elif len(UWIlist)<=2000:
         XYZ = func(UWIlist)
     
@@ -579,7 +580,8 @@ def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SCOUT
         with concurrent.futures.ThreadPoolExecutor(max_workers = processors) as executor:
             f = {executor.submit(func,a): a for a in data}
         for i in f.keys():
-            SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
+            SCOUT_df = pd.concat([SCOUT_df,i.result()], ignore_index = True)
+            #SCOUT_df = SCOUT_df.append(i.result(), ignore_index = True)
     return None
     
 def UPDATE_SPACINGS(DB = 'FIELD_DATA.db'):
