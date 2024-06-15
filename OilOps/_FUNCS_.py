@@ -1112,3 +1112,30 @@ def AziFromLatLon(LON1,LAT1,LON2,LAT2):
     while theta<0:
         theta += 360
     return theta
+
+def superposition_time(x,y, stype = 'linear'):
+    if not isinstance(x,np.ndarray):
+        x = np.array(x)
+    if not isinstance(y,np.ndarray):
+        y = np.array(y)
+    # ensure 0,0
+    if abs(x[0]+y[0]) != 0:
+        x = np.insert(x,0,0)
+        y = np.insert(y,0,0)
+
+    OUTPUT = []
+    if stype == 'linear':
+        dx = x[1:]-x[:-1]
+        dy = y[1:]-y[:-1]
+        for i,xi in enumerate(x):
+            OUTPUT.append(sum((dy[:i]/y[i]* np.sqrt(x[i] - x[:i])))**2)
+
+    return(OUTPUT)   
+
+def asym_sigmoid(x, S, EC50, HillSlope, Top, Bottom):
+    Denom = (1+(2**(1/S)-1)*((EC50/x)**HillSlope))**S
+    Num = Top-Bottom
+    Y = Bottom + (Num / Denom)
+    return Y
+ 
+        
