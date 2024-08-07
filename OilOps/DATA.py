@@ -1898,7 +1898,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         #UWIKEY = Find_Str_Locs(ppdf,'UWI|API')
         UWIKEY = GetKey(ppdf,r'UWI|API')
         try:
-            UWIKEY = ppdf[UWIKEY].map(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
+            UWIKEY = ppdf[UWIKEY].applymap(lambda x:WELLAPI(x).API2INT(10)>0).sum(axis=0).sort_values(axis=0, ascending = False).keys()[0]
         except:
             print('NO UWI COLUMN!')
             return None
