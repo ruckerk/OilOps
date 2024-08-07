@@ -1870,7 +1870,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     warnings.filterwarnings('ignore')
     adir = getcwd()
 
-    ppdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
+    #ppdf[['PROD_DAYS','OIL_RATE','GAS_RATE','WTR_RATE','PROD_DAYS','CUMOIL','CUMGAS','CUMWTR','TMB_OIL','TMB_GAS','TMB_WTR','GOR','OWR','WOR','OWC','WOC']] = np.nan
     
     OUTPUT=pd.DataFrame(columns=['UWI','UWI10','FIRST_PRODUCTION'
                                  ,'BTU_MEAN','BTU_STD'
