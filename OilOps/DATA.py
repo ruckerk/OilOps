@@ -1904,12 +1904,12 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
            
     try: 
         DATE     = ppdf.iloc[:,ppdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
-        DAYSON   = ppdf.iloc[0,ppdf.keys().str.contains('.*DAYS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
-        OIL      = ppdf.iloc[0,ppdf.keys().str.contains('.*OIL.*PROD.*', regex=True, case=False,na=False)].keys()[0]
-        GAS      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
-        WTR      = ppdf.iloc[0,ppdf.keys().str.contains('.*WATER.*VOLUME.*', regex=True, case=False,na=False)].keys()[0]
+        DAYSON   = ppdf.iloc[0,ppdf.keys().str.contains('.*DAYS.*(ON|PROD).*', regex=True, case=False,na=False)].keys()[0]
+        OIL      = ppdf.iloc[0,ppdf.keys().str.contains('.*OIL.*(PROD|VOL).*', regex=True, case=False,na=False)].keys()[0]
+        GAS      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*(PROD|VOL).*', regex=True, case=False,na=False)].keys()[0]
+        WTR      = ppdf.iloc[0,ppdf.keys().str.contains('.*WATER.*(PROD|VOL).*', regex=True, case=False,na=False)].keys()[0]
         API      = ppdf.iloc[0,ppdf.keys().str.contains('.*OIL.*GRAVITY.*', regex=True, case=False,na=False)].keys()[0]
-        BTU      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*BTU.*', regex=True, case=False,na=False)].keys()[0]
+        BTU      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*(GRAVITY|BTU).*', regex=True, case=False,na=False)].keys()[0]
         FM       = ppdf.iloc[0,ppdf.keys().str.contains('.*Formation.*', regex=True, case=False,na=False)].keys()[0]
         #SEQ      = pdf.iloc[0,pdf.keys().str.contains('.*SEQUENCE.*', regex=True, case=False,na=False)].keys()[0]
 
