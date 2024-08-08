@@ -1942,7 +1942,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     ppdf['OIL_RATE'] = ppdf[OIL]/ppdf[DAYSON]
     ppdf['GAS_RATE'] = ppdf[GAS]/ppdf[DAYSON]
     ppdf['WTR_RATE'] = ppdf[WTR]/ppdf[DAYSON]
-    ppdf['PROD_DAYS'] = ppdf[['UWI10',DAYSON]].groupby([UWIKEY]).cumsum()
+    ppdf['PROD_DAYS'] = ppdf[[UWIKEY ,DAYSON]].groupby([UWIKEY]).cumsum()
 
     # NORM PARAMS
     ppdf[['NORM_OIL','NORM_GAS','NORM_WTR']] = np.nan
@@ -2082,7 +2082,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
     MODELS = pd.DataFrame()
     for (Xkey, Ykey, logx_bool, logy_bool, mm, func) in PAIRS:
             try:
-                MODEL = ppdf.loc[mm,['UWI10',Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby(['UWI10']).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
+                MODEL = ppdf.loc[mm,[UWIKEY ,Xkey,Ykey]].replace((np.inf,-np.inf,None),np.nan).dropna(how='any', axis = 0).groupby([UWIKEY ]).apply(lambda x: curve_fitter(x[Xkey],x[Ykey], funct = func, split = None, plot = False, logx = logx_bool, logy = logy_bool))
                 params = int(MODEL.dropna().apply(len).mode())
                 MODEL.dropna(inplace = True)
                 NAME = '_'.join([Xkey,Ykey])
