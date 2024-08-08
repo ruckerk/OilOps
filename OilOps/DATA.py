@@ -1918,7 +1918,10 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         print(f'Cannot parse tables')
         ERROR = 1
         return None
-    
+
+    for k in [DAYSON,OIL,GAS,WTR,API,BTU]:
+        ppdf[k] = pd.to_numeric(ppdf[k])
+           
     ppdf[DATE] = pd.to_datetime(ppdf[DATE]).dt.date
 
     PRODOIL = ppdf[OIL].dropna().index
