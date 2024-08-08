@@ -2093,6 +2093,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                 MODELS = pd.merge(MODELS,MODEL2,how = 'outer',left_index = True,right_index=True)
             except:
                 pass
+    MODELS.reset_index(drop = False)
     if UWIKEY != 'UWI10':
         MODELS['UWI10'] = MODELS[UWIKEY].apply(lambda x:WELLAPI(x).API2INT(10))
         MODELS.drop(UWIKEY, axis= 1, inplace = True)
