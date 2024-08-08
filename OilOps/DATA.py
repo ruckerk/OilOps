@@ -1963,7 +1963,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         pdf = ppdf.loc[ppdf[UWIKEY] == UWI,:].copy()
         pdf.sort_values(by=  DATE, ascending = True).reset_index(drop=True, inplace = True)
            
-        if pdf[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
+        if pdf[[OIL,GAS,WTR]].dropna(how='any').shape[0]<=6:
            #print('NO PRODUCTION')
            continue
         OUTPUT.at[UWI,'UWI'] = UWI
@@ -2024,11 +2024,14 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
                     #OUTPUT.at[UWI,'OWR_PrePeakOil']  = pdf.loc[PREPEAKOIL,OIL].sum()/pdf.loc[PREPEAKOIL,WTR].sum()
                 if pdf.loc[POSTPEAKGAS,WTR].sum() >0:
                     OUTPUT.at[UWI,'OWR_PostPeakGas']  = np.exp(logsumexp(pdf.loc[POSTPEAKGAS,OIL])-logsumexp(pdf.loc[POSTPEAKGAS,WTR]))
-                    #OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()     
-                OUTPUT.at[UWI,'WOC_PostPeakOil'] = np.exp(logsumexp(pdf.loc[POSTPEAKOIL,WTR]) - logsumexp(pdf.loc[POSTPEAKOIL,WTR].fillna(0)+pdf.loc[POSTPEAKOIL,OIL].fillna(0)))                                                                          
-                #OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
-                OUTPUT.at[UWI,'WOC_PostPeakGas'] = np.exp(logsumexp(pdf.loc[POSTPEAKGAS,WTR]) - logsumexp(pdf.loc[POSTPEAKGAS,WTR].fillna(0)+pdf.loc[POSTPEAKGAS,OIL].fillna(0)))                                                               
-                #OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())        
+                    #OUTPUT.at[UWI,'OWR_PostPeakGas'] = pdf.loc[POSTPEAKGAS,OIL].sum()/pdf.loc[POSTPEAKGAS,WTR].sum()   
+                if pdf.loc[POSTPEAKOIL,[WTR,OIL]].dropna(how = 'any').shape[0]>2:
+                    OUTPUT.at[UWI,'WOC_PostPeakOil'] = np.exp(logsumexp(pdf.loc[POSTPEAKOIL,WTR]) - logsumexp(pdf.loc[POSTPEAKOIL,WTR].fillna(0)+pdf.loc[POSTPEAKOIL,OIL].fillna(0)))                                                                          
+                    #OUTPUT.at[UWI,'WOC_PostPeakOil'] = pdf.loc[POSTPEAKOIL,WTR].sum() / (pdf.loc[POSTPEAKOIL,WTR].sum()+pdf.loc[POSTPEAKOIL,OIL].sum())
+                if pdf.loc[POSTPEAKGAS,[WTR,OIL]].dropna(how = 'any').shape[0]>2:
+                    OUTPUT.at[UWI,'WOC_PostPeakGas'] = np.exp(logsumexp(pdf.loc[POSTPEAKGAS,WTR]) - logsumexp(pdf.loc[POSTPEAKGAS,WTR].fillna(0)+pdf.loc[POSTPEAKGAS,OIL].fillna(0)))                                                               
+                    #OUTPUT.at[UWI,'WOC_PostPeakGas'] = pdf.loc[POSTPEAKGAS,WTR].sum() / (pdf.loc[POSTPEAKGAS,WTR].sum()+pdf.loc[POSTPEAKGAS,OIL].sum())       
+                       
                 OUTPUT.at[UWI,'Peak_Oil_CumWtr'] = pdf[WTR][0:pdf[OIL].idxmax()].sum()
                 OUTPUT.at[UWI,'Peak_Gas_CumWtr'] = pdf[WTR][0:pdf[GAS].idxmax()].sum()
               
