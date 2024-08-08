@@ -1961,7 +1961,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
 
     for UWI in ppdf[UWIKEY].unique():
         pdf = ppdf.loc[ppdf[UWIKEY] == UWI,:].copy()
-        pdf.sort_values(by= 'First_of_Month', ascending = True).reset_index(drop=True, inplace = True)
+        pdf.sort_values(by=  DATE, ascending = True).reset_index(drop=True, inplace = True)
            
         if pdf[[OIL,GAS,WTR]].dropna(how='any').shape[0]==0:
            #print('NO PRODUCTION')
