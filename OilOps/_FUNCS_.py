@@ -197,6 +197,20 @@ def DF_UNSTRING(df_IN):
 
     #DATES
     DATECOLS = [col for col in df_IN.columns if 'DATE' in str(col).upper()]
+    DROPLIST = []
+    for k in DATECOLS:
+        row_count = np.nan
+        try:
+            row_count = pd.to_datetime(df_IN[k].astype(str)).dropna().shape[0]
+            #print(f'{f}: {row_count}')
+            if ((df_IN[k].dropna().astype(str).replace(re.compile('^(NONE|NAN|NAT)$',re.I),None,regex=True).dropna().shape[0]) > (row_count*2)) or np.isnan(row_count):
+                 DROPLIST.append(k)
+        except Exception as error:
+            #print(f'remove for error: {k} for {error}')
+            DROPLIST.append(k)
+        
+    DATECOLS = list(set(DATECOLS)-set(DROPLIST))
+
 
     #for k in df_IN.keys():
     #print(k+" :: "+str(df_IN[k].dropna().iloc[0]))
@@ -209,6 +223,8 @@ def DF_UNSTRING(df_IN):
             continue
         A = df_IN[k].dropna().astype(str).str.replace(r'[^\d*]','_', regex = True).str.split('_', expand=True).apply(pd.to_numeric, errors = 'ignore', axis =0)
         if A.empty:
+            continue
+        elif A.shape[1]>5:
             continue
         else:
             A = A.describe(percentiles = None)
@@ -228,18 +244,8 @@ def DF_UNSTRING(df_IN):
             DATECOLS.append(k)
     DATECOLS = list(set(DATECOLS))
 
-    DATECOLS
+    #DATECOLS
     for k in DATECOLS:
-        # common date problems
-        # "REPORTED: "
-        #  Prior to rule 205A.b.(2)(A)
-        #pattern = re.compile(r'.*Prior to rule.*|reported:',re.I)
-
-        #if pd.to_datetime(df_IN[k].str.replace(pattern,'').fillna(np.nan),errors='coerce').count() != df_IN[k].str.replace(pattern,'').count():
-        #    df_IN.loc[pd.to_datetime(df_IN[k].str.replace(pattern,'').fillna(np.nan),errors='coerce').isna() != df_IN[k].str.replace(pattern,'').isna()][k].str.replace(pattern,'')
-        #    DATECOLS.remove(k)
-        #else:
-        #    df_IN[k]=pd.to_datetime(df_IN[k].fillna(np.nan),errors='coerce')
         df_IN[k] = pd.to_datetime(df_IN[k],errors='coerce')
 
     #FLOATS
