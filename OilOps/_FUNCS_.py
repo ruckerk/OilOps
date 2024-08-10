@@ -201,7 +201,7 @@ def DF_UNSTRING(df_IN):
     for k in DATECOLS:
         row_count = np.nan
         try:
-            row_count = pd.to_datetime(df_IN[k].astype(str)).dropna().shape[0]
+            row_count = pd.to_datetime(df_IN[k].dropna().astype(str)).dropna().shape[0]
             #print(f'{f}: {row_count}')
             if ((df_IN[k].dropna().astype(str).replace(re.compile('^(NONE|NAN|NAT)$',re.I),None,regex=True).dropna().shape[0]) > (row_count*2)) or np.isnan(row_count):
                  DROPLIST.append(k)
