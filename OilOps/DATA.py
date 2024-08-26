@@ -589,7 +589,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     print('Saving Results')
     PRODDATA = DF_UNSTRING(PRODDATA)
     PRODDATA[DATE] = pd.to_datetime(PRODDATA[DATE])
-    PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[0])+'_'+datetime.datetime.now().strftime('%Y%m%d')
+    PROD_FNAME = 'PRODUCTION_'+str(PRODDATA['UWI'].iloc[0])+'_'+str(PRODDATA['UWI'].iloc[-1])+'_'+datetime.datetime.now().strftime('%Y%m%d')
     PRODDATA.columns = PRODDATA.columns.str.replace(' ','_')
     PRODDATA['UWI10'] = PRODDATA.UWI.apply(lambda x: WELLAPI(x).API2INT(10))
 
