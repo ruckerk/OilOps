@@ -2102,7 +2102,8 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         MODELS.drop(UWIKEY, axis= 1, inplace = True)
     
     #OUTPUT = pd.concat([OUTPUT,MODELS], axis = 0, join = 'outer') # left_index = True, right_index = True, how= 'outer')
-    OUTPUT = pd.merge(OUTPUT,MODELS, how = 'left', on = 'UWI10')
+    if MODELS.shape[0]>0:
+        OUTPUT = pd.merge(OUTPUT,MODELS, how = 'left', on = 'UWI10')
     #OUTPUT.at[UWI,'Production_Formation'] = '_'.join(pdf[FM].unique())
            
     if ADD_RATIOS:
