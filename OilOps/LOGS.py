@@ -537,8 +537,8 @@ def Alias_Dictionary():
                        "NPOR_LIM":4,"NPORLS":4,"NPRL":4,"POL":4,"POS":2,
                        "PRON":3,"QNP-1A":3,"QNP-5A":3,"RPOR":2,"SNP":2,
                        "TNPH":2,"TNPH_LIM":4,"TPHC":4,"CNPOR":4,"NLIM":2,
-                        "NPHI_100":2,"CNCFLS":5,"CNLS":5,"CNPOR1":4,"DNPH":3,"PHIN":5,
-            "NPRS":3,"NPRD":3,"NPES":2},
+                       "NPHI_100":2,"CNCFLS":5,"CNLS":5,"CNPOR1":4,"DNPH":3,"PHIN":5,
+                       "NPRS":3,"NPRD":3,"NPES":2, "NPHI_LS": 5},
                 'PE':{"HPRA":1,"PEF8":1,"PEFZ":1,"2PEF":2,"HPEDN":1,"HPEF8":1,
                        "PDPE":1,"PE":1,
                        "PE2":1,"PE2QH":1,"PEDF":1,"PEDN":1,"PEF":1,
@@ -583,7 +583,7 @@ def Alias_Dictionary():
                        "CIL":10,"CILD":11,"CIPD":10,"CLLD":8,"COND":10,"DVC1":10,
                        "DVC2":10,"DVC4":10,"FC":10,"M0CX":10,"M1CX":10,"M2CC9":10,
                        "M2CCX":10,"M2CX":10,"M4CCX":10,"M4CX":10,"MVC2":10,"P34H_COND":10,
-                       "RO90":6,"RD":4,"RTAO":1,"AT90DS":2, "HART":6},
+                       "RO90":6,"RD":4,"RTAO":1,"AT90DS":2, "HART":6, "RESD":10},
                 'RMED':{"AF30":2,"AHF30":2,"AHO30":2,"AHT30":1,"AIT30":1,"AO30":3,
                        "ASF30":2,"ASO30":3,"AST30":1,"AT30":1,"HILM":1,
                        "HLLS":1,"HRL3":1,"ILM":1,"ILM2":1,"ILM4":2,"IM":1,
@@ -594,7 +594,7 @@ def Alias_Dictionary():
                        "PIRM":2,"REIM":2,"DSLL":5,"AIT3":2,"AHF3":3,"AHO3":3,
                        "AHT3":1,"AS30":1,"ASF3":3,"AST3":1,"HAT3":1,"RLLS":3,
                        "CILM":5,"CIMQ":5,"CIMR":5,"CIPM":5,"RMLL":5,"RO30":3,
-                       "RM":4},
+                       "RM":4, "RESM":5},
                 'RSH':{"AF10":4,"AF20":5,"AFRX":3,"AHF10":4,"AHF20":5,
                        "AHO10":4,"AHO20":5,"AHSFI":3,"AHT10":2,"AHT20":3,
                        "AHTRX":1,"AIT10":2,"AIT20":3,"AO10":4,"AO20":5,
@@ -614,7 +614,7 @@ def Alias_Dictionary():
                        "AHT1":1,"AHT2":2,"AS10":1,"AS20":2,"ASF1":3,
                        "ASF2":4,"ASRX":2,"AST1":1,"AST2":2,"HAT1":1,"RO10":4,
                        "HAT2":2,"HSFL":1,"MSFF":1,"RXOH":1,"CSFL":5,
-                       "MCON":5,"RLL3":3},
+                       "MCON":5,"RLL3":3, "RESS":5},
                 'SP':{"HSP":1,"PCH1":2,"SP":1,"SPBR":2,"SPC":2,"SPCG":2,
                        "SPD":2,"SPDF":2,"SPDH":1,"SPH":1,"SPP":2,"SPSB":1,
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
@@ -799,6 +799,7 @@ def DLOGR(LASfile):
         df = (las.df().astype(np.float32))
         df["DEPTH"] = las.df().index.astype(float)
         dfmask=df[[Alias['DEN'],Alias['NPHI']]].dropna(thresh=1).index
+
         df = df.loc[(df.index).isin(dfmask)]
         uwi=Get_API(las)
 
