@@ -294,7 +294,13 @@ def convert_XY(X_LON,Y_LAT,EPSG_OLD=4267,EPSG_NEW=4326, CRS_OLD = None):
 def county_from_LatLon(LAT,LON):
     UAGENT = getlogin() +'_' +socket.gethostbyname(socket.gethostname())
     geolocator = Nominatim(user_agent=UAGENT)
-    CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
+    address = geolocator.reverse(str(LAT)+","+str(LON)).raw['address']
+    if 'county' in [x.lower() for x in a.raw.keys()]:
+        CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
+    else:
+        zipcode = a.raw['address']['postcode']
+        CNTY = nomi.query_postal_code(z)['county_name']
+    
     CNTY = CNTY.upper()
     CNTY = CNTY.replace('COUNTY','')
     CNTY = CNTY.strip()
