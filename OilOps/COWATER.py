@@ -22,7 +22,7 @@ def DWR_GEOPHYSWELLSUMMARY(LAT,LON, RADIUS = 1, RADIUS_UNIT = 'miles'):
     QTERMS = ['wellId',
         'wellName',
         'permit',
-        'ogccId',
+        'ecmcId',
         'locnum',
         'wellDepth',
         'aquiferPicks',
