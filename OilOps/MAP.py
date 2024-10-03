@@ -299,6 +299,7 @@ def county_from_LatLon(LAT,LON):
         CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
     else:
         zipcode = address.raw['address']['postcode']
+        nomi = pgeocode.Nominatim('us')
         CNTY = nomi.query_postal_code(z)['county_name']
     
     CNTY = CNTY.upper()
