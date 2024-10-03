@@ -300,7 +300,7 @@ def county_from_LatLon(LAT,LON):
     else:
         zipcode = address.raw['address']['postcode']
         nomi = pgeocode.Nominatim('us')
-        CNTY = nomi.query_postal_code(z)['county_name']
+        CNTY = nomi.query_postal_code(zipcode)['county_name']
     
     CNTY = CNTY.upper()
     CNTY = CNTY.replace('COUNTY','')
