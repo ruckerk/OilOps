@@ -1,7 +1,6 @@
 from ._FUNCS_ import *
 from .MAP import Pt_Distance, Pt_Bearing, county_from_LatLon, convert_XY, DistAzi, elevation_function, get_openelevation
 from shapely.geometry import Point
-from geopy.geocoders import Nominatim
 
 # Upgrade Ideas:
 # Incorporate a DEM to add elevations to water well depths and convert to subsea
