@@ -625,25 +625,7 @@ def UPDATE_SPACINGS(DB = 'FIELD_DATA.db'):
     WELL_DF = DF_UNSTRING(WELL_DF)
     WELL_DF.sort_values(by = 'FIRST_PRODUCTION_DATE',ascending = False, inplace = True)
         
-        
-          
-def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
-    ###############
-    # GET SURVEYS #
-    ############### #if True:
-    # Initialize constants
-    URL_BASE = 'https://ecmc.state.co.us/weblink/results.aspx?id=XNUMBERX'
-    DL_BASE = 'https://ecmc.state.co.us/weblink/XLINKX'
-    adir = getcwd()
-    dir_add = path.join(adir,FOLDER)
-
-    if FULL_UPDATE:
-        OLD_YEAR = 1900
-    else:
-        OLD_YEAR = datetime.datetime.now().year-4
-    
-    SHL_BHL_THRESH = 2000
-          
+def UWI_FROM_SHP(SHL_BHL_THRESH = 2000):
     #Read UWI files and form UWI list
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
     WELLPLAN_LOC = read_shapefile(shp.Reader('Directional_Lines_Pending.shp'))
@@ -685,7 +667,26 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
     m = LOC_DF['DELTA']>SHL_BHL_THRESH
     SHP_UWIS = list(LOC_DF.loc[m,'UWI10'].unique())
 
-    #SHP_UWIS = list(set(WELL_LOC['UWI10']).union(set(WELLPLAN_LOC['UWI10'])).union(set(WELL_LOC['UWI10'])))
+    return SHP_UWIS        
+
+def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
+    ###############
+    # GET SURVEYS #
+    ############### #if True:
+    # Initialize constants
+    URL_BASE = 'https://ecmc.state.co.us/weblink/results.aspx?id=XNUMBERX'
+    DL_BASE = 'https://ecmc.state.co.us/weblink/XLINKX'
+    adir = getcwd()
+    dir_add = path.join(adir,FOLDER)
+
+    if FULL_UPDATE:
+        OLD_YEAR = 1900
+    else:
+        OLD_YEAR = datetime.datetime.now().year-4
+
+    #Read UWI files and form UWI list
+    SHL_BHL_THRESH = 2000
+    SHP_UWIS = UWI_FROM_SHP(SHL_BHL_THRESH)
           
     connection_obj = sqlite3.connect(DB)
           
