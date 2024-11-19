@@ -624,7 +624,10 @@ def UPDATE_SPACINGS(DB = 'FIELD_DATA.db'):
     WELL_DF = WELL_DF.loc[~WELL_DF.UWI10.isna()]
     WELL_DF = DF_UNSTRING(WELL_DF)
     WELL_DF.sort_values(by = 'FIRST_PRODUCTION_DATE',ascending = False, inplace = True)
-        
+
+    return None
+
+
 def UWI_FROM_SHP(SHL_BHL_THRESH = 2000):
     #Read UWI files and form UWI list
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
@@ -668,6 +671,7 @@ def UWI_FROM_SHP(SHL_BHL_THRESH = 2000):
     SHP_UWIS = list(LOC_DF.loc[m,'UWI10'].unique())
 
     return SHP_UWIS        
+          
 
 def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFOLDER'):
     ###############
@@ -840,8 +844,8 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
     # Parallel Execution if 1==1:
     processors = max(1,floor(1+multiprocessing.cpu_count()/2))
         
-    chunksize = int(len(UWIlist)/processors)
-    chunksize = 1000
+    chunksize = min(max(int(len(UWIlist)/processors),1000),200)
+    
     batch = int(len(UWIlist)/chunksize)
     #processors = max(processors,batch)
     data=np.array_split(UWIlist,batch)
