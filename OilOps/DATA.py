@@ -2235,11 +2235,14 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                             #surveyrows.append(dirdata)
                             #surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
                             m = pdf.iloc[:,3].str.contains('(?=.*DIRECTIONAL|.*DEVIAT|.*GYRO)(?=.*DATA|.*SURVEY)',flags = re.I,regex= True).fillna(False)
-                            surveyrows.append(pdf.loc[m,:])
-                                 
+                            surveyrows = pd.concat([surveyrows,pdf.loc[m,:]], ignore_index = True, axis = 0)    
                     elif (pages == 0) and (sum([len(i) for i in data]) > 10):
-                        parsed_table = soup.find_all('table')[0]
-                        pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
+
+                        parsed_table = soup.find_all('table')[tables-1]
+                        pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)
+                        # get DL table:
+                               
+                        pdf = [p for p in pdf if 'Download' in p.keys()][0]
                         links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
                         pdf['LINK']=None
                         pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
@@ -2247,18 +2250,19 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         #surveyrows.append(dirdata)
                         #surveyrows.append(pdf.loc[pdf.iloc[:,3].astype(str).str.contains('DIRECTIONAL DATA' or 'DEVIATION SURVEY DATA' or 'DIRECTIONAL SURVEY' or 'GYRO SURVEY', case = False)==True])
                         m = pdf.iloc[:,3].str.contains('(?=.*DIRECTIONAL|.*DEVIAT|.*GYRO)(?=.*DATA|.*SURVEY)',flags = re.I,regex= True).fillna(False)
-                        surveyrows.append(pdf.loc[m,:])
+                        surveyrows = pd.concat([surveyrows,pdf.loc[m,:]], ignore_index = True, axis = 0)
                     else:
                         print(f'No Tables for {UWI}')
                         PAGEERROR=ERROR=1
-                        break
-                    
+                        break          
                     surveyrows=pd.DataFrame(surveyrows)
+                    m = surveyrows.iloc[:,:-1].drop_duplicates().index
+                    surveyrows = surveyrows.loc[m]
                     if len(surveyrows)==0:
                         ERROR=1
                         break
                     surveyrows.loc[:,'DateString']=None
-                    surveyrows.loc[:,'DateString']=surveyrows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')
+                    surveyrows.loc[:,'DateString']=surveyrows['Date'].astype('datetime64[ns]').dt.strftime('%Y_%m_%d')
                     LINKCOL=surveyrows.columns.get_loc('LINK')
                     for i in range(0,surveyrows.shape[0]):
                         #dl_url= re.sub('XLINKX', str(surveyrows.loc[surveyrows['Date'].astype('datetime64').idxmax(),'LINK']),DL_BASE)
@@ -2285,7 +2289,8 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         #Select most recent survey data and download   
                         #XX=df.loc[df[0].str.contains("DocDate"),:].replace({r'.*([0-9]{2}/[0-9]{2}/[0-9]{2,4}).*':r'\1'},regex=True).astype('datetime64').transpose().idxmax()
                         #dl_url=re.sub('XLINKX',df.loc[df[0].str.contains("Download"),int(XX)].to_string(index=False),DL_BASE)
-                        r=requests.get(dl_url, allow_redirects=True)
+                        ecmc_file_url = 'http'+dl_url.split('http')[-1]
+                        r=requests.get(ecmc_file_url, allow_redirects=True)
                         filetype=path.splitext(re.sub(r'.*filename=\"(.*)\"',r'\1',r.headers['content-disposition']))[1]
                         filename=path.join(dir_add,'SURVEYDATA_'+DocDate+'_DOCID'+str(DocID)+'_UWI'+str(UWI)+filetype)
                         if not path.exists(filename):
