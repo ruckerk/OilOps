@@ -2212,7 +2212,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
 
                     if pages>0:
                         for p in range(1,pages):
-                            browser.find_element_by_link_text(str(1+p)).click()
+                            browser.find_element(by = 'link text',value = str(1+p)).click()
                             browser.page_source
                             soup = BS(browser.page_source, 'lxml')
                             #check COGCC site didn't glitch
