@@ -2180,7 +2180,7 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         continue
                     
                     browser.find_element(By.LINK_TEXT, "Document Name").click()
-                           
+
                     soup = BS(browser.page_source, 'lxml')
                     
                     try:
@@ -2226,8 +2226,15 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                             if newpages>pages:
                                 PAGEERROR=1
                                 break
-                            parsed_table = soup.find_all('table')[0]
-                            pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
+                            parsed_table = soup.find_all('table')
+                            for i,p in enumerate(parsed_table):
+                                try:
+                                    pdf = pd.read_html(str(p),encoding='utf-8', header=0)
+                                    pdf = [p for p in pdf if 'Download' in p.keys()][0]
+                                    break       
+                                except:
+                                    pass
+                            parsed_table = soup.find_all('table')[i]
                             links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
                             pdf['LINK']=None
                             pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
@@ -2241,9 +2248,9 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         parsed_table = soup.find_all('table')[tables-1]
                         pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)
                         # get DL table:
-                               
+                           
                         pdf = [p for p in pdf if 'Download' in p.keys()][0]
-                        links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
+                        links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]   
                         pdf['LINK']=None
                         pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
                         #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
