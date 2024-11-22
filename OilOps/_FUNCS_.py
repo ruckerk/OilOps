@@ -1146,8 +1146,11 @@ def asym_sigmoid(x, S, EC50, HillSlope, Top, Bottom):
  
         
 def UrlDownload(url:str, savefile:str):
-    response=requests.get(url)
-    exfile=response.content
-    egfile=open(savefile,'wb')
-    egfile.write(exfile)
-    egfile.close()
+    #response=requests.get(url)
+    #exfile=response.content
+    #egfile=open(savefile,'wb')
+    #egfile.write(exfile)
+    #egfile.close()
+    r=requests.get(url).content
+        with open(savefile,'wb') as f:
+            f.write(r)
