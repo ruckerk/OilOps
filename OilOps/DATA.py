@@ -2302,8 +2302,9 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         filename=path.join(dir_add,'SURVEYDATA_'+DocDate+'_DOCID'+str(DocID)+'_UWI'+str(UWI)+filetype)
                         if not path.exists(filename):
                             #remove(filename)
-                        #    filename=dir_add+'\\SURVEYDATA_'+DocDate+'_'+str(UWI)+'_1'+filetype
-                            urllib.request.urlretrieve(dl_url, filename)
+                            #    filename=dir_add+'\\SURVEYDATA_'+DocDate+'_'+str(UWI)+'_1'+filetype
+                            UrlDownload(dl_url, filename):
+                            #urllib.request.urlretrieve(dl_url, filename)
                     SUCCESS=1
                     if PAGEERROR==1:
                          #TRYCOUNT+=1
