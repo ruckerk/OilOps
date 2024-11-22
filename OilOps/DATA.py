@@ -2112,7 +2112,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         return OUTPUT
 
 
-def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX',DL_BASE = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX', FOLDER = None):
+def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX:str',DL_BASE = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX':str, FOLDER = None, REPLACE = False:bool):
            
     #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
@@ -2300,11 +2300,14 @@ def CO_Get_Surveys(UWIx,URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/D
                         r=requests.get(ecmc_file_url, allow_redirects=True)
                         filetype=path.splitext(re.sub(r'.*filename=\"(.*)\"',r'\1',r.headers['content-disposition']))[1]
                         filename=path.join(dir_add,'SURVEYDATA_'+DocDate+'_DOCID'+str(DocID)+'_UWI'+str(UWI)+filetype)
+                        if REPLACE:                            
+                            if path.exists(filename):
+                                remove(filename)
                         if not path.exists(filename):
-                            #remove(filename)
-                            #    filename=dir_add+'\\SURVEYDATA_'+DocDate+'_'+str(UWI)+'_1'+filetype
-                            UrlDownload(ecmc_file_url , filename):
-                            #urllib.request.urlretrieve(dl_url, filename)
+                            urllib.request.urlretrieve(ecmc_file_url, filename)
+                        # filename=dir_add+'\\SURVEYDATA_'+DocDate+'_'+str(UWI)+'_1'+filetype
+                        #urllib.request.urlretrieve(ecmc_file_url, filename)
+                        #urllib.request.urlretrieve(dl_url, filename)
                     SUCCESS=1
                     if PAGEERROR==1:
                          #TRYCOUNT+=1
