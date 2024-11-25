@@ -761,7 +761,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
 
     for UWI in UWIs:
         #if 1==1:
-        UWI = str(UWI)
+        UWI = WELLAPI(UWI).STRING(10)
         #if len(UWI)%2 == 1:
         #    UWI = UWI.zfill(len(UWI)+1)
 
