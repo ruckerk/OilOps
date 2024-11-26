@@ -778,6 +778,7 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
             while RETRY<8:
                 try:
                     pagedf=pd.read_html(docurl)
+                    status_code = requests.get(docurl).status_code
                     RETRY=60
                 except:
                     pagedf=[]
@@ -810,6 +811,10 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
                 C0 = 0
                 for j,c in enumerate(C):
                     TEST_STR = str(page_merge.iloc[R[j],C[j]]).upper()
+                    if TEST_STR == str(np.nan).upper():
+                        continue
+                    if str(page_merge.iloc[R[j],1+C[j]]) == str(np.nan):
+                           continue
                     score1 = difflib.SequenceMatcher(None, T, TEST_STR).ratio()
                     if score1 > score0:
                         score0 = score1
@@ -826,17 +831,17 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
             xSummary['UWI']=UWI
 
             # Status code
-            STAT_CODE = None
-            try:
-                status = status_pat.search(page_merge.iloc[1,0])
-                status = status.group(1)
-                STAT_CODE = status.strip()
-            except:
-                print('status error')
-                STAT_CODE = 'ERR'
-                pass
+            #STAT_CODE = None
+            #try:
+            #    status = status_pat.search(page_merge.iloc[1,0])
+            #    status = status.group(1)
+            #    STAT_CODE = status.strip()
+            #except:
+            #    print('status error')
+            #    STAT_CODE = 'ERR'
+            #    pass
 
-            xSummary.at[UWI,'WELL_STATUS'] = STAT_CODE
+            xSummary.at[UWI,'WELL_STATUS'] = str(status_code) 
             
 
             #xSummary = pd.DataFrame([xSummary.values],columns= xSummary.index.tolist())
