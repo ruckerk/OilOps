@@ -1154,8 +1154,8 @@ def UrlDownload(url:str, savefile:str):
     #egfile.write(exfile)
     #egfile.close()
     r=requests.get(url).content
-        with open(savefile,'wb') as f:
-            f.write(r)
+    with open(savefile,'wb') as f:
+        f.write(r)
 
 def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER :(int,float) = None, EPSG4POLY = None, NameIndex:int = None):
     ITEMS = shp.Reader(ITEM_SHAPEFILE)
