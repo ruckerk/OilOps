@@ -2117,7 +2117,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
         return OUTPUT
 
 
-def CO_Get_Surveys(UWIx,URL_BASE:str = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX',DL_BASE:str = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX', FOLDER = None, REPLACE = False:bool):
+def CO_Get_Surveys(UWIx,URL_BASE:str = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX',DL_BASE:str = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX', FOLDER = None, REPLACE:bool = False):
            
     #URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
     #DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
