@@ -1156,3 +1156,59 @@ def UrlDownload(url:str, savefile:str):
     r=requests.get(url).content
         with open(savefile,'wb') as f:
             f.write(r)
+
+def generate_polygon_regions(input_shapefile, output_shapefile, num_regions):
+    # Step 1: Read the shapefile
+    sf = shapefile.Reader(input_shapefile)
+    shapes = sf.shapes()
+
+    # Step 2: Extract representative points for clustering
+    centroids = []
+    for s in shapes:
+        geom = shape(s.__geo_interface__)  # Convert shape to Shapely geometry
+        if isinstance(geom, Point):
+            # Use the point coordinates directly
+            centroids.append(geom.coords[0])
+        elif isinstance(geom, LineString):
+            # Use the centroid of the linestring
+            centroids.append(geom.centroid.coords[0])
+        else:
+            # Skip unsupported geometries
+            print(f"Skipping unsupported geometry: {geom}")
+            continue
+
+    # Check if centroids were extracted successfully
+    if not centroids:
+        raise ValueError("No valid geometries (Points or LineStrings) found in the shapefile!")
+
+    # Convert centroids to a numpy array
+    centroids = np.array(centroids)
+
+    # Step 3: Perform clustering with KMeans
+    try:
+        kmeans = KMeans(n_clusters=num_regions, random_state=0)
+        region_labels = kmeans.fit_predict(centroids)
+    except Exception as e:
+        print("Error during clustering:", e)
+        raise ValueError("Clustering failed. Ensure the data is valid and well-formed.")
+
+    # Step 4: Create a convex hull for each cluster
+    cluster_polygons = {}
+    for region_label in range(num_regions):
+        # Get centroids belonging to this region
+        region_points = centroids[region_labels == region_label]
+        # Create a convex hull around the points
+        multipoint = MultiPoint(region_points)
+        cluster_polygons[region_label] = multipoint.convex_hull
+
+    # Step 5: Write the polygon shapefile
+    with shapefile.Writer(output_shapefile, shapeType=shapefile.POLYGON) as writer:
+        # Define fields
+        writer.field('Region', 'N')
+
+        # Write polygons
+        for region_label, polygon in cluster_polygons.items():
+            writer.poly([list(polygon.exterior.coords)])
+            writer.record(region_label)
+
+    print(f"Polygon shapefile created successfully: {output_shapefile}")
