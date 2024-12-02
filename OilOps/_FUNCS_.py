@@ -1157,58 +1157,38 @@ def UrlDownload(url:str, savefile:str):
         with open(savefile,'wb') as f:
             f.write(r)
 
-def generate_polygon_regions(input_shapefile, output_shapefile, num_regions):
-    # Step 1: Read the shapefile
-    sf = shapefile.Reader(input_shapefile)
-    shapes = sf.shapes()
+def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER :(int,float) = None, EPSG4POLY = None, NameIndex:int = None):
+    ITEMS = shp.Reader(ITEM_SHAPEFILE)
+    ITEMS = read_shapefile(ITEMS)
+    CRS_ITEMS = CRS_FROM_SHAPE(ITEM_SHAPEFILE)
 
-    # Step 2: Extract representative points for clustering
-    centroids = []
-    for s in shapes:
-        geom = shape(s.__geo_interface__)  # Convert shape to Shapely geometry
-        if isinstance(geom, Point):
-            # Use the point coordinates directly
-            centroids.append(geom.coords[0])
-        elif isinstance(geom, LineString):
-            # Use the centroid of the linestring
-            centroids.append(geom.centroid.coords[0])
-        else:
-            # Skip unsupported geometries
-            print(f"Skipping unsupported geometry: {geom}")
-            continue
+    POLYS = shp.Reader(POLYGON_SHAPEFILE)
+    POLYS = read_shapefile(POLYS)
+    CRS_POLYS = CRS_FROM_SHAPE(POLYGON_SHAPEFILE)
 
-    # Check if centroids were extracted successfully
-    if not centroids:
-        raise ValueError("No valid geometries (Points or LineStrings) found in the shapefile!")
+    TFORMER = pyproj.Transformer.from_crs(pyproj.CRS.from_wkt(CRS_POLYS.to_ogc_wkt()),
+                                          pyproj.CRS.from_wkt(CRS_ITEMS.to_ogc_wkt()),
+                                          always_xy = True)
 
-    # Convert centroids to a numpy array
-    centroids = np.array(centroids)
+    ITEMS['coords_old'] = ITEMS['coords']
+    POLYS['coords_old'] = POLYS['coords']
 
-    # Step 3: Perform clustering with KMeans
-    try:
-        kmeans = KMeans(n_clusters=num_regions, random_state=0)
-        region_labels = kmeans.fit_predict(centroids)
-    except Exception as e:
-        print("Error during clustering:", e)
-        raise ValueError("Clustering failed. Ensure the data is valid and well-formed.")
+    if NameIndex == None:
+        NAMES = POLYS.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+        NAMES = POLYS[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False).index[0]
+    else:
+        NAMES = POLYS.keys()[NameIndex]
 
-    # Step 4: Create a convex hull for each cluster
-    cluster_polygons = {}
-    for region_label in range(num_regions):
-        # Get centroids belonging to this region
-        region_points = centroids[region_labels == region_label]
-        # Create a convex hull around the points
-        multipoint = MultiPoint(region_points)
-        cluster_polygons[region_label] = multipoint.convex_hull
+    for i in POLYS.index:
+        NAME = POLYS.loc[i,NAMES]
+        NAME = str(NAME)
 
-    # Step 5: Write the polygon shapefile
-    with shapefile.Writer(output_shapefile, shapeType=shapefile.POLYGON) as writer:
-        # Define fields
-        writer.field('Region', 'N')
+        converted = TFORMER.transform(pd.DataFrame(POLYS.coords_old[0])[0],
+                          pd.DataFrame(POLYS.coords_old[0])[1])
+        POLYS.at[i,'coords'] = list(map(tuple, np.array(converted).T))
+        POLY_SHAPE = shapely.geometry.Polygon(POLYS.loc[i,'coords'] )
 
-        # Write polygons
-        for region_label, polygon in cluster_polygons.items():
-            writer.poly([list(polygon.exterior.coords)])
-            writer.record(region_label)
+        RESULT = GROUP_IN_TC_AREA(POLYS.loc[[i],:],ITEMS)
+        ITEMS[f'IN_{NAME}'] = RESULT.TEST.values
 
-    print(f"Polygon shapefile created successfully: {output_shapefile}")
+    return ITEMS
