@@ -388,7 +388,7 @@ def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
    
     return elevation
 
-def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER (int,float) = None, EPSG4POLY = None, NameIndex:int = None):
+def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER :(int,float) = None, EPSG4POLY = None, NameIndex:int = None):
     ITEMS = shp.Reader(ITEM_SHAPEFILE)
     ITEMS = read_shapefile(ITEMS)
     CRS_ITEMS = CRS_FROM_SHAPE(ITEM_SHAPEFILE)
@@ -420,7 +420,7 @@ def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER (int,flo
         POLY_SHAPE = shapely.geometry.Polygon(POLYS.loc[i,'coords'] )
         
         RESULT = GROUP_IN_TC_AREA(POLYS.loc[[i],:],ITEMS)
-        ITEMS['IN_'+NAME] = RESULT.TEST.values
+        ITEMS[f'IN_{NAME}'] = RESULT.TEST.values
         
     return ITEMS    
     
