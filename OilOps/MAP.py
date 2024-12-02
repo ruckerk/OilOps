@@ -388,7 +388,7 @@ def get_openelevation(lat, long, units = 'feet', epsg_in=4269):
    
     return elevation
 
-def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY = None):
+def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER (int,float) = None, EPSG4POLY = None, NameIndex:int = None):
     ITEMS = shp.Reader(ITEM_SHAPEFILE)
     ITEMS = read_shapefile(ITEMS)
     CRS_ITEMS = CRS_FROM_SHAPE(ITEM_SHAPEFILE)
@@ -403,12 +403,16 @@ def Items_in_Polygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY
     
     ITEMS['coords_old'] = ITEMS['coords']
     POLYS['coords_old'] = POLYS['coords']
-    
-    NAMES = POLYS.map(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
-    NAMES = POLYS[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False).index[0]
+
+    if NameIndex == None:
+        NAMES = POLYS.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+        NAMES = POLYS[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False).index[0]
+    else:
+        NAMES = POLYS.keys()[NameIndex]
         
     for i in POLYS.index:   
         NAME = POLYS.loc[i,NAMES]
+        NAME = str(NAME)
         
         converted = TFORMER.transform(pd.DataFrame(POLYS.coords_old[0])[0],
                           pd.DataFrame(POLYS.coords_old[0])[1])
@@ -428,7 +432,7 @@ def ItemsInPolygons(ITEM_SHAPEFILE,POLYGON_SHAPEFILE, BUFFER = None, EPSG4POLY =
     POLY = shp.Reader(POLYGON_SHAPEFILE)
     POLY = read_shapefile(POLY)
     
-    NAMES = POLY.map(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+    NAMES = POLY.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
     NAMES = POLY[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False)
     MAXITEMS = NAMES.max()
     
