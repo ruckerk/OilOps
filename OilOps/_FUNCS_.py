@@ -51,7 +51,7 @@ import selenium
 import shapefile as shp #pyshp
 import sklearn as sk
 from sklearn.decomposition import PCA
-from sklearn.cluster import HDBSCAN 
+from sklearn.cluster import HDBSCAN, KMeans
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
@@ -87,6 +87,8 @@ import dateutil.parser
 import shapely
 import shapely.wkt
 from shapely.ops import unary_union
+from shapely.geometry import shape, LineString, Point, MultiPoint
+
 import pycrs
 import pyproj
 from pyproj import Transformer, CRS
