@@ -451,7 +451,7 @@ def FIND_SURVEY_HEADER(df_in, return_header = False):
             except: 
                 pass
 
-def SurveyCols(df_s_in=None, INCLUDE_NS = True):      
+def SurveyCols(df_s_in:pd.DataFrame=None, INCLUDE_NS:bool = True, ReqAll:bool = True):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
              'INC':r'.*INC.*|.*DIP.*',
              'AZI':r'.*AZI.*|.*AZM.*',
@@ -505,7 +505,7 @@ def SurveyCols(df_s_in=None, INCLUDE_NS = True):
    
     # sterms=dict((v, k) for k, v in sterms.iteritems())
     sterms = {v: k for k, v in sterms.items()}
-    if None in list(sterms):
+    if None in list(sterms) and ReqAll:
         raise Exception('Incomplete Survey Headers Found')
     return sterms
 
