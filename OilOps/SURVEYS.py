@@ -29,6 +29,7 @@ __all__ = ['Find_API_Col',
           'XYZSpacing',
           'LeftRightSpacing']
 
+
 def Find_API_Col(df_inAPI):
     # NOT WORKING RIGHT returning datestrings
           
@@ -113,7 +114,6 @@ def APIfromFrame(df_in):
     return term
 
 
-    
 def COGCC_SURVEY_CLEANUP(df_in):#if True:
     df_in.columns = df_in.keys().astype(str)      
     skeys = df_in.keys().str.upper().str.strip().str.replace(' ','')
@@ -141,6 +141,7 @@ def COGCC_SURVEY_CLEANUP(df_in):#if True:
             return df_in
     else:
         return None 
+
 
 def ExtractSurveyWrapper(df_in):
     OUT=pd.DataFrame()
@@ -288,10 +289,10 @@ def ExtractSurvey(df_in): #if True:
                     except: pass
 
 
-
 def CheckUWI(df_in):
     cols = SurveyCols(df_in)    
     outdf.UWI = outdf.UWI.apply(lambda x:WELLAPI(x).str2num())
+
 
 def survey_from_excel(file, ERRORS = True): #if True:
     TUPLE_TEST = isinstance(file, tuple)
@@ -437,6 +438,7 @@ def survey_from_excel(file, ERRORS = True): #if True:
             outdf = outdf.dropna(thresh=3,axis=0)
     return outdf
 
+
 def FIND_SURVEY_HEADER(df_in, return_header = False):
     for n in np.arange(0,4):
         for i,j in enumerate(df_in.index[0:min(100, df_in.shape[0])]):
@@ -450,6 +452,7 @@ def FIND_SURVEY_HEADER(df_in, return_header = False):
                     return ROWS
             except: 
                 pass
+
 
 def SurveyCols(df_s_in:pd.DataFrame=None, INCLUDE_NS:bool = True, ReqAll:bool = True):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
@@ -1220,7 +1223,7 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     return OUTPUT
                    
 def MIN_CURVATURE(df_survey):
-    d = SurveyCols(df_survey,False)
+    d = SurveyCols(df_survey,False, False)
     keys = list(d.values())
 
     df = df_survey[keys]
