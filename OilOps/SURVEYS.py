@@ -160,7 +160,10 @@ def ExtractSurveyWrapper(df_in):
                 H = FIND_SURVEY_HEADER(adf,True)
                 adf = adf.loc[R[-1]:,:].iloc[1:,:]
                 adf.columns = H
-            df_in = COGCC_SURVEY_CLEANUP(adf)            
+            df_in2 = COGCC_SURVEY_CLEANUP(adf)            
+            if not df_in2.empty:
+                df_in = df_in2
+                del df_in2
             df_in = pd.DataFrame(df_in)
             if df_in.empty:
                 raise Exception('No survey found in dataframe')
