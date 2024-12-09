@@ -208,11 +208,13 @@ def ExtractSurvey(df_in): #if True:
                 
             outdf_in = outdf_in.applymap(str2num)
             #outdf_in = DF_UNSTRING(outdf_in)
+            outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
-                    
             outdf_in = outdf_in.dropna(how='all',axis = 1)
             outdf_in = outdf_in.dropna(how='all',axis = 0)
             if ('UWI' in outdf_in.keys()) == False:
+                outdf_in['UWI']=None
+            if outdf_in.UWI.max() == 0:
                 outdf_in['UWI']=None
             #outdf_in.rename(columns = SurveyCols(outdf_in),inplace=True)
             outdf_in =   MIN_CURVATURE(outdf_in)     
@@ -263,8 +265,9 @@ def ExtractSurvey(df_in): #if True:
                         #outdf_in = outdf_in.map(lambda x:WELLAPI(x).str2num())
                         #outdf_in = DF_UNSTRING(outdf_in)
                         outdf_in = outdf_in.applymap(str2num)
-                        outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
+                        outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
                               
+                        outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                               
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
                         test = outdf_in.loc[:10,newcols].dropna(how='any').shape[0]
@@ -533,6 +536,7 @@ def str2num(IN):
             val = re.sub(r'[^\-\s\d\.]',r'',str(val))
             if float(val) == int(val):
                 val = int(val)
+            val = re.sub(r'[^0-9\.]','',str(str_in))
             #if c>1:             
             #    val = re.sub(r'[^0-9\.]','',str(str_in))
             #else:
