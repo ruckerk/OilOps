@@ -447,7 +447,8 @@ def FIND_SURVEY_HEADER(df_in, return_header = False):
         for i,j in enumerate(df_in.index[0:min(100, df_in.shape[0])]):
             try:
                 HEADER = df_in.loc[j:j+n,:].fillna('').astype(str).apply('_'.join,axis=0).tolist()
-                x=SurveyCols(HEADER, False)
+                HEADER = [re.sub('\n',' ',x) for x in HEADER]
+                x = SurveyCols(HEADER, False)
                 ROWS = np.arange(j,j+n+1)
                 if return_header:
                     return HEADER
@@ -457,10 +458,10 @@ def FIND_SURVEY_HEADER(df_in, return_header = False):
                 pass
 
 
-def SurveyCols(df_s_in:pd.DataFrame=None, INCLUDE_NS:bool = True, ReqAll:bool = True):      
+def SurveyCols(df_s_in:(pd.DataFrame,pd.Series, list)=None, INCLUDE_NS:bool = True, ReqAll:bool = True):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
              'INC':r'.*INC.*|.*DIP.*',
-             'AZI':r'.*AZI.*|.*AZM.*|DRIFT',
+             'AZI':r'.*AZI.*|.*AZM.*|.*DRIFT.*',
              'TVD':r'.*TVD.*|.*TRUE.*(VERT|DEPTH).*|.*VERTICAL.*DEPTH.*',
              'NORTH_dY':r'.*\+N.*|.*(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}.*FT.*|.*N\+.*|^\s*N(?:[\/\\]){0,1}S\s*|.*NORTH(?!ING).*|(?:^|_)(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}(?:$|_)|NS.*ft',
              'EAST_dX':r'.*\+E.*|.*(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}.*FT.*|.*E\+.*|^\s*E(?:[\/\\]){0,1}W\s*|.*EAST(?!ING).*|(?:^|_)(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}(?:$|_)|EW.*ft'
