@@ -325,8 +325,8 @@ def ExtractSurvey(df_in): #if True:
             outdf_in = outdf_in.dropna(how='all',axis = 1)
             outdf_in = outdf_in.dropna(how='all',axis = 0)
             if outdf_in.shape[0] > 5:
-                outdf_in = df_in[SurveyCols(df_in, False)]
-                outdf_in.rename(columns = SurveyCols(outdf_in,False),inplace=True)
+                #outdf_in = df_in[SurveyCols(df_in, False)]
+                #outdf_in.rename(columns = SurveyCols(outdf_in,False),inplace=True)
                 if ('UWI' in outdf_in.keys()) == False:
                     outdf_in['UWI'] = None
                 outdf_in =   MIN_CURVATURE(outdf_in)
