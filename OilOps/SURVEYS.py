@@ -236,7 +236,7 @@ def ExtractSurvey(df_in): #if True:
             newcols = list(key_dict.values())
             df_in.rename(columns = key_dict, inplace = True)
 
-            # check for excel cell merge issue
+            # check for excel issues from columns with merged cells
             df_0 = df_in[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
             df_f = df_in.fillna(method='ffill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
             df_b = df_in.fillna(method='bfill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
@@ -259,7 +259,7 @@ def ExtractSurvey(df_in): #if True:
                 outdf_in = df_in.fillna(method='bfill', axis=1).loc[m_b, newcols].copy()
            
             #outdf_in = df_in[cols].copy(deep=True)     
-            outdf_in.reset_index(drop=True, inplace= True
+            outdf_in.reset_index(drop=True, inplace= True)
                               
             #outdf_in.rename(columns = key_dict, inplace = True)          
             outdf_in['UWI'] = ReadUWI
