@@ -252,12 +252,12 @@ def ExtractSurvey(df_in): #if True:
 
             LTEST = np.array((len(m_0)*tests[0], len(m_f) * tests[1], len(m_b)*tests[2])).argmax()
             if LTEST == 0:
-                outdf_in = df_in[newcols].copy()
+                outdf_in = df_in.loc[m_0, newcols].copy()
             if LTEST == 1:
-                outdf_in = df_in.fillna(method='ffill', axis=1)[newcols].copy()
+                outdf_in = df_in.fillna(method='ffill', axis=1).loc[m_f, newcols].copy()
             if LTEST == 2:
-                outdf_in = df_in.fillna(method='bfill', axis=1)[newcols].copy()
-                  
+                outdf_in = df_in.fillna(method='bfill', axis=1).loc[m_b, newcols].copy()
+           
             #outdf_in = df_in[cols].copy(deep=True)     
             outdf_in.reset_index(drop=True, inplace= True
                               
