@@ -158,7 +158,7 @@ def ExtractSurveyWrapper(df_in):
             R = FIND_SURVEY_HEADER(adf,False)
             if isinstance(R, np.ndarray):
                 H = FIND_SURVEY_HEADER(adf,True)
-                adf = adf.loc[R[-1]:,:].iloc[1:,:]
+                adf = adf.loc[1+(R[-1]):,:]
                 adf.columns = H
             df_in2 = COGCC_SURVEY_CLEANUP(adf)            
             if not df_in2.empty:
@@ -223,9 +223,57 @@ def ExtractSurvey(df_in): #if True:
             outdf_in =   MIN_CURVATURE(outdf_in)     
             return outdf_in
     except:
-        # test for strings
+        # test for strings               if True: 
+        df_in = adf_in.copy()
         test = re.findall(r'MD|TVD|DEPTH|INC|AZ',adf_in.to_string(),re.I)
         if len(test)>=3:
+            R = FIND_SURVEY_HEADER(df_in)
+            H = FIND_SURVEY_HEADER(df_in, True)
+            df_in = df_in.iloc[(1+R[-1]):,:]
+            df_in.columns = H
+            key_dict = SurveyCols(df_in,False)
+            cols = list(key_dict)                  
+            newcols = list(key_dict.values())
+            df_in.rename(columns = key_dict, inplace = True)
+
+            # check for excel cell merge issue
+            df_0 = df_in[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
+            df_f = df_in.fillna(method='ffill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
+            df_b = df_in.fillna(method='bfill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
+
+            # MD COUNT
+            pd.to_numeric(df_in[newcols[0]].apply(str2num).astype(str).str.replace(r'[^0-9\.-]','',regex = True), errors= 'coerce').dropna().shape[0]
+            pd.to_numeric(df_in.fillna(method='ffill', axis=1)[newcols[0]].apply(str2num).astype(str).str.replace(r'[^0-9\.-]','',regex = True), errors= 'coerce').dropna().shape[0]
+            pd.to_numeric(df_in.fillna(method='bfill', axis=1)[newcols[0]].apply(str2num).astype(str).str.replace(r'[^0-9\.-]','',regex = True), errors= 'coerce').dropna().shape[0]
+
+            m_0 = df_0.loc[(df_0.AZI>=0) * (df_0.AZI<=360) * (df_0.INC<=180) * (df_0.INC>=0)].dropna().index
+            m_f = df_f.loc[(df_f.AZI>=0) * (df_f.AZI<=360) * (df_f.INC<=180) * (df_f.INC>=0)].dropna().index
+            m_b = df_b.loc[(df_b.AZI>=0) * (df_b.AZI<=360) * (df_b.INC<=180) * (df_b.INC>=0)].dropna().index
+
+            tests = list()
+            tests.append(df_0.loc[m_0,'MD'].is_monotonic_increasing)
+            tests.append(df_f.loc[m_f,'MD'].is_monotonic_increasing)
+            tests.append(df_b.loc[m_b,'MD'].is_monotonic_increasing)
+
+            LTEST = np.array((len(m_0)*tests[0], len(m_f) * tests[1], len(m_b)*tests[2])).argmax()
+            if LTEST == 0:
+                outdf_in = df_in[newcols].copy()
+            if LTEST == 1:
+                outdf_in = df_in.fillna(method='ffill', axis=1)[newcols].copy()
+            if LTEST == 2:
+                outdf_in = df_in.fillna(method='bfill', axis=1)[newcols].copy()
+                  
+            #outdf_in = df_in[cols].copy(deep=True)     
+            outdf_in.reset_index(drop=True, inplace= True
+                              
+            #outdf_in.rename(columns = key_dict, inplace = True)          
+            df_in = df_in.fillna(method='ffill', axis=1)
+            outdf_in['UWI'] = ReadUWI
+            outdf_in = outdf_in.applymap(str2num)
+            outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
+                              
+            outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
+      
             for n in [1,2,3,4]:
                 drow = -1
                 for i in range(0,100): # is survey header in 1st 15 rows?
@@ -375,9 +423,11 @@ def survey_from_excel(file, ERRORS = True): #if True:
             ext_df=pd.DataFrame()
 
             R = FIND_SURVEY_HEADER(df_s)
+            H = FIND_SURVEY_HEADER(df_s, True)      
             if isinstance(R, np.ndarray):         
                 ext_df = df_s.loc[(max(R)+1):,:]
-                ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
+                #ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
+                ext_df.columns = H  
             else:
                 continue
             try:
