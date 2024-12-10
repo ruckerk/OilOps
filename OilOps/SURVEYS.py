@@ -362,8 +362,10 @@ def survey_from_excel(file, ERRORS = True): #if True:
         try:
             xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
         except:
-            #print(file+': ERROR')
+            print(file+': ERROR CANNOT READ')
             RUNERROR = True
+            return None
+
     
     # make headers strings
     #if isinstance(xl,dict):
