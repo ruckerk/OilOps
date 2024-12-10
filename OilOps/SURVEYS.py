@@ -241,11 +241,6 @@ def ExtractSurvey(df_in): #if True:
             df_f = df_in.fillna(method='ffill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
             df_b = df_in.fillna(method='bfill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
 
-            # MD COUNT
-            pd.to_numeric(df_in[newcols[0]].apply(str2num).astype(str).str.replace(r'[^0-9\.-]','',regex = True), errors= 'coerce').dropna().shape[0]
-            pd.to_numeric(df_in.fillna(method='ffill', axis=1)[newcols[0]].apply(str2num).astype(str).str.replace(r'[^0-9\.-]','',regex = True), errors= 'coerce').dropna().shape[0]
-            pd.to_numeric(df_in.fillna(method='bfill', axis=1)[newcols[0]].apply(str2num).astype(str).str.replace(r'[^0-9\.-]','',regex = True), errors= 'coerce').dropna().shape[0]
-
             m_0 = df_0.loc[(df_0.AZI>=0) * (df_0.AZI<=360) * (df_0.INC<=180) * (df_0.INC>=0)].dropna().index
             m_f = df_f.loc[(df_f.AZI>=0) * (df_f.AZI<=360) * (df_f.INC<=180) * (df_f.INC>=0)].dropna().index
             m_b = df_b.loc[(df_b.AZI>=0) * (df_b.AZI<=360) * (df_b.INC<=180) * (df_b.INC>=0)].dropna().index
