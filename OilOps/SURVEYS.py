@@ -411,22 +411,22 @@ def survey_from_excel(file, ERRORS = True): #if True:
         outdf = pd.DataFrame()
         for k in xl.keys(): # for each sheet  #if True:
             df_s = xl[k].copy(deep=True)
-            df_s = df_s.dropna(how='all',axis=0).dropna(how='all',axis=1)
+            #df_s = df_s.dropna(how='all',axis=0).dropna(how='all',axis=1)
 
             ext_df=pd.DataFrame()
 
-            R = FIND_SURVEY_HEADER(df_s)
-            H = FIND_SURVEY_HEADER(df_s, True)      
-            if isinstance(R, np.ndarray):         
-                ext_df = df_s.loc[(max(R)+1):,:]
+            #R = FIND_SURVEY_HEADER(df_s)
+            #H = FIND_SURVEY_HEADER(df_s, True)      
+            #if isinstance(R, np.ndarray):         
+                #ext_df = df_s.loc[(max(R)+1):,:]
                 #ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
-                ext_df.columns = H  
-            else:
-                continue
+                #ext_df.columns = H  
+            #else:
+                #continue
             try:
                 #ext_df = (df_s)
                 #ext_df = pd.DataFrame(df_s)
-                ext_df = ExtractSurveyWrapper(ext_df)      
+                ext_df = ExtractSurveyWrapper(df_s)      
             except:
                 continue
 
