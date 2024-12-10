@@ -258,38 +258,36 @@ def ExtractSurvey(df_in): #if True:
             if LTEST == 2:
                 outdf_in = df_in.fillna(method='bfill', axis=1).loc[m_b, newcols].copy()
            
-            #outdf_in = df_in[cols].copy(deep=True)     
             outdf_in.reset_index(drop=True, inplace= True)
                               
-            #outdf_in.rename(columns = key_dict, inplace = True)          
             outdf_in['UWI'] = ReadUWI
             outdf_in = outdf_in.applymap(str2num)
-            outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
-                              
+            outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                               
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
-      
-            for n in [1,2,3,4]:
-                drow = -1
-                for i in range(0,100): # is survey header in 1st 15 rows?
-                    try:
-                        df_in=adf_in.copy()
-                        N = max(1,min(i,n))
-                        concat_vals = df_in.iloc[i:i+N,:].apply(lambda row:'_'.join(row.values.astype(str)),axis=0)
-                        #SurveyCols(concat_vals)
+         
+            outdf_in['UWI'] = ReadUWI
+                  
+     #       for n in [1,2,3,4]:
+     #           drow = -1
+     #           for i in range(0,100): # is survey header in 1st 15 rows?
+     #               try:
+     #                   df_in=adf_in.copy()
+     #                   N = max(1,min(i,n))
+     #                   concat_vals = df_in.iloc[i:i+N,:].apply(lambda row:'_'.join(row.values.astype(str)),axis=0)
+     #                   #SurveyCols(concat_vals)#
 
-                        df_in = df_in.iloc[i+N:,:]
-                        df_in.columns = concat_vals
-                        key_dict = SurveyCols(df_in,False)
-                        cols = list(key_dict)
-                        newcols = list(key_dict.values())
+     #                   df_in = df_in.iloc[i+N:,:]
+     #                   df_in.columns = concat_vals
+     #                   key_dict = SurveyCols(df_in,False)
+     #                   cols = list(key_dict)
+     #                   newcols = list(key_dict.values())
 
-                        df_in.reset_index(drop=True, inplace= True)
+     #                   df_in.reset_index(drop=True, inplace= True)
 
-                        outdf_in = df_in[cols].copy(deep=True)
-                        outdf_in.rename(columns = key_dict, inplace = True)
-    ##                  outdf_in.rename(columns ={df_in.keys()[APICOL]:'UWI'},inplace=True)
+     #                   outdf_in = df_in[cols].copy(deep=True)
+     #                   outdf_in.rename(columns = key_dict, inplace = True)
                         
-                        outdf_in['UWI'] = ReadUWI
+     #                   outdf_in['UWI'] = ReadUWI
     ##                    
     ##                    (DEAD,APICOL) = Find_API_Col(df_in)
     ##                    if APICOL != None:
@@ -309,32 +307,33 @@ def ExtractSurvey(df_in): #if True:
                         #outdf_in = outdf_in.copy(deep=True)
                         #outdf_in = outdf_in.map(lambda x:WELLAPI(x).str2num())
                         #outdf_in = DF_UNSTRING(outdf_in)
-                        outdf_in = outdf_in.applymap(str2num)
-                        outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
                               
-                        outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
+                        #outdf_in = outdf_in.applymap(str2num)
+                        #outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
+                              
+                        #outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
                               
                         #.apply(pd.to_numeric,errors='coerce').dropna(axis=0,how='any').shape[0]
-                        test = outdf_in.loc[:10,newcols].dropna(how='any').shape[0]
-                        if test<10:
-                            continue
+
 
                         #for k in outdf_in.keys():
                             # GETTING SLICE ERROR HERE
                             #outdf_in.loc[:,k] = np.array(outdf_in.loc[:,k].astype(str).str.replace(r'[^0-9\.]*','',regex=True))
                             # GETTING SLICE ERROR HERE
                             #outdf_in.loc[:,k] = np.array(pd.to_numeric(outdf_in.loc[:,k], errors='coerce'))
-                        outdf_in = outdf_in.apply(pd.to_numeric, errors='coerce')
-                        outdf_in = outdf_in.dropna(how='all',axis = 1)
-                        outdf_in = outdf_in.dropna(how='all',axis = 0)
-                        if outdf_in.shape[0] > 5:
-                            outdf_in = df_in[SurveyCols(df_in, False)]
-                            outdf_in.rename(columns = SurveyCols(outdf_in,False),inplace=True)
-                            if ('UWI' in outdf_in.keys()) == False:
-                                outdf_in['UWI'] = None
-                            outdf_in =   MIN_CURVATURE(outdf_in)
-                            return outdf_in
-                    except: pass
+                  
+            outdf_in = outdf_in.dropna(how='all',axis = 1)
+            outdf_in = outdf_in.dropna(how='all',axis = 0)
+            if outdf_in.shape[0] > 5:
+                outdf_in = df_in[SurveyCols(df_in, False)]
+                outdf_in.rename(columns = SurveyCols(outdf_in,False),inplace=True)
+                if ('UWI' in outdf_in.keys()) == False:
+                    outdf_in['UWI'] = None
+                outdf_in =   MIN_CURVATURE(outdf_in)
+                return outdf_in
+            else:
+                return None
+        
 
 
 def CheckUWI(df_in):
