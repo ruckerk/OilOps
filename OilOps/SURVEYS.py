@@ -262,7 +262,6 @@ def ExtractSurvey(df_in): #if True:
             outdf_in.reset_index(drop=True, inplace= True
                               
             #outdf_in.rename(columns = key_dict, inplace = True)          
-            df_in = df_in.fillna(method='ffill', axis=1)
             outdf_in['UWI'] = ReadUWI
             outdf_in = outdf_in.applymap(str2num)
             outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
