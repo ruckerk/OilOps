@@ -1,4 +1,4 @@
-from ._FUNCS_ import *
+2from ._FUNCS_ import *
 from .WELLAPI import WELLAPI as WELLAPI
 from .MAP import convert_XY
 
@@ -78,7 +78,7 @@ def Find_API_Col(df_inAPI):
             # check for API/UWI key
             if any(str(x).upper() in str(k).upper() for x in APIterms):
                 test=True   
-            elif df.iloc[:,-3].astype(str).str.contains(f'{rAPIterms}',case = False, flags=re.I, regex=True).max():
+            elif df2.iloc[:,-3].astype(str).str.contains(f'{rAPIterms}',case = False, flags=re.I, regex=True).max():
                 test = True
 
             # confirm numbers are > 10 and less than 14 digits
