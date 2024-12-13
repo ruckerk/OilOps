@@ -349,129 +349,130 @@ def survey_from_excel(file, ERRORS = True): #if True:
           file = file[1]
           
     ERR_FOLDER = None
-    RUNERROR = False
+    TERMINATE = False
     if ERRORS == True:
         ERR_FOLDER = ERRORFILES()
     
-    #while RUNERROR == False:
-    outdf = pd.DataFrame()
-    xl = {}
-    # read excel as a dictionary of dataframes
-    try:
-        xl = pd.read_excel(file, sheet_name = None, engine = None, header = None)
-    except:
+    while TERMINATE == False:
+        outdf = pd.DataFrame()
+        xl = {}
+        # read excel as a dictionary of dataframes
         try:
-            xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
+            xl = pd.read_excel(file, sheet_name = None, engine = None, header = None)
         except:
-            print(file+': ERROR CANNOT READ')
-            RUNERROR = True
-            return None
+            try:
+                xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
+            except:
+                print(file+': ERROR CANNOT READ')
+                TERMINATE = True
+                #return None
 
     
-    # make headers strings
-    #if isinstance(xl,dict):
-    #    for i in xl:
-    #        xl[i].columns = [str(s) for s in xl[i].columns]
-    #elif isinstance(xl,pd.DataFrame):
-    #    xl.columns = [str(s) for s in xl.columns]
+        # make headers strings
+        #if isinstance(xl,dict):
+        #    for i in xl:
+        #        xl[i].columns = [str(s) for s in xl[i].columns]
+        #elif isinstance(xl,pd.DataFrame):
+        #    xl.columns = [str(s) for s in xl.columns]
+    
+        if len(xl)==0:
+            #print('FILE XL READ ERROR IN: '+ file)
+            outdf = None
+            if ERRORS == True:
+                shutil.move(file, ERR_FOLDER)
+            TERMINATE = True
+            #return None   
 
-    if len(xl)==0:
-        #print('FILE XL READ ERROR IN: '+ file)
-        outdf = None
-        if ERRORS == True:
-            shutil.move(file, ERR_FOLDER)
-        RUNERROR = True
-        return None   
-
-    if isinstance(xl,dict):
-        R_LIST = []
-        for x in xl:
-            R_LIST.append(APIfromFrame(xl[x]))
-        R_LIST = [WELLAPI(x).API2INT(14) for x in R_LIST if x != None]
-        R_LIST = list(set(R_LIST))
-        if len(R_LIST) > 0:
-            READUWI = R_LIST[0] 
-    else:
-        READUWI = APIfromFrame(xl)
-        
-    if TUPLE_TEST:
-        FILENAMEUWI =  APIfromString(FNAME,BlockT2 = True)
-    else:
-        FILENAMEUWI =  APIfromString(file,BlockT2 = True)
-              
-    READUWI2 = WELLAPI(READUWI).API2INT()
-    FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
-    if (FILENAMEUWI2 == READUWI2) & (FILENAMEUWI2 > 1e8):
-        UWI = READUWI2
-    elif (READUWI2 == 0) & (FILENAMEUWI2 >1e8):
-        UWI = FILENAMEUWI2
-    elif (FILENAMEUWI2 == 0) & (READUWI2 >1e8):
-        UWI = READUWI2    
-    else:
-        UWI = None     
-        
-    if isinstance(xl,dict): # test if file read delivered a dictionary
-        outdf = pd.DataFrame()
-        for k in xl.keys(): # for each sheet  #if True:
-            df_s = xl[k].copy(deep=True)
-            #df_s = df_s.dropna(how='all',axis=0).dropna(how='all',axis=1)
-
-            ext_df=pd.DataFrame()
-
-            #R = FIND_SURVEY_HEADER(df_s)
-            #H = FIND_SURVEY_HEADER(df_s, True)      
-            #if isinstance(R, np.ndarray):         
-                #ext_df = df_s.loc[(max(R)+1):,:]
-                #ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
-                #ext_df.columns = H  
-            #else:
-                #continue
-            try:
-                #ext_df = (df_s)
-                #ext_df = pd.DataFrame(df_s)
-                ext_df = ExtractSurveyWrapper(df_s)      
-            except:
-                continue
-
-            #for kkey in SurveyCols().keys():
-            #    list(SurveyCols(df_s).values())
-
-       #     if len(list((ext_df).values)) > 5:
-       #         outdf = ext_df
-       #         break
-            #else:
-            #    UWI = set(list(outdf.UWI.apply(str2num)))
-                
-            outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
-            
-            #print(ext_df.keys())
-            
-        if 'UWI' in outdf.keys():
-            outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).str2num())
+        if isinstance(xl,dict):
+            R_LIST = []
+            for x in xl:
+                R_LIST.append(APIfromFrame(xl[x]))
+            R_LIST = [WELLAPI(x).API2INT(14) for x in R_LIST if x != None]
+            R_LIST = list(set(R_LIST))
+            if len(R_LIST) > 0:
+                READUWI = R_LIST[0] 
         else:
-            outdf['UWI'] = UWI
-            
-            #pd.to_numeric(outdf.UWI, errors='coerce').dropna().to_list()
-            #print('outdf dict done')
-            #print(outdf)
-            #if isinstance(outdf,pd.DataFrame):
-            #    return outdf
-
-    if isinstance(xl,pd.DataFrame):
-        try:
-            R = FIND_SURVEY_HEADER(xl)
-            if isinstance(R, np.ndarray):         
-                xl.columns = xl.iloc[R,:].astype(str).agg('_'.join,axis =0)
-                xl = xl.iloc[(max(R)+1):,:]             
-            else:
-                pass          
+            READUWI = APIfromFrame(xl)
+        
+        if TUPLE_TEST:
+            FILENAMEUWI =  APIfromString(FNAME,BlockT2 = True)
+        else:
+            FILENAMEUWI =  APIfromString(file,BlockT2 = True)
                   
-            outdf = ExtractSurveyWrapper(xl)
-            outdf = pd.DataFrame(outdf)
-            if not 'UWI' in  outdf.keys():
+        READUWI2 = WELLAPI(READUWI).API2INT()
+        FILENAMEUWI2 = WELLAPI(FILENAMEUWI).API2INT()
+        if (FILENAMEUWI2 == READUWI2) & (FILENAMEUWI2 > 1e8):
+            UWI = READUWI2
+        elif (READUWI2 == 0) & (FILENAMEUWI2 >1e8):
+            UWI = FILENAMEUWI2
+        elif (FILENAMEUWI2 == 0) & (READUWI2 >1e8):
+            UWI = READUWI2    
+        else:
+            UWI = None     
+        
+        if isinstance(xl,dict): # test if file read delivered a dictionary
+            outdf = pd.DataFrame()
+            for k in xl.keys(): # for each sheet  #if True:
+                df_s = xl[k].copy(deep=True)
+                #df_s = df_s.dropna(how='all',axis=0).dropna(how='all',axis=1)
+    
+                ext_df=pd.DataFrame()
+    
+                #R = FIND_SURVEY_HEADER(df_s)
+                #H = FIND_SURVEY_HEADER(df_s, True)      
+                #if isinstance(R, np.ndarray):         
+                    #ext_df = df_s.loc[(max(R)+1):,:]
+                    #ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
+                    #ext_df.columns = H  
+                #else:
+                    #continue
+                try:
+                    #ext_df = (df_s)
+                    #ext_df = pd.DataFrame(df_s)
+                    ext_df = ExtractSurveyWrapper(df_s)      
+                except:
+                    continue
+    
+                #for kkey in SurveyCols().keys():
+                #    list(SurveyCols(df_s).values())
+    
+           #     if len(list((ext_df).values)) > 5:
+           #         outdf = ext_df
+           #         break
+                #else:
+                #    UWI = set(list(outdf.UWI.apply(str2num)))
+                    
+                outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
+                
+                #print(ext_df.keys())
+                
+            if 'UWI' in outdf.keys():
+                outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).str2num())
+            else:
                 outdf['UWI'] = UWI
-        except:
-            pass
+                
+                #pd.to_numeric(outdf.UWI, errors='coerce').dropna().to_list()
+                #print('outdf dict done')
+                #print(outdf)
+                #if isinstance(outdf,pd.DataFrame):
+                #    return outdf
+
+        if isinstance(xl,pd.DataFrame):
+            try:
+                R = FIND_SURVEY_HEADER(xl)
+                if isinstance(R, np.ndarray):         
+                    xl.columns = xl.iloc[R,:].astype(str).agg('_'.join,axis =0)
+                    xl = xl.iloc[(max(R)+1):,:]             
+                else:
+                    pass          
+                      
+                outdf = ExtractSurveyWrapper(xl)
+                outdf = pd.DataFrame(outdf)
+                if not 'UWI' in  outdf.keys():
+                    outdf['UWI'] = UWI
+            except:
+                pass
+        TERMINATE = True
     
     if isinstance(outdf,pd.DataFrame):
         if outdf.empty:
