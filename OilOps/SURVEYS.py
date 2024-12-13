@@ -352,7 +352,8 @@ def survey_from_excel(file, ERRORS = True): #if True:
     RUNERROR = False
     if ERRORS == True:
         ERR_FOLDER = ERRORFILES()
-    while RUNERROR == False:
+    
+    #while RUNERROR == False:
     outdf = pd.DataFrame()
     xl = {}
     # read excel as a dictionary of dataframes
