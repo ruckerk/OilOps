@@ -76,7 +76,7 @@ def Find_API_Col(df_inAPI):
         for k in keylist:
             test = False
             # check for API/UWI key
-            if any(x.upper() in k.upper() for x in APIterms):
+            if any(str(x).upper() in str(k).upper() for x in APIterms):
                 test=True   
             elif df.iloc[:,-3].astype(str).str.contains(f'{rAPIterms}',case = False, flags=re.I, regex=True).max():
                 test = True
