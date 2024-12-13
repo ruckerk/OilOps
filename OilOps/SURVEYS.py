@@ -1351,3 +1351,27 @@ def LeftRightSpacing(df_in):
                 df_in.loc[idx,'right_dz']  = df_in.loc[idx,z_keys[i]]
                 break
     return("finished")
+
+def convert_xls_to_xlsx(input_file, output_dir):
+    """
+    Converts an .XLS file to .XLSX using LibreOffice.
+    """
+    soffice_loc = 'C:\\Program Files\\LibreOffice\\program\\soffice.exe'
+    command = [
+        soffice_loc, "--headless", "--convert-to", "xlsx", "--outdir", output_dir,  input_file,
+    ]
+    subprocess.run(command, check=True)
+
+def fix_xls(input_file_path):
+    maindir = path.split(input_file_path)[0]
+    updir = path.split(maindir)[0]
+    TEMP_DIR = path.join(updir,'TEMP_DELETE')
+    OLD_FILENAME = path.split(input_file_path)[-1]
+    TEMP_FILENAME = OLD_FILENAME.split('.')[0]+'.xlsx'
+    if not path.exists(path.join(updir,'TEMP_DELETE')):
+        mkdir(TEMP_DIR)
+    convert_xls_to_xlsx(input_file_path,TEMP_DIR)
+    if path.exists(path.join(TEMP_DIR,TEMP_FILENAME)):
+        NEW_FILENAME = "CNVT_"+TEMP_FILENAME
+        shutil.move(path.join(TEMP_DIR,TEMP_FILENAME),path.join(maindir,NEW_FILENAME) )                   
+    
