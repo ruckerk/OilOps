@@ -46,7 +46,7 @@ def Find_API_Col(df_inAPI):
     SUCCESS = 0
     PD_UWI = None
     while SUCCESS == 0:
-        if ii in indices:
+        for ii in indices:
             row_uwis = df2.iloc[ii[0],ii[1]:].apply(lambda x:WELLAPI(x).str2num()).dropna().unique().tolist()
             col_uwis = df2.iloc[ii[0]:,ii[1]].apply(lambda x:WELLAPI(x).str2num()).dropna().unique().tolist()     
                   
