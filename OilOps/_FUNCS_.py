@@ -1192,3 +1192,24 @@ def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER :(int,fl
         ITEMS[f'IN_{NAME}'] = RESULT.TEST.values
 
     return ITEMS
+
+def pd_find_regex(dataframe, regex_pattern):
+    """
+    Find all cells in a DataFrame that match a given regex pattern.
+
+    Args:
+        dataframe (pd.DataFrame): The input DataFrame to search.
+        regex_pattern (str): The regex pattern to search for.
+
+    Returns:
+        list: A list of tuples containing (row_index, column_name) of matches.
+    """
+    matches = []
+    pattern = re.compile(regex_pattern)
+
+    for col in dataframe.columns:  # Iterate over all columns
+        for idx, value in dataframe[col].items():  # Iterate over rows in each column
+            if pd.notna(value) and pattern.search(str(value)):
+                matches.append((idx, col))
+    
+    return matches
