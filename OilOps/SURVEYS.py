@@ -38,8 +38,34 @@ def Find_API_Col(df_inAPI):
     rAPIterms = '|'.join(APIterms)
     
     df2 = df_inAPI.copy(deep = True)
+          
     lowlim = 10**(8)
     highlim = 10**14
+          
+    indices = pd_find_regex(df2,r'UWI|API')
+    SUCCESS = 0
+    PD_UWI = None
+    while SUCCESS == 0:
+        if ii in indices:
+            row_uwis = df2.iloc[ii[0],ii[1]:].apply(lambda x:WELLAPI(x).str2num()).dropna().unique().tolist()
+            col_uwis = df2.iloc[ii[0]:,ii[1]].apply(lambda x:WELLAPI(x).str2num()).dropna().unique().tolist()     
+                  
+            row_uwis = [r for r in row_uwis if (r>lowlim)*(r<highlim)]
+            col_uwis = [r for r in col_uwis if (r>lowlim)*(r<highlim)]
+    
+            if len(row_uwis)>0:
+                PD_UWI = row_uwis[0]
+                PD_UWI = WELLAPI(PD_UWI).API2INT(14)
+                SUCCESS = 1
+            if len(col_uwis)>0:
+                PD_UWI = col_uwis[0]
+                PD_UWI = WELLAPI(PD_UWI).API2INT(14)
+                SUCCESS = 1
+        SUCCESS = 1      
+
+    if PD_UWI != None:
+        return (PD_UWI, ii[1])
+    
     def STR2INT(INPUT):       
         if bool(re.findall(r'[a-z]',str(INPUT),re.I)):
             return None
@@ -48,26 +74,26 @@ def Find_API_Col(df_inAPI):
         except:
             val = None
         return val
-                  
-    #df2 = df2.apply(lambda x:STR2INT(x))
+
     df2 = df2.applymap(STR2INT)
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
         return (None,None)
+
     keys = df2.keys()
-    
+
     keylist=[]
     UWIlist = pd.Series(data=None,dtype = int)
 
     knum = None
     UWI = None
-    
+
     for k in keys:        
-        # check for GT 50 rows per value
-        if df2[k].shape[0]/len(df2[k].unique()) > 50:
+        # check for GT 30 rows per value
+        if df2[k].shape[0]/len(df2[k].unique()) > 30:
             keylist.append(k)
-        UWIlist = UWIlist.add(pd.Series((df2[k].dropna().unique())))
+        UWIlist = pd.concat([UWIlist, pd.Series((df2[k].dropna().unique()))])
 
     if len(keylist) > 0:
         longest = 0
@@ -78,8 +104,9 @@ def Find_API_Col(df_inAPI):
             # check for API/UWI key
             if any(str(x).upper() in str(k).upper() for x in APIterms):
                 test=True   
-            elif df2.iloc[:,-3].astype(str).str.contains(f'{rAPIterms}',case = False, flags=re.I, regex=True).max():
-                test = True
+            #next check is broken because text already removed
+            #elif df2.iloc[:,-3].astype(str).str.contains(f'{rAPIterms}',case = False, flags=re.I, regex=True).max(): 
+            #    test = True
 
             # confirm numbers are > 10 and less than 14 digits
             df2[k] = df2[k].apply(lambda x:WELLAPI(x).str2num())
