@@ -1,4 +1,4 @@
-2from ._FUNCS_ import *
+from ._FUNCS_ import *
 from .WELLAPI import WELLAPI as WELLAPI
 from .MAP import convert_XY
 
