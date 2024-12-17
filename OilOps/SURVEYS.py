@@ -294,37 +294,6 @@ def ExtractSurvey(df_in): #if True:
          
             outdf_in['UWI'] = ReadUWI
                   
-     #       for n in [1,2,3,4]:
-     #           drow = -1
-     #           for i in range(0,100): # is survey header in 1st 15 rows?
-     #               try:
-     #                   df_in=adf_in.copy()
-     #                   N = max(1,min(i,n))
-     #                   concat_vals = df_in.iloc[i:i+N,:].apply(lambda row:'_'.join(row.values.astype(str)),axis=0)
-     #                   #SurveyCols(concat_vals)#
-
-     #                   df_in = df_in.iloc[i+N:,:]
-     #                   df_in.columns = concat_vals
-     #                   key_dict = SurveyCols(df_in,False)
-     #                   cols = list(key_dict)
-     #                   newcols = list(key_dict.values())
-
-     #                   df_in.reset_index(drop=True, inplace= True)
-
-     #                   outdf_in = df_in[cols].copy(deep=True)
-     #                   outdf_in.rename(columns = key_dict, inplace = True)
-                        
-     #                   outdf_in['UWI'] = ReadUWI
-    ##                    
-    ##                    (DEAD,APICOL) = Find_API_Col(df_in)
-    ##                    if APICOL != None:
-    ##                        cols = cols + [df_in.keys()[APICOL]]
-    ##                        outdf_in = df_in[cols].copy(deep=True)
-    ##                        outdf_in.rename(columns ={df_in.keys()[APICOL]:'UWI'},inplace=True)
-    ##                    else:
-    ##                        outdf_in = df_in[cols].copy(deep=True)
-    ##                        if (ReadUWI != None) & (ReadUWI != 0):
-    ##                            outdf_in['UWI'] = ReadUWI
 
                         # WAS GOING TO BUILD A CHECK THAT LAST ROW IN KEY COLUMNS DOES NOT CONTAIN VALUES
                         #keycols = list()
@@ -441,35 +410,24 @@ def survey_from_excel(file, ERRORS = True): #if True:
             outdf = pd.DataFrame()
             for k in xl.keys(): # for each sheet  #if True:
                 df_s = xl[k].copy(deep=True)
-                #df_s = df_s.dropna(how='all',axis=0).dropna(how='all',axis=1)
-    
+
                 ext_df=pd.DataFrame()
-    
-                #R = FIND_SURVEY_HEADER(df_s)
-                #H = FIND_SURVEY_HEADER(df_s, True)      
-                #if isinstance(R, np.ndarray):         
-                    #ext_df = df_s.loc[(max(R)+1):,:]
-                    #ext_df.columns = df_s.loc[R,:].astype(str).agg('_'.join,axis =0)
-                    #ext_df.columns = H  
-                #else:
-                    #continue
+
                 try:
                     #ext_df = (df_s)
                     #ext_df = pd.DataFrame(df_s)
                     ext_df = ExtractSurveyWrapper(df_s)      
                 except:
                     continue
-    
-                #for kkey in SurveyCols().keys():
-                #    list(SurveyCols(df_s).values())
-    
-           #     if len(list((ext_df).values)) > 5:
-           #         outdf = ext_df
-           #         break
-                #else:
-                #    UWI = set(list(outdf.UWI.apply(str2num)))
-                    
-                outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
+                
+                #CORRECTION TO HANDLE CASE OF TWO SHEETS WITH SURVEY
+                if len(set(outdf.keys()).intersection(set(ext_df.keys())))>0:
+                    if ext_df.dropna(thresh=4).shape[0] > outdf.dropna(thresh=4).shape[0]:
+                        outdf = ext_df.copy()
+                    else:
+                        pass
+                else:
+                    outdf = pd.concat([outdf,ext_df],axis=1,ignore_index=False)
                 
                 #print(ext_df.keys())
                 
