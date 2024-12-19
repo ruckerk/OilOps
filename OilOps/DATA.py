@@ -227,7 +227,7 @@ def Get_LAS(UWIS):
                                 
                 ERROR = 1
  
-def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY', FOLDER = 'PRODDATA'):
+def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY', FOLDER = 'PRODDATA', RETURN_MONTHLY = False):
     #if 1==1:
     #URL_BASE = 'https://cogcc.state.co.us/cogis/ProductionWellMonthly.asp?APICounty=XCOUNTYX&APISeq=XNUMBERX&APIWB=XCOMPLETIONX&Year=All'
     URL_BASE = 'https://cogcc.state.co.us/production/?&apiCounty=XCOUNTYX&apiSequence=XNUMBERX'
@@ -260,6 +260,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
 
     UWIs = [x for x in UWIs if x[0:2]=='05']
 
+    MONTHLY_DATA = pd.DataFrame()
     PRODDATA = pd.DataFrame()
     ct = 0
     t1 = perf_counter()
@@ -713,7 +714,12 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
         conn.close()
     except:
         pass
-    return(OUTPUT)
+    if RETURN_MONTHLY:
+        return (OUTPUT)
+    elif not RETURN_MONTHLY:
+        return (OUTPUT, PRODDATA)
+    else:
+        return (OUTPUT)
 
 
 def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
