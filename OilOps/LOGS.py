@@ -1152,21 +1152,24 @@ def Mechanics(lasfile):
         df=las.df()
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
-        df["Vs"]=304800/df[Alias["DTS"]]
         df["Zp"]=df[Alias["DEN"]]*df["Vp"]/1000
-        df["Zs"]=df[Alias["DEN"]]*df["Vs"]/1000
-        df["Lame1"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-2*df["Vs"]**2)*(10**(-9))
-        df["ShearMod"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*10**(-9)
-        df["E_Youngs"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*(3*df["Vp"]**2-4*df["Vs"]**2)/(df["Vp"]**2-df["Vs"]**2)*10**(-9)
-        df["K_Bulk"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-4/3*df["Vs"]**2)*10**(-9)
-        df["Poisson"]=((df["Vp"]/df["Vs"])**2-2)/(2*(df["Vp"]/df["Vs"])**2-2)
-        df["RhoLambda"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
-        df["MuRho"]=df["ShearMod"]*df[Alias["DEN"]]/1000*10**9
-        df["LambdaMu"]=df["Lame1"]*df["ShearMod"]*10**18
-        df["LambdaRho"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
         df["UCS_WFD"]=150.79*(304.8*df[Alias["DTC"]])**3.5
         df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
+        
+        if  (Alias["DTS"]!="NULL"):
+            df["Vs"]=304800/df[Alias["DTS"]]
+            df["Zs"]=df[Alias["DEN"]]*df["Vs"]/1000
+            df["Lame1"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-2*df["Vs"]**2)*(10**(-9))
+            df["ShearMod"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*10**(-9)
+            df["E_Youngs"]=1000*df[Alias["DEN"]]*(df["Vs"]**2)*(3*df["Vp"]**2-4*df["Vs"]**2)/(df["Vp"]**2-df["Vs"]**2)*10**(-9)
+            df["K_Bulk"]=1000*df[Alias["DEN"]]*(df["Vp"]**2-4/3*df["Vs"]**2)*10**(-9)
+            df["Poisson"]=((df["Vp"]/df["Vs"])**2-2)/(2*(df["Vp"]/df["Vs"])**2-2)
+            df["RhoLambda"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
+            df["MuRho"]=df["ShearMod"]*df[Alias["DEN"]]/1000*10**9
+            df["LambdaMu"]=df["Lame1"]*df["ShearMod"]*10**18
+            df["LambdaRho"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
 
+        
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
         exlas.well.Date=str(datetime.datetime.today())
@@ -1177,17 +1180,18 @@ def Mechanics(lasfile):
 
         # POPULATE EXPORT LAS
         exlas.append_curve('WKR_Vp',df.Vp, unit='m/s', descr='Metric P Wave Velocity')
-        exlas.append_curve('WKR_Vs',df.Vs, unit='m/s', descr='Metric S Wave Velocity')
-        exlas.append_curve('WKR_ShearMod',df.ShearMod, unit='GPa', descr='Metric Shear Modulus')
-        exlas.append_curve('WKR_E_Youngs',df.E_Youngs, unit='GPa', descr='Metric Youngs Modulus')
-        exlas.append_curve('WKR_K_Bulk',df.K_Bulk, unit='GPa', descr='Metric Bulk Modulus')
         exlas.append_curve('WKR_VpMod',df.VpMod, unit='GPa', descr='Metric Compression Modulus')
-        exlas.append_curve('WKR_Poisson',df.Poisson, unit='None', descr='Poissons Ratio')
-        exlas.append_curve('WKR_MuRho',df.MuRho, unit='GPa*Kg/m3', descr='Metric Lame Mu * Den')
-        exlas.append_curve('WKR_LambdaMu',df.LambdaMu, unit='GPa*Gpa', descr='Metric Lame Mu * Lame Lambda')
-        exlas.append_curve('WKR_LambdaRho',df.LambdaRho, unit='GPa*Kg/m3', descr='Metric Lame Lambda * Den')    
         exlas.append_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
-        exlas.append_curve('WKR_UCS_WFD',df.UCS_WFD, unit='MPa', descr='Weatherford UCS model from DTC')
+
+        if  (Alias["DTS"]!="NULL"):
+            exlas.append_curve('WKR_Vs',df.Vs, unit='m/s', descr='Metric S Wave Velocity')
+            exlas.append_curve('WKR_ShearMod',df.ShearMod, unit='GPa', descr='Metric Shear Modulus')
+            exlas.append_curve('WKR_E_Youngs',df.E_Youngs, unit='GPa', descr='Metric Youngs Modulus')
+            exlas.append_curve('WKR_K_Bulk',df.K_Bulk, unit='GPa', descr='Metric Bulk Modulus')
+            exlas.append_curve('WKR_Poisson',df.Poisson, unit='None', descr='Poissons Ratio')
+            exlas.append_curve('WKR_MuRho',df.MuRho, unit='GPa*Kg/m3', descr='Metric Lame Mu * Den')
+            exlas.append_curve('WKR_LambdaMu',df.LambdaMu, unit='GPa*Gpa', descr='Metric Lame Mu * Lame Lambda')
+            exlas.append_curve('WKR_LambdaRho',df.LambdaRho, unit='GPa*Kg/m3', descr='Metric Lame Lambda * Den')    
 
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_WKR_MECH.las"
         exlas.write(filename, version = 2.0)
