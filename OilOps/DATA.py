@@ -714,9 +714,9 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
     except:
         pass
                
-    if RETURN_DATA == True:
+    if RETURN_DATA == False:
         return (OUTPUT)
-    elif RETURN_DATA == False:
+    elif RETURN_DATA == True:
         return (OUTPUT, PRODDATA)
     else:
         return (OUTPUT)
