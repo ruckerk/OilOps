@@ -1148,7 +1148,7 @@ def Mechanics(lasfile):
     try: las=lasio.read(lasfile)
     except: las=[[0]]
     Alias=GetAlias(las)
-    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["DTS"]!="NULL"):
+    if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL"):
         df=las.df()
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
