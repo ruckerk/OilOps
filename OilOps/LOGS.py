@@ -595,7 +595,7 @@ def Alias_Dictionary():
                        "PIRM":2,"REIM":2,"DSLL":5,"AIT3":2,"AHF3":3,"AHO3":3,
                        "AHT3":1,"AS30":1,"ASF3":3,"AST3":1,"HAT3":1,"RLLS":3,
                        "CILM":5,"CIMQ":5,"CIMR":5,"CIPM":5,"RMLL":5,"RO30":3,
-                       "RM":4, "RESM":5},
+                       "RM":4, "RESM":5, "RT30": 2},
                 'RSH':{"AF10":4,"AF20":5,"AFRX":3,"AHF10":4,"AHF20":5,
                        "AHO10":4,"AHO20":5,"AHSFI":3,"AHT10":2,"AHT20":3,
                        "AHTRX":1,"AIT10":2,"AIT20":3,"AO10":4,"AO20":5,
@@ -615,7 +615,7 @@ def Alias_Dictionary():
                        "AHT1":1,"AHT2":2,"AS10":1,"AS20":2,"ASF1":3,
                        "ASF2":4,"ASRX":2,"AST1":1,"AST2":2,"HAT1":1,"RO10":4,
                        "HAT2":2,"HSFL":1,"MSFF":1,"RXOH":1,"CSFL":5,
-                       "MCON":5,"RLL3":3, "RESS":5},
+                       "MCON":5,"RLL3":3, "RESS":5, "RT10": 2,"RT20": 3},
                 'SP':{"HSP":1,"PCH1":2,"SP":1,"SPBR":2,"SPC":2,"SPCG":2,
                        "SPD":2,"SPDF":2,"SPDH":1,"SPH":1,"SPP":2,"SPSB":1,
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
