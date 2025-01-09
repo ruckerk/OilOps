@@ -510,8 +510,8 @@ def FIND_SURVEY_HEADER(df_in, return_header = False):
 
 def SurveyCols(df_s_in:(pd.DataFrame,pd.Series, list)=None, INCLUDE_NS:bool = True, ReqAll:bool = True):      
     sterms = {'MD':r'.*MEASURED.*DEPTH.*|.*MD.*|^\s*DEPTH\s*|(?:^|_)DEPTH(?:$|_)',
-             'INC':r'.*INC.*|.*DIP.*',
-             'AZI':r'.*AZI.*|.*AZM.*|.*DRIFT.*',
+             'INC':r'.*INC.*|.*DIP.*|^\s*ANGLE\s*',
+             'AZI':r'.*AZI.*|.*AZM.*|.*DRIFT.*|^\s*DIRECTION\s*',
              'TVD':r'.*TVD.*|.*TRUE.*(VERT|DEPTH).*|.*VERTICAL.*DEPTH.*',
              'NORTH_dY':r'.*\+N.*|.*(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}.*FT.*|.*N\+.*|^\s*N(?:[\/\\]){0,1}S\s*|.*NORTH(?!ING).*|(?:^|_)(?:\+){0,1}N(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}S(?:\-){0,1}(?:$|_)|NS.*ft',
              'EAST_dX':r'.*\+E.*|.*(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}.*FT.*|.*E\+.*|^\s*E(?:[\/\\]){0,1}W\s*|.*EAST(?!ING).*|(?:^|_)(?:\+){0,1}E(?:\+){0,1}(?:[\/\\]){0,1}(?:\-){0,1}W(?:\-){0,1}(?:$|_)|EW.*ft'
