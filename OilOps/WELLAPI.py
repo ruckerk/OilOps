@@ -16,7 +16,7 @@ class WELLAPI:
             self.str = 'None'
             self.int = None              
         else:
-            self.int = int(self.str2num())
+            self.int = self.str2num()
 
 
 
@@ -27,6 +27,8 @@ class WELLAPI:
     def str2num(self):
         str_in = self.str
         if (str_in.upper() == 'NONE'):
+            return None
+        if (str_in.upper() == 'nan'):
             return None
         if str(self.int).upper() == 'NONE':
             str_in = str(str_in)
