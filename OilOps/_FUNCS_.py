@@ -6,7 +6,7 @@ from io import StringIO, BytesIO
 from adjustText import adjust_text
 from math import floor, cos, sin, tan, radians, atan, atan2, acos, asin, degrees, sqrt, ceil, isnan, pi, log10
 import statistics
-from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin, getcwd
+from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin, getcwd, devnull
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -77,7 +77,7 @@ from scipy.stats import circmean
 from statsmodels.tsa.seasonal import seasonal_decompose
 import  statsmodels.api as sm
 
-import openpyxl
+import openpyxl, xlrd
 import xlsxwriter
 import shutil
 from urllib.request import urlopen 
