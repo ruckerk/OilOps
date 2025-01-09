@@ -1,4 +1,4 @@
-(from ._FUNCS_ import *
+((from ._FUNCS_ import *
 from .WELLAPI import WELLAPI as WELLAPI
 from .MAP import convert_XY
 
@@ -38,6 +38,8 @@ def Find_API_Col(df_inAPI):
     rAPIterms = '|'.join(APIterms)
     
     df2 = df_inAPI.copy(deep = True)
+    df2.reset_index(drop = True, inplace = True)
+    df2.columns = list(np.arange(0,len(df2.keys())))      
           
     lowlim = 10**(8)
     highlim = 10**14
@@ -398,7 +400,7 @@ def survey_from_excel(file:(str,tuple), ERRORS:bool = True): #if True:
                 R_LIST.append(APIfromFrame(xl[x]))
             R_LIST = [WELLAPI(x).API2INT(14) for x in R_LIST if x != None]
             R_LIST = list(set(R_LIST))
-            if len(R_LIST) > 0:
+            if (len(R_LIST) > 0) and (len(R_LIST) < 2):
                 READUWI = R_LIST[0] 
         else:
             READUWI = APIfromFrame(xl)
