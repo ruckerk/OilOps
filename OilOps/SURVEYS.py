@@ -353,17 +353,21 @@ def survey_from_excel(file, ERRORS = True): #if True:
         outdf = pd.DataFrame()
         xl = {}
         # read excel as a dictionary of dataframes
+
         try:
-            wb = xlrd.open_workbook(file)     
-            xl = pd.read_excel(wb)
-            #xl = pd.read_excel(file, sheet_name = None, engine = None, header = None)
+            xl = pd.read_excel(file, sheet_name = None, engine = None, header = None)
         except:
             try:
-                xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
-            except:
-                print(file+': ERROR CANNOT READ')
-                TERMINATE = True
-                #return None
+                wb = xlrd.open_workbook(file)     
+                xl = pd.read_excel(wb)
+            except:          
+                try:
+                    xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
+                except:
+                    print(file+': ERROR CANNOT READ')
+                    TERMINATE = True
+                    #return None
+                
 
     
         # make headers strings
