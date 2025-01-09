@@ -356,13 +356,20 @@ def survey_from_excel(file, ERRORS = True): #if True:
 
         try:
             xl = pd.read_excel(file, sheet_name = None, engine = None, header = None)
+            if not len(xl)>0:
+                raise Exception(f"read_excel on {file} read nothing") 
         except:
             try:
                 wb = xlrd.open_workbook(file)     
                 xl = pd.read_excel(wb)
+                if not len(xl)>0:
+                    raise Exception(f"xlrd.open_workbook on {file} read nothing") 
+                      
             except:          
                 try:
                     xl = pd.read_excel(file, sheet_name = None ,engine = 'openpyxl', header = None)
+                    if not len(xl)>0:
+                        raise Exception(f"pd.read_excel engine=openpyxl on {file} read nothing") 
                 except:
                     print(file+': ERROR CANNOT READ')
                     TERMINATE = True
