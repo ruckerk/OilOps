@@ -1508,7 +1508,8 @@ def SUMMARIZE_COGCC(SAVE = False, DB = 'FIELD_DATA.db',TABLE_NAME = 'COGCC_SQL_S
     df = pd.read_sql_query(Q2.split(';')[1],conn)
     df.loc[df.PastTreatmentDate!=None]
     df2 = pd.merge(df,pd.DataFrame(df).pivot_table(index=['StateWellKey'],aggfunc='size').rename('Count'),how='left',left_on='StateWellKey',right_on='StateWellKey')
-    df2['TDelta']=(pd.to_datetime(df2.DATE1)-pd.to_datetime(df2.DATE2)).astype('timedelta64[M]')
+    (df.date2 - df.date1) / np.timedelta64(1, 'M')
+    df2['TDelta']=(pd.to_datetime(df2.DATE1)-pd.to_datetime(df2.DATE2))/np.timedelta64(1,'M')
     x=df2.loc[(df2.Cum_Difference<50) | ((df2.TDelta <6) & (df2.Cum_Difference<1000)) | (df2.TDelta < 2)].sort_values(by='Cum_Difference')
     df2['TreatKey2']=0
     df2['TreatKey2']=((df2.Cum_Difference<50) | ((df2.TDelta <6) & (df2.Cum_Difference<1000)) | (df2.TDelta < 2))*1+df2.TreatKey2
