@@ -1508,8 +1508,8 @@ def SUMMARIZE_COGCC(SAVE = False, DB = 'FIELD_DATA.db',TABLE_NAME = 'COGCC_SQL_S
     df = pd.read_sql_query(Q2.split(';')[1],conn)
     df.loc[df.PastTreatmentDate!=None]
     df2 = pd.merge(df,pd.DataFrame(df).pivot_table(index=['StateWellKey'],aggfunc='size').rename('Count'),how='left',left_on='StateWellKey',right_on='StateWellKey')
-    (df.date2 - df.date1) / np.timedelta64(1, 'M')
-    df2['TDelta']=(pd.to_datetime(df2.DATE1)-pd.to_datetime(df2.DATE2))/np.timedelta64(1,'M')
+    #(df.date2 - df.date1) / np.timedelta64(1, 'M')
+    df2['TDelta']=(pd.to_datetime(df2.DATE1)-pd.to_datetime(df2.DATE2))/np.timedelta64(1,'D')/30.4
     x=df2.loc[(df2.Cum_Difference<50) | ((df2.TDelta <6) & (df2.Cum_Difference<1000)) | (df2.TDelta < 2)].sort_values(by='Cum_Difference')
     df2['TreatKey2']=0
     df2['TreatKey2']=((df2.Cum_Difference<50) | ((df2.TDelta <6) & (df2.Cum_Difference<1000)) | (df2.TDelta < 2))*1+df2.TreatKey2
@@ -2917,10 +2917,14 @@ def SUMMARIZE_COGCC_SQL(SAVE = True, SAVEDB= 'FIELD_DATA.db',TABLE_NAME = 'CO_SQ
         while STIM_df['StateStimulationKey'+str(i-1)].map(StimDict).dropna().shape[0]>0:
             STIM_df['StateStimulationKey'+str(i)] = STIM_df['StateStimulationKey'+str(i-1)]
             #STIM_df['StateStimulationKey'+str(i-1)].map(StimDict)
-            STIM_df.loc[STIM_df['StateStimulationKey'+str(i-1)].map(StimDict).dropna().index,STIM_df.columns=='StateStimulationKey'+str(i)]=STIM_df['StateStimulationKey'+str(i-1)].map(StimDict).dropna()
+            m = STIM_df['StateStimulationKey'+str(i-1)].map(StimDict).dropna().index
+            STIM_df.loc[m, 'StateStimulationKey'+str(i)] = STIM_df.loc[m,'StateStimulationKey'+str(i-1)].map(StimDict)
             i+=1
         # Stimulation Dates Dictionary
-        StimDates=STIM_df[['StateStimulationKey','TreatmentDate']].drop_duplicates().set_index('StateStimulationKey').astype('datetime64').TreatmentDate.to_dict()
+        #StimDates=STIM_df[['StateStimulationKey','TreatmentDate']].drop_duplicates().set_index('StateStimulationKey').astype('datetime64').TreatmentDate.to_dict()
+        StimDates = STIM_df[['StateStimulationKey','TreatmentDate']].drop_duplicates().set_index('StateStimulationKey')       
+        StimDates = StimDates.apply(lambda x:np.datetime64(x[0]), axis = 1)
+        StimDates = StimDates.to_dict()       
         # Count of stimulations per well
 
 
