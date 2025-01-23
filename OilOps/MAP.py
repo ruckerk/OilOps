@@ -295,9 +295,9 @@ def county_from_LatLon(LAT,LON):
     UAGENT = getlogin() +'_' +socket.gethostbyname(socket.gethostname())
     geolocator = Nominatim(user_agent=UAGENT)
     address = geolocator.reverse(str(LAT)+","+str(LON))
-    if 'county' in [x.lower() for x in address.raw.keys()]:
-        CNTY = geolocator.reverse(str(LAT)+","+str(LON)).raw['address'].get('county')
-    else:
+    try:
+        CNTY = address.raw['address'].get('county')
+    except:
         zipcode = address.raw['address']['postcode']
         nomi = pgeocode.Nominatim('us')
         CNTY = nomi.query_postal_code(zipcode)['county_name']
