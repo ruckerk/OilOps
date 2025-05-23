@@ -3,7 +3,7 @@ from ._FUNCS_ import *
 import shapefile as shp #pyshp
 import shapely
 import shapely.wkt
-from shapely.ops import unary_union, cascaded_union, transform
+from shapely.ops import unary_union, transform
 from shapely.strtree import STRtree
 import pycrs
 import pyproj
