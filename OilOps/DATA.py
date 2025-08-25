@@ -43,6 +43,117 @@ def ND_WELLSUMMARY(username, password, driver= None):
             zipObj.extractall('ND_WELLDATA')
     driver.quit()
 
+def filename_from_request(url):
+    response = requests.get(url, stream=True)
+    if "content-disposition" in response.headers:
+        import re
+        cd = response.headers["content-disposition"]
+        match = re.findall('filename="?([^"]+)"?', cd)
+        if match:
+            filename = match[0]
+        else:
+            filename = "downloaded_file"
+    else:
+        from urllib.parse import urlparse
+        import os
+    filename = os.path.basename(urlparse(url).path)
+    return filename
+
+def filename_from_content_disposition(headers: dict) -> str | None:
+    """
+    Parse RFC 6266/5987 Content-Disposition for filename/filename*.
+    Returns None if unavailable.
+    """
+    cd = headers.get("Content-Disposition") or headers.get("content-disposition")
+    if not cd:
+        return None
+
+    # filename*=UTF-8''encoded-name.ext (RFC 5987)
+    m = re.search(r"filename\*\s*=\s*([^']*)''([^;]+)", cd, flags=re.IGNORECASE)
+    if m:
+        # charset = m.group(1)  # usually UTF-8
+        return unquote(m.group(2))
+
+    # filename="name.ext" OR filename=name.ext
+    m = re.search(r'filename\s*=\s*"([^"]+)"', cd, flags=re.IGNORECASE)
+    if m:
+        return m.group(1)
+    m = re.search(r'filename\s*=\s*([^;]+)', cd, flags=re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+
+    return None
+
+
+def filename_from_url(url: str) -> str:
+    path = urlparse(url).path
+    name = os.path.basename(path.rstrip("/"))
+    return name or "downloaded_file"
+
+
+def safe_extract(zip_path: Path, dest_dir: Path) -> list[Path]:
+    """
+    Extracts ZIP while preventing zip-slip (path traversal).
+    Returns list of extracted file paths (relative to dest_dir).
+    """
+    extracted = []
+    dest_dir = dest_dir.resolve()
+    with zipfile.ZipFile(zip_path) as zf:
+        for member in zf.infolist():
+            # Skip directory entries cleanly
+            if member.filename.endswith("/"):
+                continue
+            # Normalize and prevent absolute/parent paths
+            target = (dest_dir / member.filename).resolve()
+            if not str(target).startswith(str(dest_dir) + os.sep):
+                # Attempted path traversal; skip
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(member) as src, open(target, "wb") as dst:
+                dst.write(src.read())
+            extracted.append(target)
+    return extracted
+
+
+def download_and_extract_zip(
+    url: str,
+    dest_dir: str | Path,
+    filename: str | None = None,
+    chunk_size: int = 1 << 20,  # 1 MiB
+    timeout: int = 60,
+) -> list[Path]:
+    """
+    Streams a ZIP from `url` to disk and extracts it to `dest_dir`.
+    - If `filename` not provided, tries Content-Disposition then falls back to URL.
+    - Returns list of extracted file Paths.
+    """
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    with requests.get(url, stream=True, timeout=timeout) as r:
+        r.raise_for_status()
+
+        # Decide filename
+        cd_name = filename_from_content_disposition(r.headers)
+        fname = filename or cd_name or filename_from_url(url)
+        # Give it a .zip suffix if missing and server didn’t provide one
+        if not fname.lower().endswith(".zip"):
+            fname += ".zip"
+        zip_path = dest_dir / fname
+
+        # Stream to disk
+        with open(zip_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=chunk_size):
+                if chunk:  # skip keep-alive chunks
+                    f.write(chunk)
+
+    # Validate and extract
+    if not zipfile.is_zipfile(zip_path):
+        raise ValueError(f"Downloaded file is not a valid ZIP: {zip_path}")
+
+    extracted = safe_extract(zip_path, dest_dir)
+    return extracted
+
 def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
@@ -52,11 +163,13 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         url = 'https://www.fracfocusdata.org/digitaldownload/FracFocusCSV.zip'
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1])    
-           
-        filename = wget.download(url)
-        with ZipFile(filename, 'r') as zipObj:
+
+        download_and_extract_zip(url, dest_dir=getcwd())
+        
+        #filename = filename_from_request(url)
+        #with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
-           zipObj.extractall('FRAC_FOCUS')
+        #   zipObj.extractall('FRAC_FOCUS')
 
     # COGCC SQLITE
     # https://dnrftp.state.co.us/
@@ -64,14 +177,16 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         url = 'https://dnrftp.state.co.us/COGCC/Temp/Gateway/CO_3_2.1.zip'
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
-           
-        filename = wget.download(url)
-        with ZipFile(filename, 'r') as zipObj:
+        download_and_extract_zip(url, dest_dir=getcwd())
+
+        
+        #filename = filename_from_request(url)
+        #with ZipFile(filename, 'r') as zipObj:
            # Extract all the contents of zip file in current directory
-           try:
-               zipObj.extractall('COOGC_SQL')
-           except BadZipfile:
-               pass
+        #   try:
+        #       zipObj.extractall('COOGC_SQL')
+        #   except BadZipfile:
+        #       pass
 
         files = []
         start_dir = path.join(adir,'COOGC_SQL')
@@ -88,30 +203,34 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         url = 'https://ecmc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_SHP.ZIP'       
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
-        filename = wget.download(url)
-        with ZipFile(filename, 'r') as zipObj:
-           # Extract all the contents of zip file in current directory
-           zipObj.extractall()
+
+        download_and_extract_zip(url, dest_dir=getcwd())
+        #filename = filename_from_request(url)
+        #with ZipFile(filename, 'r') as zipObj:
+        #   # Extract all the contents of zip file in current directory
+        #   zipObj.extractall()
         remove(filename)
 
         # url = 'https://cogcc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP' # NEW URL BELOW
         url = 'https://ecmc.state.co.us/documents/data/downloads/gis/DIRECTIONAL_LINES_PENDING_SHP.ZIP'
         if path.exists(path.split(url)[-1]):
-            remove(path.split(url)[-1])            
-        filename = wget.download(url)
-        with ZipFile(filename, 'r') as zipObj:
-           # Extract all the contents of zip file in current directory
-           zipObj.extractall()
+            remove(path.split(url)[-1])        
+        download_and_extract_zip(url, dest_dir=getcwd())
+        #filename = wget.download(url)
+        #with ZipFile(filename, 'r') as zipObj:
+        #   # Extract all the contents of zip file in current directory
+        #   zipObj.extractall()
         remove(filename)
 
         url = 'https://cogcc.state.co.us/documents/data/downloads/gis/WELLS_SHP.ZIP'
         url = 'https://ecmc.state.co.us/documents/data/downloads/gis/WELLS_SHP.ZIP'
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
-        filename = wget.download(url)
-        with ZipFile(filename, 'r') as zipObj:
-           # Extract all the contents of zip file in current directory
-           zipObj.extractall()
+        download_and_extract_zip(url, dest_dir=getcwd())
+        #filename = wget.download(url)
+        #with ZipFile(filename, 'r') as zipObj:
+        #   # Extract all the contents of zip file in current directory
+        #   zipObj.extractall()
         remove(filename)
 
 def Get_LAS(UWIS):
