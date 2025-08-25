@@ -24,6 +24,7 @@ from sys import argv, exec_prefix, platform
 from time import perf_counter, sleep
 from tkinter import filedialog
 from zipfile import ZipFile, BadZipfile
+import zipfile
 import concurrent.futures
 import futures3 as cfutures
 import csv
@@ -81,6 +82,9 @@ import openpyxl, xlrd
 import xlsxwriter
 import shutil
 from urllib.request import urlopen 
+from urllib.parse import urlparse, unquote
+from __future__ import annotations
+from pathlib import Path
 import dateutil.parser
 
 #MAPPING
