@@ -72,6 +72,7 @@ import fnmatch
 from scipy import signal, stats
 from scipy import interpolate
 from scipy.optimize import curve_fit, fmin_cobyla
+from scipy.optimize import least_squares
 from scipy.stats.mstats import gmean
 from scipy.stats import circmean
 
