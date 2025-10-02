@@ -1,3 +1,7 @@
+__all__ = ['dpl',
+           'fit_dpl_with_cum',
+           'dpl_residual']
+
 
 def dpl(t, q0, alpha, b1, b2, tx, m):
     return (q0 / (1 + alpha*t)**b1) * (1 + (t/tx)**m)**(-b2/m)
