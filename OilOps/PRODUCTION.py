@@ -1,3 +1,4 @@
+from ._FUNCS_ import *
 __all__ = ['dpl',
            'fit_dpl_with_cum',
            'dpl_residual']
