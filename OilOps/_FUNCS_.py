@@ -1,4 +1,5 @@
  # requires xlrd, openpyxl
+from __future__ import annotations
 
 from bs4 import BeautifulSoup as BS
 from functools import partial
@@ -84,7 +85,6 @@ import xlsxwriter
 import shutil
 from urllib.request import urlopen 
 from urllib.parse import urlparse, unquote
-from __future__ import annotations
 from pathlib import Path
 import dateutil.parser
 
