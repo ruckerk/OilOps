@@ -59,7 +59,8 @@ def filename_from_request(url):
     filename = os.path.basename(urlparse(url).path)
     return filename
 
-def filename_from_content_disposition(headers: dict) -> (str | None):
+#def filename_from_content_disposition(headers: dict) -> (str | None):
+def filename_from_content_disposition(headers: dict):
     """
     Parse RFC 6266/5987 Content-Disposition for filename/filename*.
     Returns None if unavailable.
