@@ -118,8 +118,8 @@ def safe_extract(zip_path: Path, dest_dir: Path) -> list[Path]:
 
 def download_and_extract_zip(
     url: str,
-    dest_dir: str | Path,
-    filename: str | None = None,
+    dest_dir: str,                # str | Path
+    filename: str,                # str | None = None
     chunk_size: int = 1 << 20,  # 1 MiB
     timeout: int = 60,
 ) -> list[Path]:
