@@ -815,7 +815,7 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db', LL_LIMIT = 0, SHP_UWI
     BAD_STATUS_UWI = list(set(BAD_STATUS_UWI) - set(BAD_STATUS_UWI).intersection(OK_STATUS_UWI))
     FULL_UWILIST = list(set(SHP_UWI)-set(BAD_STATUS_UWI))               
     
-    if not 'PRODDATA' in LIST_SQL_TABLES(connection_obj):
+    if not 'PRODDATA' in LIST_SQL_TABLES(connection_obj): 
           FULL_UPDATE = True
 
     if not FULL_UPDATE:
