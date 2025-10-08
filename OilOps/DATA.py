@@ -176,11 +176,12 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     # https://dnrftp.state.co.us/
     if COGCC_SQL:
         url = 'https://dnrftp.state.co.us/COGCC/Temp/Gateway/CO_3_2.1.zip'
+               
         zip_folder = path.basename(url).replace('.','_')
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
         download_and_extract_zip(url, 
-                                 dest_dir=path.join(getcwd(),zip_folder))
+                                 dest_dir=path.join(getcwd(),'COLORADO_SQL'))
 
         #filename = filename_from_request(url)
         #with ZipFile(filename, 'r') as zipObj:
@@ -191,8 +192,8 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         #       pass
 
         files = []        
-        start_dir = path.join(adir,'COOGC_SQL')
-        pattern   = r'CO_3_2.*'
+        start_dir = path.join(adir,'COLORADO_SQL')
+        pattern   = r'CO_3_2.*.sq.*'
         for dir,_,_ in walk(start_dir):
             files.extend(glob(path.join(getcwd(),zip_folder)))
 
