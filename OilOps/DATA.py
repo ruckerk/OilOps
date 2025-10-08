@@ -56,7 +56,7 @@ def filename_from_request(url):
     else:
         from urllib.parse import urlparse
         import os
-    filename = os.path.basename(urlparse(url).path)
+    filename = path.basename(urlparse(url).path)
     return filename
 
 #def filename_from_content_disposition(headers: dict) -> (str | None):
@@ -88,7 +88,7 @@ def filename_from_content_disposition(headers: dict):
 
 def filename_from_url(url: str) -> str:
     path = urlparse(url).path
-    name = os.path.basename(path.rstrip("/"))
+    name = path.basename(path.rstrip("/"))
     return name or "downloaded_file"
 
 
@@ -106,7 +106,7 @@ def safe_extract(zip_path: Path, dest_dir: Path) -> list[Path]:
                 continue
             # Normalize and prevent absolute/parent paths
             target = (dest_dir / member.filename).resolve()
-            if not str(target).startswith(str(dest_dir) + os.sep):
+            if not str(target).startswith(str(dest_dir) + sep):
                 # Attempted path traversal; skip
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
