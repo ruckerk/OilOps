@@ -197,7 +197,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
             files.extend(glob(path.join(getcwd(),'COLORADO_SQL')))
 
         shutil.move(files[0], path.join(adir, path.basename(files[0])))
-        shutil.rmtree(path.join(adir,'COOGC_SQL'))
+        shutil.rmtree(path.join(adir,'COLORADO_SQL'))
 
     # COGCC shapefiles
     if COGCC_SHP:
