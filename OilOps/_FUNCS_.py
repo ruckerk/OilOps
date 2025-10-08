@@ -1218,3 +1218,45 @@ def pd_find_regex(dataframe, regex_pattern):
                 matches.append((idx, col))
     
     return matches
+
+def zipwalk(zip_file_path):
+    """
+    Generates a tuple (dirname, dirnames, filenames) for each directory
+    within a ZIP file, similar to os.walk().
+    """
+    with zipfile.ZipFile(zip_file_path, 'r') as zf:
+        # Get a list of all names within the zip file
+        all_names = zf.namelist()
+
+        # Organize names into a dictionary representing the directory structure
+        # Key: directory path, Value: tuple of (subdirectories, files)
+        structure = {}
+
+        for name in all_names:
+            parts = name.split('/')
+            
+            # Handle directories
+            if name.endswith('/'):
+                dir_path = '/'.join(parts[:-1])
+                parent_dir = '/'.join(parts[:-2]) if len(parts) > 2 else ''
+                
+                if parent_dir not in structure:
+                    structure[parent_dir] = ([], [])
+                if parts[-2] not in structure[parent_dir][0]:
+                    structure[parent_dir][0].append(parts[-2])
+                
+                if dir_path not in structure:
+                    structure[dir_path] = ([], [])
+            
+            # Handle files
+            else:
+                dir_path = '/'.join(parts[:-1])
+                filename = parts[-1]
+                
+                if dir_path not in structure:
+                    structure[dir_path] = ([], [])
+                structure[dir_path][1].append(filename)
+        
+        # Yield results in a similar fashion to os.walk
+        for dir_path, (subdirs, files) in structure.items():
+            yield dir_path, sorted(subdirs), sorted(files)
