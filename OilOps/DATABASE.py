@@ -797,12 +797,23 @@ def UPDATE_SURVEYS(DB = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SURVEYFO
         #CO_Get_Surveys(UWIlist)
 
 
-def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
+def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db', LL_LIMIT = 0, SHP_UWI_ONLY = False):
     pathname = path.dirname(argv[0])
     adir = path.abspath(pathname)
     dir_add = path.join(adir,'PRODFOLDER')
           
     connection_obj = sqlite3.connect(DB)
+
+    SHP_UWI = UWI_FROM_SHP(LL_LIMIT)
+    WELLS_LOC.loc[WELLS_LOC.Facil_Stat.isin(['AC','PA','PR','SI','TA','UN'])]
+    WELLS_LOC = read_shapefile(shp.Reader('Wells.shp'))
+    WELLS_LOC['UWI10'] = WELLS_LOC['API_Label'].apply(lambda x:WELLAPI(x).API2INT(10))
+    m_badstatus = WELLS_LOC.index[WELLS_LOC['Facil_Stat'].isin(['AL','AP','DG', 'EP', 'IJ', 'SO', 'WO'])]
+    m_okstatus = WELLS_LOC.index[~(WELLS_LOC['Facil_Stat'].isin(['AL','AP','DG', 'EP', 'IJ', 'SO', 'WO']))]
+    BAD_STATUS_UWI = WELLS_LOC.loc[m_badstatus, 'UWI10'].tolist()
+    OK_STATUS_UWI = WELLS_LOC.loc[m_okstatus, 'UWI10'].tolist()
+    BAD_STATUS_UWI = list(set(BAD_STATUS_UWI) - set(BAD_STATUS_UWI).intersection(OK_STATUS_UWI))
+    FULL_UWILIST = list(set(SHP_UWI)-set(BAD_STATUS_UWI))               
     
     if not 'PRODDATA' in LIST_SQL_TABLES(connection_obj):
           FULL_UPDATE = True
@@ -840,8 +851,11 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db'):
         NONPRODUCERS = df_prod.loc[(df_prod.DAYS_SINCE_LAST_PROD>(30*15)) * (df_prod.Well_Status.isin(['AB','PA'])),'UWI10'].tolist()    
         UWIlist = list(set(SCOUT_LIST) - set(NONPRODUCERS))
     else:
-        UWIlist = FULL_SCOUT_LIST
-
+        UWIlist = list(set(FULL_SCOUT_LIST).union(set(FULL_UWILIST)))
+              
+    if SHP_UWI_ONLY:
+        UWIlist = FULL_UWILIST     
+              
     UWIlist = [WELLAPI(x).STRING(10) for x in UWIlist]
     UWIlist.sort(reverse=True)
     
