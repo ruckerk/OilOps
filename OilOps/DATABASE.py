@@ -565,7 +565,14 @@ def UPDATE_SCOUT(DB_NAME = 'FIELD_DATA.db', FULL_UPDATE = False, FOLDER = 'SCOUT
     WELLLINE_LOC['Y'] = WELLLINE_LOC.coords.apply(lambda x:x[0][1])
     WELLLINE_LOC['XBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][0])
     WELLLINE_LOC['YBHL'] = WELLLINE_LOC.coords.apply(lambda x:x[-1][1])
-    UWIlist = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'].isin(SCOUT_UWI)), 'UWI10']
+    WELLLINE_LOC['BHL_to_SHL'] = ((WELLLINE_LOC['X'] - WELLLINE_LOC['XBHL'])**2 + (WELLLINE_LOC['Y'] - WELLLINE_LOC['YBHL'])**2)**0.5
+    if str(FULL_UPDATE).upper() == 'HZ':
+        UWI_SHP = WELLLINE_LOC.loc[WELLLINE_LOC['BHL_to_SHL']> 2000,'API_Label'].apply(lambda x:WELLAPI(x).STRING(10))
+    elif FULL_UPDATE == True :  
+        UWI_SHP  = WELLLINE_LOC['API_Label'].apply(lambda x:WELLAPI(x).STRING(10))
+    else:           
+        UWI_SHP = WELLLINE_LOC.loc[~(WELLLINE_LOC['UWI10'].isin(SCOUT_UWI)), 'UWI10']
+    UWIlist = list(set(SCOUT_UWI).union(set(UWI_SHP)))
     len(UWIlist)
     if len(UWIlist) >2000:
         func = partial(Get_Scouts,
