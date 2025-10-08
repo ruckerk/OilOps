@@ -207,7 +207,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
             remove(path.split(url)[-1]) 
 
         download_and_extract_zip(url, dest_dir=getcwd())
-        #filename = filename_from_request(url)
+        filename = filename_from_request(url)
         #with ZipFile(filename, 'r') as zipObj:
         #   # Extract all the contents of zip file in current directory
         #   zipObj.extractall()
@@ -218,7 +218,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1])        
         download_and_extract_zip(url, dest_dir=getcwd())
-        #filename = wget.download(url)
+        filename = wget.download(url)
         #with ZipFile(filename, 'r') as zipObj:
         #   # Extract all the contents of zip file in current directory
         #   zipObj.extractall()
@@ -229,7 +229,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
         download_and_extract_zip(url, dest_dir=getcwd())
-        #filename = wget.download(url)
+        filename = wget.download(url)
         #with ZipFile(filename, 'r') as zipObj:
         #   # Extract all the contents of zip file in current directory
         #   zipObj.extractall()
