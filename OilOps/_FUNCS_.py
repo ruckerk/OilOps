@@ -7,7 +7,7 @@ from io import StringIO, BytesIO
 from adjustText import adjust_text
 from math import floor, cos, sin, tan, radians, atan, atan2, acos, asin, degrees, sqrt, ceil, isnan, pi, log10
 import statistics
-from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin, getcwd, devnull
+from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin, getcwd, devnull, sep
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
