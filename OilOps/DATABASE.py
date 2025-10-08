@@ -805,7 +805,7 @@ def UPDATE_PROD(FULL_UPDATE = False, DB = 'FIELD_DATA.db', LL_LIMIT = 0, SHP_UWI
     connection_obj = sqlite3.connect(DB)
 
     SHP_UWI = UWI_FROM_SHP(LL_LIMIT)
-    WELLS_LOC.loc[WELLS_LOC.Facil_Stat.isin(['AC','PA','PR','SI','TA','UN'])]
+
     WELLS_LOC = read_shapefile(shp.Reader('Wells.shp'))
     WELLS_LOC['UWI10'] = WELLS_LOC['API_Label'].apply(lambda x:WELLAPI(x).API2INT(10))
     m_badstatus = WELLS_LOC.index[WELLS_LOC['Facil_Stat'].isin(['AL','AP','DG', 'EP', 'IJ', 'SO', 'WO'])]
