@@ -87,8 +87,8 @@ def filename_from_content_disposition(headers: dict):
 
 
 def filename_from_url(url: str) -> str:
-    path = urlparse(url).path
-    name = path.basename(path.rstrip("/"))
+    upath = urlparse(url).path
+    name = path.basename(upath.rstrip("/"))
     return name or "downloaded_file"
 
 
