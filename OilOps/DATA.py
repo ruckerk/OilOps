@@ -177,7 +177,6 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
     if COGCC_SQL:
         url = 'https://dnrftp.state.co.us/COGCC/Temp/Gateway/CO_3_2.1.zip'
                
-        zip_folder = path.basename(url).replace('.','_')
         if path.exists(path.split(url)[-1]):
             remove(path.split(url)[-1]) 
         download_and_extract_zip(url, 
@@ -195,7 +194,7 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         start_dir = path.join(adir,'COLORADO_SQL')
         pattern   = r'CO_3_2.*.sq.*'
         for dir,_,_ in walk(start_dir):
-            files.extend(glob(path.join(getcwd(),zip_folder)))
+            files.extend(glob(path.join(getcwd(),'COLORADO_SQL')))
 
         shutil.move(files[0], path.join(adir, path.basename(files[0])))
         shutil.rmtree(path.join(adir,'COOGC_SQL'))
