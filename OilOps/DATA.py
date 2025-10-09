@@ -547,7 +547,7 @@ def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA
                     POSTPEAKOIL = pdf.loc[(pdf['PROD_DAYS'][pdf[OIL].idxmax()]-pdf['PROD_DAYS']).between(0,100),:].index
                     POSTPEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(0,100),:].index
                     PEAKGAS = pdf.loc[(pdf['PROD_DAYS'][pdf[GAS].idxmax()]-pdf['PROD_DAYS']).between(-50,50),:].index
-                    LATEWATER = pdf.index[pdf['TMB_WTR']>500]
+                    LATEWATER = pdf.index[pdf['TMB_WTR']>200]
                     LATEGAS = pdf.index[pdf['TMB_GAS']>30]
                     
                     if pdf.loc[PREPEAKOIL,OIL].sum()>0:
