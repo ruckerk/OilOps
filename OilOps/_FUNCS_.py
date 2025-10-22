@@ -51,13 +51,23 @@ import re
 import requests
 import selenium
 import shapefile as shp #pyshp
+
 import sklearn as sk
 from sklearn.decomposition import PCA
 from sklearn.cluster import HDBSCAN, KMeans
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, RidgeCV, MultiTaskElasticNetCV, LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, mean_absolute_error, r2_score
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.pipeline   import make_pipeline,Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.cross_decomposition import PLSRegression
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.utils import check_random_state
+from sklearn.impute import SimpleImputer
+
+from sklearn import set_config
+set_config(transform_output="pandas")
+
 
 import sqlalchemy
 import sqlite3
@@ -76,6 +86,7 @@ from scipy.optimize import curve_fit, fmin_cobyla
 from scipy.optimize import least_squares
 from scipy.stats.mstats import gmean
 from scipy.stats import circmean
+from scipy.ndimage    import binary_dilation
 
 from statsmodels.tsa.seasonal import seasonal_decompose
 import  statsmodels.api as sm
@@ -107,6 +118,13 @@ import base64
 import difflib
 
 from .WELLAPI import WELLAPI as WELLAPI
+
+#import lightgbm as lgb
+#from lightgbm import log_evaluation
+#import xgboost as xgb
+#from catboost import CatBoostRegressor
+#from lightgbm import LGBMRegressor
+from typing import Dict, Any, Tuple, List
 
 warnings.filterwarnings('ignore')
         
