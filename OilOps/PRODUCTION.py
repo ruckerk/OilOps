@@ -140,7 +140,7 @@ def interpolate_to_daily_by_prod_days(df_data_in, prod_col='Oil', days_col='Days
     # Spline interpolation through average daily rate at midpoint of each month
     x_pts = prod_day_mid[valid]
     y_pts = avg_daily_rate[valid]
-    spline = CubicSpline(x_pts, y_pts, bc_type='natural', extrapolate=True)
+    spline = interpolate.CubicSpline(x_pts, y_pts, bc_type='natural', extrapolate=True)
 
     # Build daily series
     daily_rows = []
