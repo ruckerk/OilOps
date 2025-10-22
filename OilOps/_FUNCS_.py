@@ -124,7 +124,9 @@ from .WELLAPI import WELLAPI as WELLAPI
 #import xgboost as xgb
 #from catboost import CatBoostRegressor
 #from lightgbm import LGBMRegressor
+
 from typing import Dict, Any, Tuple, List
+from tqdm import tqdm, trange
 
 warnings.filterwarnings('ignore')
         
