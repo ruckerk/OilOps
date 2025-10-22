@@ -183,10 +183,15 @@ def ProductionToParams(UWI_List:list,
                        OilKey:str = 'Oil',
                        GasKey:str = 'Gas',
                        WaterKey:str = 'Water'):
-    
+                                  
     ProdData = df_data_in.loc[df_data_in.UWI10.isin(UWI_List)].copy()
     ProdData.rename(columns = {UWI_key:'UWI10',Time_key:'Days On', OilKey:'Oil',GasKey:'Gas',WaterKey:'Water'}, inplace = True)
     ProdData = ProdData.loc[ProdData.UWI10.isin(UWI_List)]
+    ProdData.sort_values(by = [UWI_key,Time_key],inplace = True, ascending = True)
+                                  
+    ProdData['NormOil'] = ProdData[OilKey] / ProdData.groupby(UWI_key)[OilKey].cummax()
+    ProdData['NormGas'] = ProdData[GasKey] / ProdData.groupby(UWI_key)[GasKey].cummax()
+    ProdData['NormWater'] = ProdData[WaterKey] / ProdData.groupby(UWI_key)[WaterKey].cummax()
 
     modelkeys = ['UWI10']
 
