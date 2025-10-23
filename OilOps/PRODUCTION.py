@@ -272,7 +272,7 @@ def ProductionToParams(UWI_List:list,
         m_lategor = q2.index[np.cumsum(q2['DailyRate']) / q2['DailyRate']  > 300]
         GORf = q2.loc[m_lategor,'GasRate'].sum() / q2.loc[m_lategor,'DailyRate'].sum()
 
-        maxdays = ProdData.loc[m, 'ProducingDays'].max()
+        maxdays = ProdData.loc[m, 'Days On'].max()
         
         try:
             mq = q2[['DailyRate','GasRate']].dropna().index
