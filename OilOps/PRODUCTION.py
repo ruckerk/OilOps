@@ -190,9 +190,9 @@ def ProductionToParams(UWI_List:list,
     ProdData.rename(columns = {UWI_key:'UWI10',Time_key:'Days On', OilKey:'Oil',GasKey:'Gas',WaterKey:'Water'}, inplace = True)
     ProdData = ProdData.loc[ProdData.UWI10.isin(UWI_List)]
                                   
-    ProdData['NormOil'] = ProdData[OilKey] / ProdData.groupby(UWI_key)[OilKey].cummax()
-    ProdData['NormGas'] = ProdData[GasKey] / ProdData.groupby(UWI_key)[GasKey].cummax()
-    ProdData['NormWater'] = ProdData[WaterKey] / ProdData.groupby(UWI_key)[WaterKey].cummax()
+    ProdData['NormOil'] = ProdData['Oil'] / ProdData.groupby(UWI_key)['Oil'].cummax()
+    ProdData['NormGas'] = ProdData['Gas'] / ProdData.groupby(UWI_key)['Gas'].cummax()
+    ProdData['NormWater'] = ProdData['Water'] / ProdData.groupby(UWI_key)['Water'].cummax()
 
     modelkeys = ['UWI10']
 
