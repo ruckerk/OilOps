@@ -266,8 +266,8 @@ def ProductionToParams(UWI_List:list,
         q2['GOR'] = 1000 * q2['GasRate'] / q2['DailyRate']
         q2['MBT_Oil'] = q2['DailyRate'].cumsum() / q2['DailyRate'].replace(0, np.nan)
 
-        m_gori = m[(ProdData.loc[m,'NormOil'] > 0.98) * (ProdData.loc[m,'ProducingDays'] < 200)]
-        gori_days = ProdData.loc[m_gori,'ProducingDays'].max()
+        m_gori = m[(ProdData.loc[m,'NormOil'] > 0.98) * (ProdData.loc[m,'Days On'] < 200)]
+        gori_days = ProdData.loc[m_gori,'Days On'].max()
         GORi = q2.loc[q2['ProducingDay'] <= gori_days, 'GasRate'].sum() / q2.loc[q2['ProducingDay'] <= gori_days, 'DailyRate'].sum() * 1000
         m_lategor = q2.index[np.cumsum(q2['DailyRate']) / q2['DailyRate']  > 300]
         GORf = q2.loc[m_lategor,'GasRate'].sum() / q2.loc[m_lategor,'DailyRate'].sum()
