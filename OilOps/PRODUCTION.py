@@ -233,7 +233,7 @@ def ProductionToParams(UWI_List:list,
         q_daily_norm.rename(columns={'DailyRate': 'NormRate'}, inplace=True)
 
         m_qdaily_oil = q_daily.index[q_daily.DailyRate > 0]
-        m_qdaily_normoil = q_daily_norm.index[q_daily_norm.DailyRate > 0]
+        m_qdaily_normoil = q_daily_norm.index[q_daily_norm.NormRate > 0]
                
         try:
             fit1 = fit_dpl_with_cum(q_daily.loc[m_qdaily_oil, 'ProducingDay'], q_daily.loc[m_qdaily_oil, 'DailyRate'], beta_cum=1.8, p0=None, bounds=None, plot=False, t_EUR = 365*50)
