@@ -186,7 +186,9 @@ def ProductionToParams(UWI_List:list,
                        progress_bar = True):
                                   
     ProdData = df_data_in.loc[df_data_in.UWI10.isin(UWI_List)].copy()
-    ProdData.sort_values(by = [UWI_key,Time_key],inplace = True, ascending = True)
+
+    DateKey = GetKey(ProdData,'Date|Month')[0]
+    ProdData.sort_values(by = [UWI_key,DateKey],inplace = True, ascending = True)
                                   
     ProdData.rename(columns = {UWI_key:'UWI10',Time_key:'Days On', OilKey:'Oil',GasKey:'Gas',WaterKey:'Water'}, inplace = True)
     ProdData = ProdData.loc[ProdData.UWI10.isin(UWI_List)]
