@@ -231,10 +231,13 @@ def ProductionToParams(UWI_List:list,
         q_daily = interpolate_to_daily_by_prod_days(ProdData.loc[m],'Oil', 'Days On', plot = False)
         q_daily_norm = interpolate_to_daily_by_prod_days(ProdData.loc[m],'NormOil', 'Days On', plot = False)
         q_daily_norm.rename(columns={'DailyRate': 'NormRate'}, inplace=True)
-        
+
+        m_qdaily_oil = q_daily.index[q_daily.DailyRate > 0]
+        m_qdaily_normoil = q_daily_norm.index[q_daily_norm.DailyRate > 0]
+               
         try:
-            fit1 = fit_dpl_with_cum(q_daily['ProducingDay'], q_daily['DailyRate'], beta_cum=1.8, p0=None, bounds=None, plot=False, t_EUR = 365*50)
-            fit_norm = fit_dpl_with_cum(q_daily_norm['ProducingDay'], q_daily_norm['NormRate'], beta_cum=1.2, p0=None, bounds=None, plot=False, t_EUR = 365*50)
+            fit1 = fit_dpl_with_cum(q_daily.loc[m_qdaily_oil, 'ProducingDay'], q_daily.loc[m_qdaily_oil, 'DailyRate'], beta_cum=1.8, p0=None, bounds=None, plot=False, t_EUR = 365*50)
+            fit_norm = fit_dpl_with_cum(q_daily_norm.loc[m_qdaily_normoil, 'ProducingDay'], q_daily_norm.loc[m_qdaily_normoil, 'NormRate'], beta_cum=1.2, p0=None, bounds=None, plot=False, t_EUR = 365*50)
         except:
             fit1 = [np.nan] * len(primary)
             fit_norm = [np.nan] * len(primary)  
