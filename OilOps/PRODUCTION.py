@@ -182,7 +182,8 @@ def ProductionToParams(UWI_List:list,
                        Time_key:str = 'ProducingDay',
                        OilKey:str = 'Oil',
                        GasKey:str = 'Gas',
-                       WaterKey:str = 'Water'):
+                       WaterKey:str = 'Water',
+                       progress_bar = True):
                                   
     ProdData = df_data_in.loc[df_data_in.UWI10.isin(UWI_List)].copy()
     ProdData.sort_values(by = [UWI_key,Time_key],inplace = True, ascending = True)
@@ -208,17 +209,18 @@ def ProductionToParams(UWI_List:list,
 
     col_names = ['UWI10']  + [f'pOil_{ix}' for ix,xx in enumerate(primary)] +  [f'pNormOil_{ix}' for ix,xx in enumerate(primary)] +  [f'pCumGOR_{ix}' for ix,xx in enumerate(secondary)] +  [f'pCumWOC_{ix}' for ix,xx in enumerate(secondary)]
     WellModels = pd.DataFrame(columns = col_names)
-
-    pbar = tqdm(total=len(ProdData[UWI_key].unique()),  # or leave None for unknown length
-            desc="Parsing wells",
-            ncols=100,           # fixed width
-            smoothing=0.1,       # faster reaction to slow items
-            bar_format='{l_bar}{bar}')
+    if progress_bar:
+        pbar = tqdm(total=len(ProdData[UWI_key].unique()),  # or leave None for unknown length
+                desc="Parsing wells",
+                ncols=100,           # fixed width
+                smoothing=0.4,       # faster reaction to slow items
+                bar_format='{l_bar}{bar}')
                                   
     for iu, u in enumerate(UWI_List):
         print(f'{UWI_List[0]}: {iu}/{len(UWI_List)}')
         #u
-        pbar.update() 
+        if progress_bar:
+            pbar.update() 
 
         m = ProdData.index[ProdData['UWI10'] == u]
         if ProdData.loc[m,['Oil']].replace(0,np.nan).dropna().shape[0] < 12:
