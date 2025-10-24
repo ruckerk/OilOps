@@ -10,8 +10,31 @@ __all__ = ['dpl',
 def richards(x, A,K,B,M,nu):
     return A + (K-A) / (1 + np.exp(-B*(x-M)))**(1/nu)
 
+def richards5(x, A, K, B, M, nu):
+    """
+    5-parameter Richards curve in x (we'll pass x = log10(MBT)).
+    """
+    # Numerically stable: clip exponent
+    z = -B*(x - M)
+    z = np.clip(z, -60.0, 60.0)
+    return A + (K - A) / (1.0 + np.exp(z))**(1.0/np.clip(nu, 1e-6, None))
+           
 def dpl(t, q0, alpha, b1, b2, tx, m):
     return (q0 / (1 + alpha*t)**b1) * (1 + (t/tx)**m)**(-b2/m)
+
+def dpl_rate(t, q0, alpha, b1, b2, tx, m):
+    """
+    Double-Power-Law / Transient-Hyperbolic-like rate.
+    """
+    t = np.asarray(t, float)
+    alpha = max(alpha, 0.0)
+    tx    = max(tx, 1.0)
+    m     = max(m, 0.05)
+    log_q = (np.log(max(q0, 1e-12))
+             - b1*np.log1p(alpha*t)
+             - (b2/m)*np.log1p((t/tx)**m))
+    return np.exp(np.clip(log_q, -50, 50))
+
 
 # -----------------------------------------------------------------
 #  residual that blends rate + cumulative errors
