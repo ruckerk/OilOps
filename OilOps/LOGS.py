@@ -295,7 +295,7 @@ def ARRAY_CHANGEPOINTS(ARRAY, COUNT):
     return(RESULT)
 
 def Init_Futures(APPLY_DATA = None, MAX_SIZE = 5000, MIN_SIZE = 10):
-    processors = max(1,multiprocessing.cpu_count())
+    processors = max(1,multiprocessing.cpu_count()-1)
     chunksize = max(MIN_SIZE,min(MAX_SIZE,max(1,int(len(APPLY_DATA)/(processors*2)))))
     batch = max(1,int(len(APPLY_DATA)/chunksize))
     processors = min(processors,batch)
