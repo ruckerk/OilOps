@@ -584,7 +584,7 @@ def Alias_Dictionary():
                        "CIL":10,"CILD":11,"CIPD":10,"CLLD":8,"COND":10,"DVC1":10,
                        "DVC2":10,"DVC4":10,"FC":10,"M0CX":10,"M1CX":10,"M2CC9":10,
                        "M2CCX":10,"M2CX":10,"M4CCX":10,"M4CX":10,"MVC2":10,"P34H_COND":10,
-                       "RO90":6,"RD":4,"RTAO":1,"AT90DS":2, "HART":6, "RESD":10},
+                       "RO90":6,"RD":4,"RTAO":1,"AT90DS":2, "HART":6, "RESD":10, "RESD_90M2":10},
                 'RMED':{"AF30":2,"AHF30":2,"AHO30":2,"AHT30":1,"AIT30":1,"AO30":3,
                        "ASF30":2,"ASO30":3,"AST30":1,"AT30":1,"HILM":1,
                        "HLLS":1,"HRL3":1,"ILM":1,"ILM2":1,"ILM4":2,"IM":1,
