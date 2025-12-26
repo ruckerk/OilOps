@@ -27,6 +27,7 @@ dependencies = ['adjustText',
                       'easygui',
                       'futures3',
                       'geopy',
+                      'geopandas',
                       'lasio',
                       'matplotlib',
                       'multiprocess',
@@ -51,7 +52,7 @@ dependencies = ['adjustText',
                       'urllib3',
                       'wget',
                       'xlrd', 
-                      'geopandas']
+                      'xlsxwriter']
                       
 keywords=[
         'OilOps', 'Colorado data', 'petrophysics', 'well spacing',
