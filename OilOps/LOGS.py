@@ -644,6 +644,85 @@ def R0(phi,arw,m):
 
 def func(x, a, b): return a + x * b
 
+def Find_R0(df, sigma = 500):
+   df_in = df.copy()
+   depth = df_in.index
+   ALIAS = OilOps.LOGS.GetAlias(df_in)        
+
+    # --- Required logs ---
+    m_phi = df_in[ALIAS['NPHI']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').dropna().index
+    m_resd = df_in[ALIAS['RDEEP']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').dropna().index
+
+    phin = df_in[ALIAS['NPHI']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').values
+    resd = df_in[ALIAS['RDEEP']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').values
+
+    if np.nanmean(phin)>1:
+        phin = phin/100
+            
+    # --- Clean up ---
+    phin = np.clip(phin, 0.01, 0.7)
+    resd = np.clip(resd, 0.2, 2000)
+
+    phin[depth<2000] = np.nan
+    resd[depth<2000] = np.nan
+
+    log_phi = np.log10(phin)
+    log_resd = np.log10(resd)
+
+    # --- Initialize output ---
+    r0_continuous = np.full_like(depth, np.nan)
+    m_continuous = np.full_like(depth, np.nan)    
+
+    # --- Moving weighted regression parameters ---
+    sigma = 500  # controls window width (ft)
+
+    for i in range(len(depth)):
+        z = depth[i]
+        weights = np.exp(-0.5 * ((depth - z)/sigma)**2)
+        valid = (np.isfinite(log_phi)) & (np.isfinite(log_resd))
+        
+        if np.sum(weights[valid]) > 20:
+            x = log_phi[valid]
+            y = log_resd[valid]
+            w = weights[valid]
+
+            # Sort by resistivity to apply weighted quantile threshold
+            sort_idx = np.argsort(y)
+            y_sorted = y[sort_idx]
+            w_sorted = w[sort_idx]
+            x_sorted = x[sort_idx]
+
+            # Compute cumulative weights
+            cum_weights = np.cumsum(w_sorted)
+            cum_weights /= cum_weights[-1]
+
+            # Apply weighted quantile (e.g., 20th percentile)
+            q_idx = np.searchsorted(cum_weights, 0.2)
+            threshold = y_sorted[q_idx]
+
+            mask = y <= threshold
+            x_sub = x[mask]
+            y_sub = y[mask]
+            w_sub = w[mask]
+
+            if len(x_sub) > 5:
+                w_sum = np.sum(w_sub)
+                xw = np.sum(w_sub * x_sub) / w_sum
+                yw = np.sum(w_sub * y_sub) / w_sum
+                slope = np.sum(w_sub * (x_sub - xw) * (y_sub - yw)) / np.sum(w_sub * (x_sub - xw) ** 2)
+                intercept = yw - slope * xw
+
+                m = -slope
+                a = 10**intercept
+                r0_continuous[i] = a * phin[i]**(-m)
+                m_continuous[i] = m
+                   
+    #r0_smooth1 = gaussian_filter1d(r0_continuous, sigma=10, mode='nearest')
+    r0_smooth2 = savgol_filter(r0_continuous, 51, 2, mode='nearest')
+
+    df_1['R0'] = r0_smooth2
+    return df_1['R0']
+
 def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     #if 1==1:
     #pathname = path.dirname(sys.argv[0])
@@ -1215,58 +1294,60 @@ def DLOGR(LASfile):
                             if (Alias['DCORR'] != 'NULL'):
                                 df.loc[np.absolute(df[Alias['DCORR']])>0.15,'BADHOLE']=1
 
-                            ###############################
-                            # Assign R0 & SW per interval #
-                            ###############################
-                            df["R0"]=np.nan
-                            df["SW_N"]=np.nan
-                            N=np.nan
-                            df.index=df.index.astype(str)
-                            for i in df.LABEL.unique():
-                                if len(df.loc[(df.LABEL==i)&(df.BADHOLE!=1),[Alias["NPHI"],Alias["RDEEP"]]].dropna())>10:
-                                    try: x=R0_DLOGN(df[[Alias["NPHI"],Alias["RDEEP"]]][(df.LABEL==i)&(df.BADHOLE!=1)].dropna(),Puwi,2,i);
-                                    except: continue;
-                                    if len(x)>0:
-                                        x.index=x.index.astype(str)
-                                        df.update(x)
-                                        del x
-                                        # GET N
-                                        #dfsub=df.loc[df.LABEL==i,[Alias['DEN'],Alias['NPHI'],Alias['RDEEP'],'R0']].dropna()
-                                        #pd.concat([(2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69,df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]],axis=1).dropna()
-                                        data=((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]).dropna()
-                                        data=(np.log10((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*np.log10(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']])).dropna()
+                            # ###############################
+                            # # Assign R0 & SW per interval #
+                            # ###############################
+                            # df["R0"]=np.nan
+                            # df["SW_N"]=np.nan
+                            # N=np.nan
+                            # df.index=df.index.astype(str)
+                            # for i in df.LABEL.unique():
+                            #     if len(df.loc[(df.LABEL==i)&(df.BADHOLE!=1),[Alias["NPHI"],Alias["RDEEP"]]].dropna())>10:
+                            #         try: x=R0_DLOGN(df[[Alias["NPHI"],Alias["RDEEP"]]][(df.LABEL==i)&(df.BADHOLE!=1)].dropna(),Puwi,2,i);
+                            #         except: continue;
+                            #         if len(x)>0:
+                            #             x.index=x.index.astype(str)
+                            #             df.update(x)
+                            #             del x
+                            #             # GET N
+                            #             #dfsub=df.loc[df.LABEL==i,[Alias['DEN'],Alias['NPHI'],Alias['RDEEP'],'R0']].dropna()
+                            #             #pd.concat([(2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69,df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]],axis=1).dropna()
+                            #             data=((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]).dropna()
+                            #             data=(np.log10((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*np.log10(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']])).dropna()
 
-                                        #normrange(XX.iloc
-                                        data=data.loc[data>0]
+                            #             #normrange(XX.iloc
+                            #             data=data.loc[data>0]
 
-                                        #data=np.log10(data)
-                                        data=data[np.absolute(data)<1000].dropna()
+                            #             #data=np.log10(data)
+                            #             data=data[np.absolute(data)<1000].dropna()
 
-                                        if len(data)>10:
-                                            #print(data)
-                                            param = stats.gamma.fit(data)
-                                            limit=10**stats.gamma.ppf(0.4,*param) # probabilistic value from bin
-                                            #df.loc[((data.loc[:,0]*data.iloc[:,1])<limit)]
-                                            pca=PCA()
-                                            filterlist=((df.LABEL==i) &
-                                                        (np.log10((2.69-df[Alias['DEN']])/1.69*np.log10(df['R0'])/df[Alias['RDEEP']])<limit) &
-                                                        (df.BADHOLE!=1))
-                                            if len(filterlist==True)<20: continue
-                                            try: pca.fit(np.log10(pd.concat([(2.69-df.loc[filterlist,Alias['DEN']])/1.69,
-                                                      df.loc[filterlist,'R0']/df.loc[filterlist,Alias['RDEEP']]],
-                                                      axis=1).clip(0.00001,100)).dropna())
-                                            #try: pca.fit(np.log10(pd.concat([(2.69-df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['DEN']])/1.69,df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),"R0"]/df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['RDEEP']]],axis=1).clip(0.00001,100)).dropna())
-                                            except: continue
-                                            N=-1/min(pca.components_[:,1]/pca.components_[:,0]) # positive eigenvector slope
-                                            #if Npca>0df:
-                                            #    df.loc[df.LABEL==i,'SWpca']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/Npca)).clip(lower=0,upper=1)
-                                            #N=2
-                                            if (N>0.4) and (N<25):
-                                                df.loc[df.LABEL==i,'SW_N']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/N)).clip(lower=0,upper=1)
-                                            else: continue
-                            for i in df.LABEL.unique():
-                                if ((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']])**0.5).dropna().quantile(q=0.9) < 0.5:
-                                    df.loc[df.LABEL==i,'R0']=None
+                            #             if len(data)>10:
+                            #                 #print(data)
+                            #                 param = stats.gamma.fit(data)
+                            #                 limit=10**stats.gamma.ppf(0.4,*param) # probabilistic value from bin
+                            #                 #df.loc[((data.loc[:,0]*data.iloc[:,1])<limit)]
+                            #                 pca=PCA()
+                            #                 filterlist=((df.LABEL==i) &
+                            #                             (np.log10((2.69-df[Alias['DEN']])/1.69*np.log10(df['R0'])/df[Alias['RDEEP']])<limit) &
+                            #                             (df.BADHOLE!=1))
+                            #                 if len(filterlist==True)<20: continue
+                            #                 try: pca.fit(np.log10(pd.concat([(2.69-df.loc[filterlist,Alias['DEN']])/1.69,
+                            #                           df.loc[filterlist,'R0']/df.loc[filterlist,Alias['RDEEP']]],
+                            #                           axis=1).clip(0.00001,100)).dropna())
+                            #                 #try: pca.fit(np.log10(pd.concat([(2.69-df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['DEN']])/1.69,df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),"R0"]/df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['RDEEP']]],axis=1).clip(0.00001,100)).dropna())
+                            #                 except: continue
+                            #                 N=-1/min(pca.components_[:,1]/pca.components_[:,0]) # positive eigenvector slope
+                            #                 #if Npca>0df:
+                            #                 #    df.loc[df.LABEL==i,'SWpca']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/Npca)).clip(lower=0,upper=1)
+                            #                 #N=2
+                            #                 if (N>0.4) and (N<25):
+                            #                     df.loc[df.LABEL==i,'SW_N']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/N)).clip(lower=0,upper=1)
+                            #                 else: continue
+                            # for i in df.LABEL.unique():
+                            #     if ((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']])**0.5).dropna().quantile(q=0.9) < 0.5:
+                            #         df.loc[df.LABEL==i,'R0']=None
+                           
+                            df['R0'] = Find_R0(df)
                             df['SW']=(df['R0']/df[Alias['RDEEP']])**0.5
                             #####################
                             # Create Export LAS #
