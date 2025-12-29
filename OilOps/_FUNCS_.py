@@ -142,6 +142,15 @@ def exponential(x, A, K, C):
     y= A * np.exp(K * x) + C
     return (y)
 
+def powfunc(x, a, c, d):
+    return a*(x**(c+d))
+
+def expfunc(x, a, b, c, d):
+    return a*np.exp(-c*(x-b))+d
+
+def exp_nct(depth, A, B):
+    return A * np.exp(B * depth)
+ 
 def stretch_exponential(x,c,tau,beta,y_offset):
     return c*(np.exp(-(x/tau)**beta))+y_offset
 
