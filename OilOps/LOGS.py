@@ -42,7 +42,41 @@ def decompose_log(df_in, p_thresh = None):
     decompose = seasonal_decompose(df_in.dropna(),model='additive', period= p_thresh)
     return decompose.trend
 
-def detrend_log(df_in,xkey='index', ykey='SP', return_model = False, model_index = [], log = False, fit_deg =1 ):
+def RollingAvg(df_in, windowsize, values_key,window_key = None):
+    windowsize = np.floor((windowsize-1)/2)
+
+    df_in = df_in.copy()
+ 
+    if window_key == None:
+        df_in['WIN'] = df_in.index
+    else: 
+        df_in['WIN'] = df_in[window_key]
+
+    min_val = df_in['WIN'].min()
+    max_val = df_in['WIN'].max()
+
+    df_in['ROLL'] = np.nan
+    
+    for i in df_in.index:
+        val = df_in.loc[i,'WIN']
+        win0 = max(val - windowsize,min_val)
+        win1 = min(val + windowsize,max_val)
+        m = ((df_in['WIN']>= win0) & (df_in['WIN']<= win1)).values
+        df_in.loc[i,'ROLL'] = df_in.loc[m,values_key].interpolate().mean()
+
+    return df_in['ROLL']                              
+    
+def decompose_log(df_in, p_thresh = None):
+    if p_thresh == None:
+        p_thresh = np.floor( df_in.dropna().shape[0]/2 )
+        p_thresh = int(p_thresh)
+    
+    decompose = seasonal_decompose(df_in.dropna(),model='additive', period= p_thresh)
+    return decompose.trend
+
+
+def detrend_log(df,xkey='index',ykey='SP',return_model = False,model_index = [], log = False):
+    df_in = df.copy()
     if len(model_index) == 0:
         model_index = df_in.index
     if isinstance(df_in,pd.Series):
@@ -59,7 +93,7 @@ def detrend_log(df_in,xkey='index', ykey='SP', return_model = False, model_index
         y=df_in.loc[m,ykey].values
     if log:
         y = np.log10(y)       
-    model = np.polyfit(x, y, fit_deg)
+    model = np.polyfit(x, y, 1)
     pred=np.poly1d(model)
     df_in[ykey+'_TREND'] = df_in[xkey].apply(lambda x: pred(x))
     if log:
@@ -68,6 +102,234 @@ def detrend_log(df_in,xkey='index', ykey='SP', return_model = False, model_index
         return pred
     else:
         return df_in[ykey+'_TREND']
+
+def rescale_data(data_series, target_min_percentile_value, target_max_percentile_value, min_percentile=5, max_percentile=95):
+    """
+    Rescales a data series linearly based on specified percentiles.
+
+    Args:
+        data_series (np.array or pd.Series): The input data series.
+        target_min_percentile_value (float): The desired value for the min_percentile.
+        target_max_percentile_value (float): The desired value for the max_percentile.
+        min_percentile (int): The percentile to use as the lower bound (default is 5).
+        max_percentile (int): The percentile to use as the upper bound (default is 95).
+
+    Returns:
+        np.array: The rescaled data series.
+    """
+
+    # Calculate the actual 5th and 95th percentiles of the data
+    p5 = np.percentile(data_series, min_percentile)
+    p95 = np.percentile(data_series, max_percentile)
+
+    # Handle the edge case where the 5th and 95th percentiles are the same
+    if p95 == p5:
+        if target_max_percentile_value == target_min_percentile_value:
+            return np.full_like(data_series, target_min_percentile_value)
+        else:
+            raise ValueError("Cannot rescale: 5th and 95th percentiles are identical, but target values are different.")
+
+    # Calculate the scaling factor (slope)
+    scale_factor = (target_max_percentile_value - target_min_percentile_value) / (p95 - p5)
+
+    # Calculate the offset (intercept)
+    offset = target_min_percentile_value - (p5 * scale_factor)
+
+    # Apply the linear transformation
+    rescaled_data = (data_series * scale_factor) + offset
+
+    return rescaled_data
+
+def robust_log_fit(x, y,x2):
+    log_x = np.log(x).reshape(-1, 1)
+    model = HuberRegressor().fit(log_x, y)
+    return model.predict(np.log(x2).reshape(-1, 1))
+
+def tune_eaton_exponent(modulus, nct, overburden, hydrostatic, min_exp=1.0, max_exp=6.0, steps=50, ratio_invert=False):
+
+    modulus = modulus.copy()
+    nct = nct.copy()
+    overburden = overburden.copy()
+    hydrostatic = hydrostatic.copy()
+
+    best_exp = 2.0
+    best_score = np.inf
+    hydro_grad = hydrostatic / overburden  # Expect ~0.465
+
+    mm=(~np.isnan(modulus+nct+overburden+hydrostatic))
+    modulus = modulus[mm]
+    nct = nct[mm]
+    overburden = overburden[mm]
+    hydrostatic = hydrostatic[mm]
+
+    for e in np.linspace(min_exp, max_exp, steps):
+        if ratio_invert:
+            modulus_ratio = np.clip(modulus / nct, 0.01, 10)
+        else:
+            modulus_ratio = np.clip(nct / modulus, 0.01, 10)
+
+        # ratio = np.clip(nct / modulus, 0.01, 10)
+        pp = overburden - (overburden - hydrostatic) * (modulus_ratio ** e)
+
+        # Penalties
+        underpressured = pp < hydrostatic
+        percent_under = underpressured.mean()
+        underpressure_penalty = 50 * percent_under + 5 * np.std(pp[underpressured]) if np.any(underpressured) else 0
+        
+        # Sudden changes penalty
+        smoothness_penalty = np.std(np.diff(pp))
+
+        # Physically unrealistic values (negative or too high)
+        unrealistic_penalty = 100 * np.mean((pp < 0) | (pp > overburden * 1.1))
+
+        total_score = underpressure_penalty + smoothness_penalty + unrealistic_penalty
+
+        if total_score < best_score:
+            best_score = total_score
+            best_exp = e
+
+    return best_exp
+
+def compute_eaton_pp(depth, log_values, log_type='density', overburden=None, hydrostatic=None, eaton_exponent=3.0, filter = [], quantile = None):
+    """
+    Compute Eaton pore pressure and normal compaction trend (NCT) from a given log.
+    
+    Parameters:
+        depth: np.array of depth values
+        log_values: np.array of measured log values
+        log_type: 'density', 'neutron', or 'resistivity'
+        overburden: np.array or scalar of overburden pressure (psi)
+        hydrostatic: np.array or scalar of hydrostatic pressure (psi)
+        eaton_exponent: default Eaton exponent
+
+    Returns:
+        nct_fit: np.array of NCT fit values
+        pore_pressure: np.array of estimated pore pressures (psi)
+    """
+
+    if len(filter) == 0:
+        filter = [True] * len(depth)
+    
+    
+    depth = np.asarray(depth)
+    log_values = np.asarray(log_values)
+
+    if quantile == None:
+        if log_type.lower().startswith('neu'):
+            q = 0.2
+        elif log_type.lower().startswith('res'):
+            q = 0.9
+            log_values = np.log10(log_values)
+        elif log_type.lower().startswith('den'):
+            q = 0.9
+    else:
+        q = quantile
+
+    # Step 1: Fit Normal Compaction Trend using lower envelope
+    # Use 10th percentile in a rolling window to approximate NCT
+    window = 500  # adjust based on resolution
+    nct_envelope = pd.Series(log_values).rolling(window=window, min_periods=10, center=True).quantile(q)
+    mask = ~nct_envelope.isna() * (depth>0) * filter
+    #popt, _ = curve_fit(exp_nct, depth[mask], nct_envelope[mask])
+
+    #nct_fit = exp_nct(depth, *popt)
+    
+    nct_model = linregress( depth[mask], nct_envelope[mask] )
+    log_nct = nct_model.intercept + nct_model.slope * np.log(depth)
+    nct_fit = np.exp(log_nct)
+
+    if False:
+        plt.plot(rhob, depth)
+        plt.plot(nct_fit,depth)
+        plt.xlim(0,4)
+        plt.show()
+
+
+    # Step 2: Handle pressures
+    if overburden is None:
+        overburden = 1.0 * depth * 0.052 * 1000  # ppg to psi
+
+    if hydrostatic is None:
+        hydrostatic = 0.465 * depth * 0.052 * 1000  # typical gradient
+ 
+    overburden = np.asarray(overburden)
+    hydrostatic = np.asarray(hydrostatic)
+
+    # Step 3: Compute Ratio (Resistivity is inverted)
+    mm = (depth>3000) * (~np.isnan(log_values)) * filter
+
+    if log_type.lower().startswith('r'):
+        ratio = np.clip(log_values / nct_fit, 0.001, 10)
+        eaton_exponent = tune_eaton_exponent(log_values[mm],
+                                    nct_fit[mm],
+                                    overburden[mm],
+                                    hydrostatic[mm],
+                                    min_exp = 0.2,
+                                    max_exp = 4, 
+                                    steps = 2000,
+                                    ratio_invert = True)        
+        
+
+
+    elif log_type.lower().startswith('n'):
+        ratio = np.clip(log_values/nct_fit, 0.001, 10)
+        eaton_exponent = tune_eaton_exponent(nct_fit[mm],
+                                            log_values[mm],
+                                            overburden[mm],
+                                            hydrostatic[mm],
+                                            min_exp = 0.2,
+                                            max_exp = 10, 
+                                            steps = 2000,
+                                            ratio_invert = False)
+    elif log_type.lower().startswith('d'):
+        ratio = np.clip(nct_fit / log_values, 0.01, 10)
+        eaton_exponent = tune_eaton_exponent(nct_fit[mm],
+                                            log_values[mm],
+                                            overburden[mm],
+                                            hydrostatic[mm],
+                                            min_exp = 0.2,
+                                            max_exp = 10, 
+                                            steps = 2000,
+                                            ratio_invert = True)
+
+    # Step 4: Eaton Equation
+    pore_pressure = overburden - (overburden - hydrostatic) * (ratio ** eaton_exponent)
+
+    return nct_fit, pore_pressure
+
+def fit_quantile_nct_surface(
+    df,
+    y_col,                # e.g., 'DT'  (for modulus later you'd build M_NCT from DT_NCT & RHOB_NCT)
+    depth_col='DEPTH_FT',
+    umaa_col='UMAA',
+    tau=0.15,             # 0.10–0.20 for lower envelope (DT); 0.80–0.90 for upper envelope (RHOB, R0)
+    df_depth=7,           # spline degrees of freedom for depth
+    df_umaa=5,            # spline degrees of freedom for UMAA
+    df_interact=4,        # complexity of the interaction (usually <= min(df_depth, df_umaa))
+    weights=None          # optional: observation weights (e.g., kernel by depth) to localize fit
+):
+    data = df[[y_col, depth_col, umaa_col]].copy()
+    data = data.replace([np.inf, -np.inf], np.nan).dropna(subset=[y_col, depth_col, umaa_col])
+    if data.empty:
+        return pd.Series(np.nan, index=df.index, name=f'{y_col}_NCT')
+
+    # Natural splines (depth) + B-splines (UMAA) + interaction.
+    # Use ':' for pure interaction; use '+' to include main effects.
+    # If you want full interaction (main effects + interaction), you can also use '*':
+    #   cr(depth, df=df_depth) * bs(UMAA, df=df_umaa)
+    formula = (
+        f"{y_col} ~ cr({depth_col}, df={df_depth})"
+        f" + bs({umaa_col}, df={df_umaa})"
+        f" + cr({depth_col}, df={max(3, df_interact)}):bs({umaa_col}, df={max(3, df_interact)})"
+    )
+
+    model = smf.quantreg(formula, data=data)
+    res = model.fit(q=tau, max_iter=10000, weights=weights)
+
+    # Predict across the full index (handle NaNs gracefully)
+    pred = res.predict(df)
+    pred.name = f'{y_col}_NCT'
+    return pred
 
 
 def TEMP_SUMMARY_LAS(_LASFILES_):
