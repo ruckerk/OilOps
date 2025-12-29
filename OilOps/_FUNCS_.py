@@ -1,5 +1,9 @@
  # requires xlrd, openpyxl
 from __future__ import annotations
+from __future__ import annotations
+
+from dataclasses import dataclass, asdict
+
 
 from bs4 import BeautifulSoup as BS
 from functools import partial
@@ -41,10 +45,14 @@ import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib import colors
+import matplotlib.patches as mpatches
+
 import seaborn as sns
 
 import multiprocessing
 import numpy as np
+from numpy.linalg import lstsq
+
 import pandas as pd
 import pylab
 import re
@@ -55,7 +63,7 @@ import shapefile as shp #pyshp
 import sklearn as sk
 from sklearn.decomposition import PCA
 from sklearn.cluster import HDBSCAN, KMeans
-from sklearn.linear_model import LinearRegression, RidgeCV, MultiTaskElasticNetCV, LogisticRegression
+from sklearn.linear_model import LinearRegression, RidgeCV, MultiTaskElasticNetCV, LogisticRegression, HuberRegressor
 from sklearn.metrics import classification_report, confusion_matrix, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.pipeline   import make_pipeline,Pipeline
@@ -64,10 +72,10 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.utils import check_random_state
 from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestRegressor
 
 from sklearn import set_config
 set_config(transform_output="pandas")
-
 
 import sqlalchemy
 import sqlite3
@@ -80,16 +88,21 @@ import lasio
 import psutil
 import fnmatch
 
-from scipy import signal, stats
-from scipy import interpolate
-from scipy.optimize import curve_fit, fmin_cobyla
-from scipy.optimize import least_squares
-from scipy.stats.mstats import gmean
+from scipy import signal, stats, interpolate
+from scipy.optimize import curve_fit, fmin_cobyla, least_squares
+from scipy.stats.mstats import gmean, linregress
 from scipy.stats import circmean
-from scipy.ndimage    import binary_dilation
+from scipy.ndimage import binary_dilation, gaussian_filter1d
+
+from scipy.signal import savgol_filter
+from scipy.interpolate import interp1d
+from scipy.integrate import cumulative_trapezoid
+from scipy.optimize import minimize, lsq_linear
 
 from statsmodels.tsa.seasonal import seasonal_decompose
-import  statsmodels.api as sm
+import statsmodels.api as sm
+
+import ruptures as rpt
 
 import openpyxl, xlrd
 import xlsxwriter
@@ -116,6 +129,10 @@ from scipy.special import logsumexp
 import base64 
 
 import difflib
+import welleng
+import wellpathpy as wp
+
+import pymc as pm
 
 from .WELLAPI import WELLAPI as WELLAPI
 
@@ -125,7 +142,8 @@ from .WELLAPI import WELLAPI as WELLAPI
 #from catboost import CatBoostRegressor
 #from lightgbm import LGBMRegressor
 
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
+
 from tqdm import tqdm, trange
 
 warnings.filterwarnings('ignore')
