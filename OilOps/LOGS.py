@@ -23,6 +23,15 @@ __all__ = ['TEMP_SUMMARY_LAS',
 
 
 # Update clay model to consider Bhuyan and Passey, 1994 method + Nphi_fl and Rho_fl from RLOGR R0
+
+
+def TRfromHI(HI,HIO=750):
+    TR = ((HIO/100)-(HI*(60-5*HIO/100))/(6000-5*HI))/(HIO/100)
+    return TR
+
+def HIfromTR(TR,HIO=750):
+    HI = 60*HIO*(TR-1)/(5*HIO/100-60+5*(TR-1)*(HIO/100))
+    return HI
                    
 
 def decompose_log(df_in, p_thresh = None):
