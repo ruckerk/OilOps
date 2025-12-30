@@ -721,8 +721,8 @@ def Find_R0(df, sigma = 500):
     #r0_smooth1 = gaussian_filter1d(r0_continuous, sigma=10, mode='nearest')
     r0_smooth2 = savgol_filter(r0_continuous, 51, 2, mode='nearest')
 
-    df_1['R0'] = r0_smooth2
-    return df_1['R0']
+    df_in ['R0'] = r0_smooth2
+    return df_in ['R0']
 
 def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     #if 1==1:
