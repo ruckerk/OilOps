@@ -1141,6 +1141,9 @@ def DLOGR(LASfile):
     except: las=[[0]]
 
     Alias = GetAlias(las)
+
+    step=las.well.STEP.value
+           
     if (len(las[0])>100):
         
         df = (las.df().astype(np.float32))
@@ -1367,13 +1370,12 @@ def DLOGR(LASfile):
                     las.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(Puwi).zfill(14), descr="Unique well identifier")
                 except: pass
 
-                #str(las.well["UWI"].value).zfill(14)
-
-                exlas.append_curve('DEPT',df.DEPTH , unit='ft')
+                exlas.append_curve('DEPT', df.DEPTH , unit='ft')
 
                 ##############
                 # CLAY MODEL #
                 ##############
+                       
                 df["ND_DIFF"]=(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69)
                 df["WKR_VCLAY"]=(-1.59488+234.513*(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69))/100
 
@@ -1389,6 +1391,7 @@ def DLOGR(LASfile):
                 df["WKR_BVW_269"]=(df["SW"])*df["WKR_DPHI_269"]
                 df["WKR_BVH_269"]=(1-df.SW.clip(lower=0,upper=1))*df["WKR_DPHI_269"]
                 df['WKR_Kirr']=(250*df.loc[df["WKR_DPHI_269"]>0,"SW"]**3)/(df["SW"].clip(lower=0,upper=1))**2
+                       
                 #    df["WKR_PHI_INV"]=df["Sw"]-((df["R0"]/df[Alias["RSHAL"]])**0.5)*df["WKR_Dphi_269"]
 
                 # for i in df.LABEL.unique():
