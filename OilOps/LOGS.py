@@ -1136,7 +1136,10 @@ def DLOGR(LASfile):
     #if 1==1:
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'DLOGR')       
-           
+
+    if not path.exists(dir_add):
+        mkdir(dir_add)
+               
     try: las = lasio.read(LASfile)
     except: las=[[0]]
 
