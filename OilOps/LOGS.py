@@ -648,7 +648,7 @@ def func(x, a, b): return a + x * b
 def Find_R0(df, sigma = 500):
     df_in = df.copy()
     depth = df_in.index
-    ALIAS = OilOps.LOGS.GetAlias(df_in)        
+    ALIAS = GetAlias(df_in)        
 
     # --- Required logs ---
     m_phi = df_in[ALIAS['NPHI']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').dropna().index
