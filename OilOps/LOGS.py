@@ -1135,19 +1135,14 @@ def reduce_mem_usage(props):
 def DLOGR(LASfile):
     #if 1==1:
     exlas=lasio.LASFile()
-    #pd.set_option('display.float_format', lambda x: '%.3f' % x)
-    #pathname = path.dirname(sys.argv[0])
-    #dir = path.abspath(pathname)
-    #dirs = listdir( pathname )
-    #dir_add = dir+"\\DLOGR"
     dir_add = path.join(getcwd(),'DLOGR')       
-    #dir_add = path.abspath(path.dirname(sys.argv[0]))+"\\DLOGR"
-    #global Alias
+           
     try: las = lasio.read(LASfile)
     except: las=[[0]]
+
     Alias = GetAlias(las)
     if (len(las[0])>100):
-    #for zz in range(0,1):
+        
         df = (las.df().astype(np.float32))
         df["DEPTH"] = las.df().index.astype(float)
         dfmask=df[[Alias['DEN'],Alias['NPHI']]].dropna(thresh=1).index
@@ -1155,15 +1150,10 @@ def DLOGR(LASfile):
         df = df.loc[(df.index).isin(dfmask)]
         uwi=Get_API(las)
 
-        #try:
-        #    uwi = re.sub(r'[^0-9]','',str(las.well["UWI"].value))
-        #except:
-        #    uwi = re.sub(r'[^0-9]','',str(las.well["API"].value))
-        #    las.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(uwi).zfill(14), descr="Unique well identifier")
         Puwi=str(0)*(14-len(str(int(uwi))))+str(int(uwi))
         #print(str(uwi))
         if (Alias["NPHI"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["RDEEP"]!="NULL"):
-            #if (len(df[Alias["NPHI"]].dropna())>100 and len(df[Alias["DEN"]].dropna())>100 and len(df[Alias["RDEEP"]].dropna())>100):
+
             if (len(df[[Alias["NPHI"],Alias["DEN"],Alias["RDEEP"]]].dropna())>100):
                 ####################
                 # PETROPHYSICAL QC #
@@ -1171,8 +1161,14 @@ def DLOGR(LASfile):
                 # NULL BADHOLE
                 # LOG CORRECTIONS
                 # SONIC DESPIKE
+                
                 if df[Alias["NPHI"]].median(axis=0)>2:
                     df[Alias["NPHI"]]=df[Alias["NPHI"]]/100
+
+                df['BADHOLE']=np.nan
+                if (Alias['DCORR'] != 'NULL'):
+                    df.loc[np.absolute(df[Alias['DCORR']])>0.15,'BADHOLE']=1
+                    
 
                 ###########################
                 # Initial Estimate Curves #
@@ -1180,314 +1176,316 @@ def DLOGR(LASfile):
                 # U_APPX = las[PE]*las[RHOB]
                 #SW_DLOGN(las[NPHI],las[RD],las.well["UWI"].value,2)
 
-                try: x = R0_DLOGN(las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna(),Puwi,2,'X')
-                except: x=pd.DataFrame()
-                df_in=las.df()[[Alias["DEN"],Alias["RDEEP"]]]
-                df_in["DPHI"]=(2.75-df_in[Alias["DEN"]])/1.75
-                try: y = R0_DLOGN(df_in[["DPHI",Alias["RDEEP"]]].dropna(),Puwi,2,'Y')
-                except: y=pd.DataFrame()
-                del df_in
+                #try: x = R0_DLOGN(las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna(),Puwi,2,'X')
+                #except: x=pd.DataFrame()
+                    
+                # df_in = las.df()[[Alias["DEN"],Alias["RDEEP"]]]
+                # df_in["DPHI"] = (2.75-df_in[Alias["DEN"]])/1.75
+                    
+                # try: y = R0_DLOGN(df_in[["DPHI",Alias["RDEEP"]]].dropna(),Puwi,2,'Y')
+                # except: y=pd.DataFrame()
+                # del df_in
                 # xr0=0.01*las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna()[0]**(-2)
                 # xsw=((las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna()[1])/(las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna()[0]**(-2)))**(-2)
                 # x=pd.DataFrame({"R0":xr0,"SW":xsw})
                 # x=[0.01*las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna()[0]**(-2)],
                 # x=((las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna()[1])/(las.df()[[Alias["NPHI"],Alias["RDEEP"]]].dropna()[0]**(-2)))**(-2)
-                if x.shape[1]>=1:
-                    x.columns = ["R0_Nappx","Sw_Nappx"]
-                    df[x.columns[0]]=np.nan
-                    df[x.columns[1]]=np.nan
-                    df.index=df.index.astype(str)
-                    x.index=x.index.astype(str)
-                    df.update(x)
-                    #df=pd.concat([df, x.iloc[:,0]], axis=1, join_axes=[df.index])
-                    #df=pd.concat([df, x.iloc[:,1]], axis=1, join_axes=[df.index])
-                    #del x
-                if y.shape[1]>=1:
-                    y.columns = ["R0_Dappx","Sw_Dappx"]
-                    df[y.columns[0]]=np.nan
-                    df[y.columns[1]]=np.nan
-                    df.index=df.index.astype(str)
-                    y.index=y.index.astype(str)
-                    df.update(y)
-                    #df=pd.concat([df, x.iloc[:,0]], axis=1, join_axes=[df.index])
-                    #df=pd.concat([df, x.iloc[:,1]], axis=1, join_axes=[df.index])
-                    #del y
+                # if x.shape[1]>=1:
+                #     x.columns = ["R0_Nappx","Sw_Nappx"]
+                #     df[x.columns[0]]=np.nan
+                #     df[x.columns[1]]=np.nan
+                #     df.index=df.index.astype(str)
+                #     x.index=x.index.astype(str)
+                #     df.update(x)
+                #     #df=pd.concat([df, x.iloc[:,0]], axis=1, join_axes=[df.index])
+                #     #df=pd.concat([df, x.iloc[:,1]], axis=1, join_axes=[df.index])
+                #     #del x
+                # if y.shape[1]>=1:
+                #     y.columns = ["R0_Dappx","Sw_Dappx"]
+                #     df[y.columns[0]]=np.nan
+                #     df[y.columns[1]]=np.nan
+                #     df.index=df.index.astype(str)
+                #     y.index=y.index.astype(str)
+                #     df.update(y)
+                #     #df=pd.concat([df, x.iloc[:,0]], axis=1, join_axes=[df.index])
+                #     #df=pd.concat([df, x.iloc[:,1]], axis=1, join_axes=[df.index])
+                #     #del y
 
-                if all (k in df.keys() for k in ("R0_Nappx","Sw_Nappx","R0_Dappx","Sw_Dappx")): 
-                    #####################
-                    # STATISTICAL UNITS #
-                    #####################
-                    A =pd.DataFrame({'DEPTH':df.DEPTH.astype(float),
-                                     'DEPTH':df.DEPTH.astype(float)+0.5,
-                                     'R0N/NPHI':(df["R0_Nappx"]*df[Alias["NPHI"]]**-2).rolling(15).mean(),
-                                     'R0N/RT':(df["R0_Nappx"]/df[Alias["RDEEP"]]).rolling(15).mean(),
-                                     'R0D/DPHI':(df["R0_Dappx"]*df[Alias["NPHI"]]**-2).rolling(15).mean(),
-                                     'R0D/RT':(df["R0_Dappx"]/df[Alias["RDEEP"]]).rolling(15).mean(),
-                                     }).dropna().astype(np.float32)
-                    #print(str(uwi),str(A.shape[0]))
-                    # HDBSCAN clusting association
-                    if len(A.iloc[:,0])>50:
+                # if all (k in df.keys() for k in ("R0_Nappx","Sw_Nappx","R0_Dappx","Sw_Dappx")): 
+                #     #####################
+                #     # STATISTICAL UNITS #
+                #     #####################
+                #     A =pd.DataFrame({'DEPTH':df.DEPTH.astype(float),
+                #                      'DEPTH':df.DEPTH.astype(float)+0.5,
+                #                      'R0N/NPHI':(df["R0_Nappx"]*df[Alias["NPHI"]]**-2).rolling(15).mean(),
+                #                      'R0N/RT':(df["R0_Nappx"]/df[Alias["RDEEP"]]).rolling(15).mean(),
+                #                      'R0D/DPHI':(df["R0_Dappx"]*df[Alias["NPHI"]]**-2).rolling(15).mean(),
+                #                      'R0D/RT':(df["R0_Dappx"]/df[Alias["RDEEP"]]).rolling(15).mean(),
+                #                      }).dropna().astype(np.float32)
+                #     #print(str(uwi),str(A.shape[0]))
+                #     # HDBSCAN clusting association
+                #     if len(A.iloc[:,0])>50:
 
-                        # Renumbered to label in depth order and associate outliers with nearest label
-                        c_num = HDBSCAN(min_cluster_size=100).fit_predict(A)
+                #         # Renumbered to label in depth order and associate outliers with nearest label
+                #         # c_num = HDBSCAN(min_cluster_size=100).fit_predict(A)
 
-                        c_num = 0+(A.DEPTH>4000)+(A.DEPTH>6000)
+                #         # c_num = 0+(A.DEPTH>4000)+(A.DEPTH>6000)
 
-                        #clusters = hdbscan.HDBSCAN(min_cluster_size=n).fit_predict(A);A["Labels"]=clusters;plt.plot(A["Labels"],-A.index);plt.title("Clusters="+str(1+max(clusters)));plt.show()
-                        if len(set(c_num))>0:
-                            A["clusters"]=c_num
-                            df.loc[df.index.isin(A.index),"cluster"]= c_num
-                            if (min(c_num)<0) and (len(set(c_num))>1):
-                                def_clusters=dict(zip(list(set(A.clusters)),stats.rankdata(list(map(lambda x: min(A[A["clusters"]==x].index.astype(float)),list(set(A.clusters))))).astype("int")))
-                                A["clusters"].replace(def_clusters,inplace=True)
-                                #A.loc[A.clusters==1,'clusters']=list(map(lambda x: round(x).astype(int),np.interp(A[A["clusters"]==1].index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
-                                #A['clusters']=list(map(lambda x: round(x).astype(int),np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
-                                A['clusters'] = list(map(lambda x: round(x), np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
-                            #df.LABEL=A.rename(index=str,columns={"clusters":"LABEL"}).LABEL
-                            df.index=df.index.astype(str)
-                            A.index=A.index.astype(str)
-                            df["LABEL"]=np.nan
-                            df.update(A.rename(index=str,columns={"clusters":"LABEL"})[["LABEL"]])
+                #         #clusters = hdbscan.HDBSCAN(min_cluster_size=n).fit_predict(A);A["Labels"]=clusters;plt.plot(A["Labels"],-A.index);plt.title("Clusters="+str(1+max(clusters)));plt.show()
+                #         if len(set(c_num))>0:
+                #             # A["clusters"]=c_num
+                #             # df.loc[df.index.isin(A.index),"cluster"]= c_num
+                #             # if (min(c_num)<0) and (len(set(c_num))>1):
+                #             #     def_clusters=dict(zip(list(set(A.clusters)),stats.rankdata(list(map(lambda x: min(A[A["clusters"]==x].index.astype(float)),list(set(A.clusters))))).astype("int")))
+                #             #     A["clusters"].replace(def_clusters,inplace=True)
+                #             #     #A.loc[A.clusters==1,'clusters']=list(map(lambda x: round(x).astype(int),np.interp(A[A["clusters"]==1].index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
+                #             #     #A['clusters']=list(map(lambda x: round(x).astype(int),np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
+                #             #     A['clusters'] = list(map(lambda x: round(x), np.interp(A.index.astype(float),A[A["clusters"]>1].index.astype(float),A.clusters[A.clusters>1])))
+                #             #df.LABEL=A.rename(index=str,columns={"clusters":"LABEL"}).LABEL
+                #             df.index=df.index.astype(str)
+                #             A.index=A.index.astype(str)
+                #             df["LABEL"]=np.nan
+                #             # df.update(A.rename(index=str,columns={"clusters":"LABEL"})[["LABEL"]])
 
-                            # Assign nulls between clusters assignments to new null sets so nulls group instead of a single null Label
-                            # step = df.DEPTH[10]-df.DEPTH[9]
-                            #step=round(scipy.stats.mstats.gmean(df.index.astype(float).to_series().diff()[df.index.astype(float).to_series().diff()!=0].dropna()),1)
-                            step=las.well.STEP.value
-                            if max(df.LABEL.dropna())>0:
-                                count=-2
-                                while (df.loc[df.LABEL.isnull(),'LABEL'].shape[0])>1:
-                                    startnull = min(df.loc[df.LABEL.isnull(),'DEPTH'])
-                                    try: endnull = min(df.loc[df.DEPTH>startnull,'LABEL'].dropna().index.astype(float))-step
-                                    except: endnull = max(df.DEPTH)
-                                    #          min(df.loc[df.index.astype(float)>(min(df.LABEL.isnull().index.astype(float))),'LABEL'].dropna().index.astype(float))-step
-                                    df.loc[((df.DEPTH>=startnull)&(df.DEPTH<=endnull)),'LABEL']=count
-                                    count-=1
-                            else: df.LABEL=-100
+                #             # Assign nulls between clusters assignments to new null sets so nulls group instead of a single null Label
+                #             # step = df.DEPTH[10]-df.DEPTH[9]
+                #             #step=round(scipy.stats.mstats.gmean(df.index.astype(float).to_series().diff()[df.index.astype(float).to_series().diff()!=0].dropna()),1)
+                #             step=las.well.STEP.value
+                #             # if max(df.LABEL.dropna())>0:
+                #             #     count=-2
+                #             #     while (df.loc[df.LABEL.isnull(),'LABEL'].shape[0])>1:
+                #             #         startnull = min(df.loc[df.LABEL.isnull(),'DEPTH'])
+                #             #         try: endnull = min(df.loc[df.DEPTH>startnull,'LABEL'].dropna().index.astype(float))-step
+                #             #         except: endnull = max(df.DEPTH)
+                #             #         #          min(df.loc[df.index.astype(float)>(min(df.LABEL.isnull().index.astype(float))),'LABEL'].dropna().index.astype(float))-step
+                #             #         df.loc[((df.DEPTH>=startnull)&(df.DEPTH<=endnull)),'LABEL']=count
+                #             #         count-=1
+                #             # else: df.LABEL=-100
 
-                                #df.loc[((df.DEPTH>=startnull)&(df.DEPTH<=endnull)),'LABEL']
-                                #df.loc[df.index.astype(float)>(min(df.LABEL.isnull().index.astype(float))),'LABEL'].dropna()
-                            #if max(df.LABEL[:firstnull])>0:
-                            #    df.loc[firstnull:,'LABEL']+=1
-                            #    df.loc[firstnull,'LABEL']=min(df.LABEL[firstnull:])-1
-                            #else: df.loc[firstnull,'LABEL']=0
+                #                 #df.loc[((df.DEPTH>=startnull)&(df.DEPTH<=endnull)),'LABEL']
+                #                 #df.loc[df.index.astype(float)>(min(df.LABEL.isnull().index.astype(float))),'LABEL'].dropna()
+                #             #if max(df.LABEL[:firstnull])>0:
+                #             #    df.loc[firstnull:,'LABEL']+=1
+                #             #    df.loc[firstnull,'LABEL']=min(df.LABEL[firstnull:])-1
+                #             #else: df.loc[firstnull,'LABEL']=0
 
-                            def_clusters=dict(
-                                zip(
-                                    list(
-                                        #set(df.LABEL[df.LABEL>=0])
-                                        set(df.LABEL)
-                                        ),stats.rankdata(
-                                            list(map(
-                                                lambda x: min(df[df["LABEL"]==x].index.astype(float)
-                                                              ),list(set(df.LABEL))
-                                                ))
-                                        ).astype("int")
-                                    )
-                                )
-                            df["LABEL"].replace(def_clusters,inplace=True)
+                #             # def_clusters=dict(
+                #             #     zip(
+                #             #         list(
+                #             #             #set(df.LABEL[df.LABEL>=0])
+                #             #             set(df.LABEL)
+                #             #             ),stats.rankdata(
+                #             #                 list(map(
+                #             #                     lambda x: min(df[df["LABEL"]==x].index.astype(float)
+                #             #                                   ),list(set(df.LABEL))
+                #             #                     ))
+                #             #             ).astype("int")
+                #             #         )
+                #             #     )
+                #             # df["LABEL"].replace(def_clusters,inplace=True)
 
-                            #df.LABEL=list(map(lambda x: round(x).astype(int),np.interp(df[df.isnull()].index.astype(float),df[df["LABEL"]>=0].index.astype(float),df.LABEL[df.LABEL>=0])))
-                            #df.LABEL=1
-                            ############
-                            # BAD HOLE #
-                            ############
-                            df['BADHOLE']=np.nan
-                            if (Alias['DCORR'] != 'NULL'):
-                                df.loc[np.absolute(df[Alias['DCORR']])>0.15,'BADHOLE']=1
+                #             #df.LABEL=list(map(lambda x: round(x).astype(int),np.interp(df[df.isnull()].index.astype(float),df[df["LABEL"]>=0].index.astype(float),df.LABEL[df.LABEL>=0])))
+                #             #df.LABEL=1
+                #             ############
+                #             # BAD HOLE #
+                #             ############
+                #             df['BADHOLE']=np.nan
+                #             if (Alias['DCORR'] != 'NULL'):
+                #                 df.loc[np.absolute(df[Alias['DCORR']])>0.15,'BADHOLE']=1
 
-                            # ###############################
-                            # # Assign R0 & SW per interval #
-                            # ###############################
-                            # df["R0"]=np.nan
-                            # df["SW_N"]=np.nan
-                            # N=np.nan
-                            # df.index=df.index.astype(str)
-                            # for i in df.LABEL.unique():
-                            #     if len(df.loc[(df.LABEL==i)&(df.BADHOLE!=1),[Alias["NPHI"],Alias["RDEEP"]]].dropna())>10:
-                            #         try: x=R0_DLOGN(df[[Alias["NPHI"],Alias["RDEEP"]]][(df.LABEL==i)&(df.BADHOLE!=1)].dropna(),Puwi,2,i);
-                            #         except: continue;
-                            #         if len(x)>0:
-                            #             x.index=x.index.astype(str)
-                            #             df.update(x)
-                            #             del x
-                            #             # GET N
-                            #             #dfsub=df.loc[df.LABEL==i,[Alias['DEN'],Alias['NPHI'],Alias['RDEEP'],'R0']].dropna()
-                            #             #pd.concat([(2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69,df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]],axis=1).dropna()
-                            #             data=((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]).dropna()
-                            #             data=(np.log10((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*np.log10(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']])).dropna()
+                #             # ###############################
+                #             # # Assign R0 & SW per interval #
+                #             # ###############################
+                #             df["R0"]=np.nan
+                #             df["SW_N"]=np.nan
+                #             # N=np.nan
+                #             # df.index=df.index.astype(str)
+                #             # for i in df.LABEL.unique():
+                #             #     if len(df.loc[(df.LABEL==i)&(df.BADHOLE!=1),[Alias["NPHI"],Alias["RDEEP"]]].dropna())>10:
+                #             #         try: x=R0_DLOGN(df[[Alias["NPHI"],Alias["RDEEP"]]][(df.LABEL==i)&(df.BADHOLE!=1)].dropna(),Puwi,2,i);
+                #             #         except: continue;
+                #             #         if len(x)>0:
+                #             #             x.index=x.index.astype(str)
+                #             #             df.update(x)
+                #             #             del x
+                #             #             # GET N
+                #             #             #dfsub=df.loc[df.LABEL==i,[Alias['DEN'],Alias['NPHI'],Alias['RDEEP'],'R0']].dropna()
+                #             #             #pd.concat([(2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69,df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]],axis=1).dropna()
+                #             #             data=((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']]).dropna()
+                #             #             data=(np.log10((2.69-df.loc[df.LABEL==i,Alias['DEN']])/1.69)*np.log10(df.loc[df.LABEL==i,"R0"]/df.loc[df.LABEL==i,Alias['RDEEP']])).dropna()
 
-                            #             #normrange(XX.iloc
-                            #             data=data.loc[data>0]
+                #             #             #normrange(XX.iloc
+                #             #             data=data.loc[data>0]
 
-                            #             #data=np.log10(data)
-                            #             data=data[np.absolute(data)<1000].dropna()
+                #             #             #data=np.log10(data)
+                #             #             data=data[np.absolute(data)<1000].dropna()
 
-                            #             if len(data)>10:
-                            #                 #print(data)
-                            #                 param = stats.gamma.fit(data)
-                            #                 limit=10**stats.gamma.ppf(0.4,*param) # probabilistic value from bin
-                            #                 #df.loc[((data.loc[:,0]*data.iloc[:,1])<limit)]
-                            #                 pca=PCA()
-                            #                 filterlist=((df.LABEL==i) &
-                            #                             (np.log10((2.69-df[Alias['DEN']])/1.69*np.log10(df['R0'])/df[Alias['RDEEP']])<limit) &
-                            #                             (df.BADHOLE!=1))
-                            #                 if len(filterlist==True)<20: continue
-                            #                 try: pca.fit(np.log10(pd.concat([(2.69-df.loc[filterlist,Alias['DEN']])/1.69,
-                            #                           df.loc[filterlist,'R0']/df.loc[filterlist,Alias['RDEEP']]],
-                            #                           axis=1).clip(0.00001,100)).dropna())
-                            #                 #try: pca.fit(np.log10(pd.concat([(2.69-df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['DEN']])/1.69,df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),"R0"]/df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['RDEEP']]],axis=1).clip(0.00001,100)).dropna())
-                            #                 except: continue
-                            #                 N=-1/min(pca.components_[:,1]/pca.components_[:,0]) # positive eigenvector slope
-                            #                 #if Npca>0df:
-                            #                 #    df.loc[df.LABEL==i,'SWpca']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/Npca)).clip(lower=0,upper=1)
-                            #                 #N=2
-                            #                 if (N>0.4) and (N<25):
-                            #                     df.loc[df.LABEL==i,'SW_N']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/N)).clip(lower=0,upper=1)
-                            #                 else: continue
-                            # for i in df.LABEL.unique():
-                            #     if ((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']])**0.5).dropna().quantile(q=0.9) < 0.5:
-                            #         df.loc[df.LABEL==i,'R0']=None
+                #             #             if len(data)>10:
+                #             #                 #print(data)
+                #             #                 param = stats.gamma.fit(data)
+                #             #                 limit=10**stats.gamma.ppf(0.4,*param) # probabilistic value from bin
+                #             #                 #df.loc[((data.loc[:,0]*data.iloc[:,1])<limit)]
+                #             #                 pca=PCA()
+                #             #                 filterlist=((df.LABEL==i) &
+                #             #                             (np.log10((2.69-df[Alias['DEN']])/1.69*np.log10(df['R0'])/df[Alias['RDEEP']])<limit) &
+                #             #                             (df.BADHOLE!=1))
+                #             #                 if len(filterlist==True)<20: continue
+                #             #                 try: pca.fit(np.log10(pd.concat([(2.69-df.loc[filterlist,Alias['DEN']])/1.69,
+                #             #                           df.loc[filterlist,'R0']/df.loc[filterlist,Alias['RDEEP']]],
+                #             #                           axis=1).clip(0.00001,100)).dropna())
+                #             #                 #try: pca.fit(np.log10(pd.concat([(2.69-df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['DEN']])/1.69,df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),"R0"]/df.loc[((dfx.iloc[:,0]*dfx.iloc[:,1])<limit) &(df.LABEL==i)&(df.BADHOLE!=1),Alias['RDEEP']]],axis=1).clip(0.00001,100)).dropna())
+                #             #                 except: continue
+                #             #                 N=-1/min(pca.components_[:,1]/pca.components_[:,0]) # positive eigenvector slope
+                #             #                 #if Npca>0df:
+                #             #                 #    df.loc[df.LABEL==i,'SWpca']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/Npca)).clip(lower=0,upper=1)
+                #             #                 #N=2
+                #             #                 if (N>0.4) and (N<25):
+                #             #                     df.loc[df.LABEL==i,'SW_N']=((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']]).clip(0,10)**(1/N)).clip(lower=0,upper=1)
+                #             #                 else: continue
+                #             # for i in df.LABEL.unique():
+                #             #     if ((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']])**0.5).dropna().quantile(q=0.9) < 0.5:
+                #             #         df.loc[df.LABEL==i,'R0']=None
                            
-                            df['R0'] = Find_R0(df)
-                            df['SW']=(df['R0']/df[Alias['RDEEP']])**0.5
-                            #####################
-                            # Create Export LAS #
-                            #####################
-                            # Created file at function beginning
+                df['R0'] = Find_R0(df)
+                df['SW']=(df['R0']/df[Alias['RDEEP']])**0.5
+                #####################
+                # Create Export LAS #
+                #####################
+                # Created file at function beginning
 
-                            # Set Header
-                            exlas.well.STRT.value=df.DEPTH.min()
-                            exlas.well.STOP.value=df.DEPTH.max()
-                            exlas.well.STEP.value=step
-                            exlas.well.Date=str(datetime.datetime.today())
-                            exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
-                            exlas.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(uwi).zfill(14), descr="Unique well identifier")
-                            try: exlas.well["APIN"].value=str(uwi).zfill(14)
-                            except: pass
-                            try:
-                                exlas.well["API"].value=str(Puwi).zfill(14)
-                                las.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(Puwi).zfill(14), descr="Unique well identifier")
-                            except: pass
+                # Set Header
+                exlas.well.STRT.value=df.DEPTH.min()
+                exlas.well.STOP.value=df.DEPTH.max()
+                exlas.well.STEP.value=step
+                exlas.well.Date=str(datetime.datetime.today())
+                exlas.well["INTP"]=lasio.HeaderItem(mnemonic="INTP", value="William Rucker", descr="Analyst for equations and final logs")
+                exlas.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(uwi).zfill(14), descr="Unique well identifier")
+                try: exlas.well["APIN"].value=str(uwi).zfill(14)
+                except: pass
+                try:
+                    exlas.well["API"].value=str(Puwi).zfill(14)
+                    las.well["UWI"]=lasio.HeaderItem(mnemonic="UWI", value=str(Puwi).zfill(14), descr="Unique well identifier")
+                except: pass
 
-                            #str(las.well["UWI"].value).zfill(14)
+                #str(las.well["UWI"].value).zfill(14)
 
-                            exlas.append_curve('DEPT',df.DEPTH , unit='ft')
+                exlas.append_curve('DEPT',df.DEPTH , unit='ft')
 
-                            ##############
-                            # CLAY MODEL #
-                            ##############
-                            df["ND_DIFF"]=(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69)
-                            df["WKR_VCLAY"]=(-1.59488+234.513*(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69))/100
+                ##############
+                # CLAY MODEL #
+                ##############
+                df["ND_DIFF"]=(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69)
+                df["WKR_VCLAY"]=(-1.59488+234.513*(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69))/100
 
-                            ##################
-                            # Resource Model #
-                            ##################
-                            #df["WKR_RHOFL"]=0.7*(1-df["SW"])+1.05*(df["SW"]);df["WKR_DPHI_269"]=(2.69-df[Alias["DEN"]])/(2.69-df["WKR_RHOFL"]);df["WKR_BVW_269"]=(df["SW"])*df["WKR_DPHI_269"]
-                            df["WKR_RHOFL"]=0.7*(1-df.SW.clip(lower=0,upper=1))+1.05*(df["SW"])
-                            df["WKR_DPHI_269"]=(2.69-df[Alias["DEN"]])/(2.69-df["WKR_RHOFL"])
-                            df["WKR_DPHI_265"]=(2.65-df[Alias["DEN"]])/(2.65-df["WKR_RHOFL"])
-                            df["WKR_DPHI_271"]=(2.71-df[Alias["DEN"]])/(2.71-df["WKR_RHOFL"])
-                            df["WKR_DLOGRN"]=np.log10(df.loc[df['R0']>0,Alias['RDEEP']]/df.loc[df['R0']>0,'R0'])
-                            df["WKR_BVW_269"]=(df["SW"])*df["WKR_DPHI_269"]
-                            df["WKR_BVH_269"]=(1-df.SW.clip(lower=0,upper=1))*df["WKR_DPHI_269"]
-                            df['WKR_Kirr']=(250*df.loc[df["WKR_DPHI_269"]>0,"SW"]**3)/(df["SW"].clip(lower=0,upper=1))**2
-                            #    df["WKR_PHI_INV"]=df["Sw"]-((df["R0"]/df[Alias["RSHAL"]])**0.5)*df["WKR_Dphi_269"]
+                ##################
+                # Resource Model #
+                ##################
+                #df["WKR_RHOFL"]=0.7*(1-df["SW"])+1.05*(df["SW"]);df["WKR_DPHI_269"]=(2.69-df[Alias["DEN"]])/(2.69-df["WKR_RHOFL"]);df["WKR_BVW_269"]=(df["SW"])*df["WKR_DPHI_269"]
+                df["WKR_RHOFL"]=0.7*(1-df.SW.clip(lower=0,upper=1))+1.05*(df["SW"])
+                df["WKR_DPHI_269"]=(2.69-df[Alias["DEN"]])/(2.69-df["WKR_RHOFL"])
+                df["WKR_DPHI_265"]=(2.65-df[Alias["DEN"]])/(2.65-df["WKR_RHOFL"])
+                df["WKR_DPHI_271"]=(2.71-df[Alias["DEN"]])/(2.71-df["WKR_RHOFL"])
+                df["WKR_DLOGRN"]=np.log10(df.loc[df['R0']>0,Alias['RDEEP']]/df.loc[df['R0']>0,'R0'])
+                df["WKR_BVW_269"]=(df["SW"])*df["WKR_DPHI_269"]
+                df["WKR_BVH_269"]=(1-df.SW.clip(lower=0,upper=1))*df["WKR_DPHI_269"]
+                df['WKR_Kirr']=(250*df.loc[df["WKR_DPHI_269"]>0,"SW"]**3)/(df["SW"].clip(lower=0,upper=1))**2
+                #    df["WKR_PHI_INV"]=df["Sw"]-((df["R0"]/df[Alias["RSHAL"]])**0.5)*df["WKR_Dphi_269"]
 
-                            for i in df.LABEL.unique():
-                                N=(np.log10(df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW_N<1),'R0']/df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW<1),Alias['RDEEP']])/np.log10(df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW_N<1),'SW'])).mean(axis=0)
-                                cmap = cm.get_cmap('bwr');
-                                normalize = colors.Normalize(vmin=0, vmax=1);
-                                swcolors = [cmap(normalize(value)) for value in (df.loc[df.LABEL==i,'SW_N'].dropna().clip(0,1))];
-                                cmap=cm.get_cmap('gist_rainbow')
-                                try:
-                                    normalize = colors.Normalize(vmin=min(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()),
-                                                                        vmax=max(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()))
-                                    bvwcolors = [cmap(normalize(value)) for value in (df.loc[df.LABEL==i,'WKR_BVW_269'].dropna().clip(0,1))];
-                                except:
-                                    print(str(i) + ' failed')
-                                    continue
+                # for i in df.LABEL.unique():
+                #     N=(np.log10(df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW_N<1),'R0']/df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW<1),Alias['RDEEP']])/np.log10(df.loc[(df.LABEL==i) & (df.SW_N>0) & (df.SW_N<1),'SW'])).mean(axis=0)
+                #     cmap = cm.get_cmap('bwr');
+                #     normalize = colors.Normalize(vmin=0, vmax=1);
+                #     swcolors = [cmap(normalize(value)) for value in (df.loc[df.LABEL==i,'SW_N'].dropna().clip(0,1))];
+                #     cmap=cm.get_cmap('gist_rainbow')
+                #     try:
+                #         normalize = colors.Normalize(vmin=min(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()),
+                #                                             vmax=max(df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_BVW_269'].dropna()))
+                #         bvwcolors = [cmap(normalize(value)) for value in (df.loc[df.LABEL==i,'WKR_BVW_269'].dropna().clip(0,1))];
+                #     except:
+                #         print(str(i) + ' failed')
+                #         continue
 
 
-                                fig, ax = plt.subplots(figsize=(12,7));
+                #     fig, ax = plt.subplots(figsize=(12,7));
 
-                                plt.suptitle('UWI: '+str(Puwi)+ '\n N= ' + str(N))
-                                ax1=plt.subplot(121)
-                                ax2=plt.subplot(122)
-                                ax1.scatter(df.loc[(df.LABEL==i) & (df.SW_N>=0),Alias['RDEEP']].clip(0.001,100),
-                                                df.loc[(df.LABEL==i) & (df.SW_N>=0),Alias['NPHI']].clip(0.001,100),
-                                                edgecolors='none',
-                                                s=50,
-                                                color=swcolors);
-                                ax1.set(ylabel=str(Alias['NPHI'])+' [v/v]',
-                                                xlabel= str(Alias['RDEEP']) + ' [Ohmm]',
-                                                title= 'Pickett',
-                                                #xlim=(1,20),
-                                                ylim=(0.01,0.5),
-                                                yscale=('log'),
-                                                xscale=('log'))
+                #     plt.suptitle('UWI: '+str(Puwi)+ '\n N= ' + str(N))
+                #     ax1=plt.subplot(121)
+                #     ax2=plt.subplot(122)
+                #     ax1.scatter(df.loc[(df.LABEL==i) & (df.SW_N>=0),Alias['RDEEP']].clip(0.001,100),
+                #                     df.loc[(df.LABEL==i) & (df.SW_N>=0),Alias['NPHI']].clip(0.001,100),
+                #                     edgecolors='none',
+                #                     s=50,
+                #                     color=swcolors);
+                #     ax1.set(ylabel=str(Alias['NPHI'])+' [v/v]',
+                #                     xlabel= str(Alias['RDEEP']) + ' [Ohmm]',
+                #                     title= 'Pickett',
+                #                     #xlim=(1,20),
+                #                     ylim=(0.01,0.5),
+                #                     yscale=('log'),
+                #                     xscale=('log'))
 
-                                ax2.scatter(df.loc[(df.LABEL==i) & (df.SW_N>=0),'R0'].clip(0.001,100)/df.loc[(df.LABEL==i) & (df.SW_N>=0),Alias['RDEEP']],
-                                                df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_DPHI_269'].clip(0.001,1),
-                                                edgecolors='none',
-                                                s=50,
-                                                color=bvwcolors);
-                                np.array
-                                ax2.plot(np.array([0.001,0.1,2,5]),10**(-1/N*(np.log10(np.array([0.001,0.1,2,5]))+10**(1-0.05/N))),'k-')
-                                ax2.set(ylabel=str('DPHI_269')+' [v/v]',
-                                                xlabel= 'R0/RT',
-                                                title= 'Buckles',
-                                                xlim=(0.001,100),
-                                                ylim=(0.01,0.5),
-                                                yscale=('log'),
-                                                xscale=('log'))
-                                plt.subplots_adjust(left=0.2, wspace=0.8, top=0.8)
-                                fig.savefig(str(dir_add)+"\\_"+str(Puwi)+"+"+str(min(df.loc[df.LABEL==i,'DEPTH']))+"_"+str(max(df.loc[df.LABEL==i,'DEPTH']))+"_Pickett.png")
-                                try: plt.close()
-                                except: pass
-                                try: fig.close()
-                                except: pass
+                #     ax2.scatter(df.loc[(df.LABEL==i) & (df.SW_N>=0),'R0'].clip(0.001,100)/df.loc[(df.LABEL==i) & (df.SW_N>=0),Alias['RDEEP']],
+                #                     df.loc[(df.LABEL==i) & (df.SW_N>=0),'WKR_DPHI_269'].clip(0.001,1),
+                #                     edgecolors='none',
+                #                     s=50,
+                #                     color=bvwcolors);
+                #     np.array
+                #     ax2.plot(np.array([0.001,0.1,2,5]),10**(-1/N*(np.log10(np.array([0.001,0.1,2,5]))+10**(1-0.05/N))),'k-')
+                #     ax2.set(ylabel=str('DPHI_269')+' [v/v]',
+                #                     xlabel= 'R0/RT',
+                #                     title= 'Buckles',
+                #                     xlim=(0.001,100),
+                #                     ylim=(0.01,0.5),
+                #                     yscale=('log'),
+                #                     xscale=('log'))
+                #     plt.subplots_adjust(left=0.2, wspace=0.8, top=0.8)
+                #     fig.savefig(str(dir_add)+"\\_"+str(Puwi)+"+"+str(min(df.loc[df.LABEL==i,'DEPTH']))+"_"+str(max(df.loc[df.LABEL==i,'DEPTH']))+"_Pickett.png")
+                #     try: plt.close()
+                #     except: pass
+                #     try: fig.close()
+                #     except: pass
 
-                            #################
-                            # Mineral Model #
-                            #################
-                            if Alias["PE"] != "NULL":
-                                sw=df["SW"].clip(0,1)
-                                sw.loc[sw.isna()]=1
-                                dphi=pd.DataFrame(df["WKR_DPHI_269"])
-                                dphi.loc[dphi.WKR_DPHI_269.isna(),"WKR_DPHI_269"]=(2.69-df.loc[df.WKR_DPHI_269.isna(),Alias["DEN"]])/1.69
-                                df['U_APPX']=df[Alias["PE"]]*df[Alias["DEN"]]
-                                df["WKR_UMAA"]=(df['U_APPX'] - (1-sw)*dphi.WKR_DPHI_269*0.136 - (sw)*dphi.WKR_DPHI_269*0.8)/(1-dphi.WKR_DPHI_269)
-                                #Vss=(las['U_APPX']-Vclay*8-13.8+13.8*Vclay)/(4.79-1)
-                                #Vls=1-Vclay-Vss
-                                #Mlog = (las['RHOZ']/1000*(304800/las['DTCO'])**2)/1000
-                                #Mmod=120*Vls+60*Vss+Vclay*25
-                                exlas.append_curve('U_APPX', df.U_APPX, unit='barns/e', descr='Simplified Matrix Cross Section PE*RHOB')
-                                exlas.append_curve('WKR_UMAA', df.WKR_UMAA, unit='barns/e', descr='Apparent Matrix Cross Section')
+                #################
+                # Mineral Model #
+                #################
+                if Alias["PE"] != "NULL":
+                    sw=df["SW"].clip(0,1)
+                    sw.loc[sw.isna()]=1
+                    dphi=pd.DataFrame(df["WKR_DPHI_269"])
+                    dphi.loc[dphi.WKR_DPHI_269.isna(),"WKR_DPHI_269"]=(2.69-df.loc[df.WKR_DPHI_269.isna(),Alias["DEN"]])/1.69
+                    df['U_APPX']=df[Alias["PE"]]*df[Alias["DEN"]]
+                    df["WKR_UMAA"]=(df['U_APPX'] - (1-sw)*dphi.WKR_DPHI_269*0.136 - (sw)*dphi.WKR_DPHI_269*0.8)/(1-dphi.WKR_DPHI_269)
+                    #Vss=(las['U_APPX']-Vclay*8-13.8+13.8*Vclay)/(4.79-1)
+                    #Vls=1-Vclay-Vss
+                    #Mlog = (las['RHOZ']/1000*(304800/las['DTCO'])**2)/1000
+                    #Mmod=120*Vls+60*Vss+Vclay*25
+                    exlas.append_curve('U_APPX', df.U_APPX, unit='barns/e', descr='Simplified Matrix Cross Section PE*RHOB')
+                    exlas.append_curve('WKR_UMAA', df.WKR_UMAA, unit='barns/e', descr='Apparent Matrix Cross Section')
 
-                            # set curves
-                            #exlas.append_curve('RHOB',df[Alias["DEN"]], unit='g/cc', descr='Density used for calculation')
-                            #exlas.append_curve('NPHI',df[Alias["NPHI"]], unit='v/v', descr='Nphi used for calculation')
-                            #exlas.append_curve('RDEEP',df[Alias["RDEEP"]], unit='ohm-m', descr='RDEEP used for calculation')
+                # set curves
+                #exlas.append_curve('RHOB',df[Alias["DEN"]], unit='g/cc', descr='Density used for calculation')
+                #exlas.append_curve('NPHI',df[Alias["NPHI"]], unit='v/v', descr='Nphi used for calculation')
+                #exlas.append_curve('RDEEP',df[Alias["RDEEP"]], unit='ohm-m', descr='RDEEP used for calculation')
 
-                            exlas.append_curve('WKR_LABEL',df.LABEL, unit='Int', descr='Clustering Group')
-                            exlas.append_curve('WKR_R0', df.R0, unit='Ohm-m', descr='Resistivity at Sw=1 from Nphi Crossplot')
-                            exlas.append_curve('WKR_DLOGRN', df.WKR_DLOGRN, unit='Ohm-m', descr='Log10 of excess resistivity by neutron method')
-                            exlas.append_curve('WKR_SW', df.SW, unit='v/v', descr='Water Saturation from N=2 & WKR_R0 for total porosity')
-                            exlas.append_curve('WKR_SW_N', df.SW_N, unit='v/v', descr='Water Saturation from PCA & WKR_R0 for total porosity')
-                            exlas.append_curve('WKR_RHOFL', df.WKR_RHOFL, unit='g/cc', descr='Fluid density using WKR_Sw')
-                            exlas.append_curve('WKR_DPHI_269', df.WKR_DPHI_269, unit='v/v', descr='Porosity using 2.69g/cc matrix and WKR_Rhofl')
-                            exlas.append_curve('WKR_DPHI_265', df.WKR_DPHI_265, unit='v/v', descr='Porosity using 2.65g/cc matrix and WKR_Rhofl')
-                            exlas.append_curve('WKR_DPHI_271', df.WKR_DPHI_271, unit='v/v', descr='Porosity using 2.71g/cc matrix and WKR_Rhofl')
-                            exlas.append_curve('WKR_BVW_269', df.WKR_BVW_269, unit='v/v', descr='Bulk volume water as Sw*WKR_DPHI_269')
-                            exlas.append_curve('WKR_BVH_269', df.WKR_BVH_269, unit='v/v', descr='Bulk volume hydrocarbon as (1-Sw)*WKR_DPHI_269')
-                            exlas.append_curve('WKR_ND_DIFF', df.ND_DIFF, unit='v/v', descr='Porosity separation between NPHI and DPHI_2.69')
-                            exlas.append_curve('WKR_Kirr', df.WKR_Kirr, unit='mD', descr='Perm assuming Sw=Swirr and N=2')
-                            exlas.append_curve('WKR_VCLAY', df.WKR_VCLAY, unit='v/v', descr='Clay volume by Neutron-Density')
-                            filename = str(dir_add)+"\\"+str(Puwi)+"_WKR_DLOGR.las"
-                            #if path.isfile(filename):
-                            #    remove(filename)
-                            exlas.write(filename, version = 2.0)
-                        else: 0
+                # exlas.append_curve('WKR_LABEL',df.LABEL, unit='Int', descr='Clustering Group')
+                exlas.append_curve('WKR_R0', df.R0, unit='Ohm-m', descr='Resistivity at Sw=1 from Nphi Crossplot')
+                exlas.append_curve('WKR_DLOGRN', df.WKR_DLOGRN, unit='Ohm-m', descr='Log10 of excess resistivity by neutron method')
+                exlas.append_curve('WKR_SW', df.SW, unit='v/v', descr='Water Saturation from N=2 & WKR_R0 for total porosity')
+                # exlas.append_curve('WKR_SW_N', df.SW_N, unit='v/v', descr='Water Saturation from PCA & WKR_R0 for total porosity')
+                exlas.append_curve('WKR_RHOFL', df.WKR_RHOFL, unit='g/cc', descr='Fluid density using WKR_Sw')
+                exlas.append_curve('WKR_DPHI_269', df.WKR_DPHI_269, unit='v/v', descr='Porosity using 2.69g/cc matrix and WKR_Rhofl')
+                exlas.append_curve('WKR_DPHI_265', df.WKR_DPHI_265, unit='v/v', descr='Porosity using 2.65g/cc matrix and WKR_Rhofl')
+                exlas.append_curve('WKR_DPHI_271', df.WKR_DPHI_271, unit='v/v', descr='Porosity using 2.71g/cc matrix and WKR_Rhofl')
+                exlas.append_curve('WKR_BVW_269', df.WKR_BVW_269, unit='v/v', descr='Bulk volume water as Sw*WKR_DPHI_269')
+                exlas.append_curve('WKR_BVH_269', df.WKR_BVH_269, unit='v/v', descr='Bulk volume hydrocarbon as (1-Sw)*WKR_DPHI_269')
+                exlas.append_curve('WKR_ND_DIFF', df.ND_DIFF, unit='v/v', descr='Porosity separation between NPHI and DPHI_2.69')
+                exlas.append_curve('WKR_Kirr', df.WKR_Kirr, unit='mD', descr='Perm assuming Sw=Swirr and N=2')
+                exlas.append_curve('WKR_VCLAY', df.WKR_VCLAY, unit='v/v', descr='Clay volume by Neutron-Density')
+                filename = str(dir_add)+"\\"+str(Puwi)+"_WKR_DLOGR.las"
+                #if path.isfile(filename):
+                #    remove(filename)
+                exlas.write(filename, version = 2.0)
+            else: 0
     else: exlas="FALSE"
 
     return exlas           
