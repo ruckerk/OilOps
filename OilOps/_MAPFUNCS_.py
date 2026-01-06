@@ -182,7 +182,7 @@ def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
     #df_in[['X','Y']]=df_in.apply(lambda x: transform(epsg1,epsg2,x.iloc[2],x.iloc[1],always_xy=True), axis=1).apply(pd.Series)
     return df_in
 
-def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lines.shp'):
+def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lines.shp', buffer = 5000):
     gp = gpd.read_file(shpfile)
     try:
         gp['UWI10'] = gp.API_Label.apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
@@ -197,7 +197,7 @@ def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lin
     
     SUB = gp.loc[gp.UWI10.isin(ULIST)]
     for g in SUB.index:
-        G = SUB.loc[g,'geometry'].buffer(5000)
+        G = SUB.loc[g,'geometry'].buffer(buffer)
         #gpd.tools.sjoin(gp,G,how = 'left')
         
         # ROUGH FILTER
