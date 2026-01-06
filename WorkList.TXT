@@ -38,3 +38,5 @@ Possibly incorporate SpatiaLite (SQLSpatial for SQLite)
 
 make las DL fix "txt aborted" automatically
 Fix LAS DL _1_1_1_1 and make it count _1 _2 _3 etc.
+
+Replace welleng dependencies with new code library
