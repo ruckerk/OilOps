@@ -3245,10 +3245,7 @@ def PROD_FEATURES(df_in):
     df_in['CUMWOR'] = df_in['CUMWTR'] / df_in['CUMOIL']
     return df_in
 
-def ABS_LOC():
-    DB_NAME = 'FIELD_DATA.db'
-    CONN = sqlite3.connect(DB_NAME)
-           
+def ABS_LOC(DB_NAME = 'FIELD_DATA.db'):           
     # CREATE ABSOLUTE LOCATION TABLE if True:
     WELL_LOC = read_shapefile(shp.Reader('Wells.shp'))
     
@@ -3287,14 +3284,16 @@ def ABS_LOC():
     LOC_DF[['XBHLFEET','YBHLFEET']] = pd.DataFrame(convert_XY(LOC_DF.XBHL,LOC_DF.YBHL,26913,2231)).T.values
  
     LOC_DF['DELTA'] = ((LOC_DF['YBHLFEET'] - LOC_DF['YFEET'])**2 +  (LOC_DF['XBHLFEET'] - LOC_DF['XFEET'])**2)**0.5
-           
-    LOC_COLS = {'UWI10': 'INTEGER',
-                'X': 'REAL',
-                'Y': 'REAL',
-                'XFEET':'REAL',
-                'YFEET':'REAL'}
 
-    INIT_SQL_TABLE(connection_obj, 'SHL', LOC_COLS)
-    LOC_DF[['UWI10','X','Y','XFEET','YFEET']].to_sql(name = 'SHL', con = CONN, if_exists='replace', index = False, dtype = LOC_COLS)
+    if bool(DB_NAME):
+        CONN = sqlite3.connect(DB_NAME)
+        LOC_COLS = {'UWI10': 'INTEGER',
+                    'X': 'REAL',
+                    'Y': 'REAL',
+                    'XFEET':'REAL',
+                    'YFEET':'REAL'}
+
+        INIT_SQL_TABLE(connection_obj, 'SHL', LOC_COLS)
+        LOC_DF[['UWI10','X','Y','XFEET','YFEET']].to_sql(name = 'SHL', con = CONN, if_exists='replace', index = False, dtype = LOC_COLS)
     return LOC_DF
  
