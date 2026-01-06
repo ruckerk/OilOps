@@ -1,5 +1,6 @@
 # update base files
 from ._FUNCS_ import *
+from .MAP import convert_XY
 
 __all__ = ['CO_BASEDATA',
            'Get_LAS',
