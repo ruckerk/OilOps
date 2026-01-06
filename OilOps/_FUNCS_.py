@@ -129,7 +129,6 @@ from scipy.special import logsumexp
 import base64 
 
 import difflib
-import welleng
 import wellpathpy as wp
 
 import pymc as pm
