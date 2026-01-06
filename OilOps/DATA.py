@@ -3294,7 +3294,7 @@ def ABS_LOC(DB_NAME = 'FIELD_DATA.db'):
                     'XFEET':'REAL',
                     'YFEET':'REAL'}
 
-        INIT_SQL_TABLE(connection_obj, 'SHL', LOC_COLS)
+        INIT_SQL_TABLE(CONN, 'SHL', LOC_COLS)
         LOC_DF[['UWI10','X','Y','XFEET','YFEET']].to_sql(name = 'SHL', con = CONN, if_exists='replace', index = False, dtype = LOC_COLS)
     return LOC_DF
  
