@@ -185,7 +185,7 @@ def XYtransform(df_in, epsg1 = 4269, epsg2 = 2878):
 def FindCloseList(UWI10LIST, shpfile='/home/ruckerwk/Programming/Directional_Lines.shp', buffer = 5000):
     gp = gpd.read_file(shpfile)
     try:
-        gp['UWI10'] = gp.API_Label.apply(lambda x: OilOps.WELLAPI(x).API2INT(10))
+        gp['UWI10'] = gp.API_Label.apply(lambda x: WELLAPI(x).API2INT(10))
     except:
         gp = gp.loc[~gp.API.isna()]
         gp['UWI10'] = gp.API.str.replace('-','').str[0:10]
