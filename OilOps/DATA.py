@@ -1057,11 +1057,15 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
     return(OUTPUT)
 
 def Merge_Frac_Focus(DIR = None, SAVE=False):
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname) 
+    # pathname = path.dirname(argv[0])
+    adir = getcwd()
+
+    if DIR == None:
+        DIR = adir
+    else DIR = path.join(adir,DIR)
            
     #if 1==1:
-    FLIST = filelist(SUBDIR = DIR, EXT='.csv',BEGIN = 'frac')
+    FLIST = filelist(SUBDIR = DIR, EXT='.csv',BEGIN = 'fracfocus')
     FracFocus = pd.DataFrame()
     for f in FLIST:
         if DIR!= None:
@@ -1069,7 +1073,7 @@ def Merge_Frac_Focus(DIR = None, SAVE=False):
         freg_df = pd.read_csv(f,low_memory=False)
         #freg_df = freg_df.drop_duplicates()
         FracFocus = pd.concat([FracFocus,freg_df],axis=0,join='outer',ignore_index=True)
-    FracFocus = FracFocus.drop_duplicates()
+        FracFocus = FracFocus.drop_duplicates()
                       
     APILEN = int(((FracFocus.APINumber.astype(str).replace(r'~\d','',regex=True).apply(len)/2).apply(np.ceil)*2).max())             
     FracFocus.APINumber = FracFocus.APINumber.apply(lambda x:WELLAPI(x).API2INT(APILEN))                                                    
