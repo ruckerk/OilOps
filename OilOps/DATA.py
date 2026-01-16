@@ -1062,7 +1062,8 @@ def Merge_Frac_Focus(DIR = None, SAVE=False):
 
     if DIR == None:
         DIR = adir
-    else DIR = path.join(adir,DIR)
+    else:
+        DIR = path.join(adir,DIR)
            
     #if 1==1:
     FLIST = filelist(SUBDIR = DIR, EXT='.csv',BEGIN = 'fracfocus')
