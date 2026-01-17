@@ -221,6 +221,164 @@ def curve_fitter(X,Y, funct, split = 0.2, plot = False, logx = False, logy = Fal
         plt.show()
     return popt
 
+
+def DF_UNSTRING(
+    df_in: pd.DataFrame,
+    *,
+    sample_size: int = 800,
+    date_success: float = 0.70,
+    num_success: float = 0.90,
+    date_cache: bool = True,
+    coerce_empty_to_na: bool = True,
+    datetime_to_utc_naive: bool = False,
+    convert_bool: bool = True,
+    bool_success: float = 0.98,
+) -> pd.DataFrame:
+    """
+    Efficiently convert string/object columns to:
+      - datetime64[ns] (dates)
+      - integer / float (numbers)
+      - boolean (optional)
+
+    Designed for prepping data for JSON export (reduces numbers/dates stored as strings).
+    Uses sampling for detection and converts each chosen column at most once.
+
+    Notes for JSON:
+      - pandas Timestamps aren't JSON-serializable by default; after this function,
+        use df.to_json(date_format='iso') or convert datetimes to strings.
+      - If you want datetimes as ISO strings in the dataframe, see the helper below.
+    """
+
+    # Precompiled regexes (fast + reused)
+    _RE_EMPTY = re.compile(r"^\s*$")
+    _RE_DATE_NAME = re.compile(r"(date|dt|time|timestamp)", re.I)
+    _RE_DATE_LIKE = re.compile(
+        r"""
+        (?:\b\d{4}[-/_]\d{1,2}[-/_]\d{1,2}\b) |                 # YYYY-MM-DD (or / or _)
+        (?:\b\d{1,2}[-/_]\d{1,2}[-/_]\d{2,4}\b) |               # MM-DD-YYYY (or DD-MM-YYYY)
+        (?:\b\d{4}\d{2}\d{2}\b)                                 # YYYYMMDD
+        """,
+        re.VERBOSE,
+    )
+
+    if df_in is None or df_in.empty:
+        return df_in
+
+    df = df_in.copy()
+
+    # Only consider object/string columns (leave numeric/datetime/categorical alone)
+    obj_cols = df.columns[df.dtypes == "object"]
+    if len(obj_cols) == 0:
+        return df
+
+    # Clean empty strings -> NA only on object cols (avoid scanning full df)
+    if coerce_empty_to_na:
+        df[obj_cols] = df[obj_cols].replace(_RE_EMPTY, pd.NA, regex=True)
+
+    for col in obj_cols:
+        s = df[col]
+        nn = s.dropna()
+        if nn.empty:
+            continue
+
+        # sample to decide type
+        if len(nn) > sample_size:
+            samp = nn.sample(sample_size, random_state=0)
+        else:
+            samp = nn
+
+        # String view once
+        ss = samp.astype("string")
+
+        # ------------------------
+        # Boolean detection (optional)
+        # ------------------------
+        if convert_bool:
+            # canonical boolean tokens
+            # (keep small + cheap)
+            lower = ss.str.lower().str.strip()
+            is_bool_token = lower.isin(
+                ["true", "false", "t", "f", "yes", "no", "y", "n", "1", "0"]
+            )
+            if is_bool_token.mean() >= bool_success:
+                # Full conversion (vectorized)
+                full = df[col].astype("string").str.lower().str.strip()
+                df[col] = full.map(
+                    {
+                        "true": True, "t": True, "yes": True, "y": True, "1": True,
+                        "false": False, "f": False, "no": False, "n": False, "0": False,
+                    }
+                ).astype("boolean")
+                continue
+
+        # ------------------------
+        # Date detection
+        # ------------------------
+        name_hint = bool(_RE_DATE_NAME.search(str(col)))
+        regex_hint = ss.str.contains(_RE_DATE_LIKE, regex=True, na=False).mean() >= 0.20
+
+        if name_hint or regex_hint:
+            parsed = pd.to_datetime(samp, errors="coerce", cache=date_cache)
+            if parsed.notna().mean() >= date_success:
+                dt = pd.to_datetime(s, errors="coerce", cache=date_cache)
+
+                # Optional: normalize timezone-ish datetimes to naive UTC
+                # (Helpful when JSON consumers expect no tz)
+                if datetime_to_utc_naive:
+                    # If tz-aware, convert; if naive, leave
+                    try:
+                        if getattr(dt.dt, "tz", None) is not None:
+                            dt = dt.dt.tz_convert("UTC").dt.tz_localize(None)
+                    except Exception:
+                        pass
+
+                df[col] = dt
+                continue
+
+        # ------------------------
+        # Numeric detection
+        # ------------------------
+        # Try numeric parse on sample
+        num_samp = pd.to_numeric(samp, errors="coerce")
+        if num_samp.notna().mean() >= num_success:
+            full = pd.to_numeric(s, errors="coerce")
+
+            # Integer-ness check on non-null values
+            full_nn = full.dropna()
+            if not full_nn.empty and (full_nn == np.floor(full_nn)).all():
+                df[col] = pd.to_numeric(full, downcast="integer")
+            else:
+                df[col] = pd.to_numeric(full, downcast="float")
+            continue
+
+        # else: leave as object/string
+
+    return df
+
+
+def datetimes_to_iso_strings(
+    df_in: pd.DataFrame,
+    *,
+    cols=None,
+    utc_z: bool = False,
+) -> pd.DataFrame:
+    """
+    Convert datetime64[ns] columns to ISO strings for JSON-friendly dataframe.
+    If utc_z=True, outputs 'Z' suffix (assumes naive datetimes are UTC).
+    """
+    df = df_in.copy()
+    if cols is None:
+        cols = df.columns[pd.api.types.is_datetime64_any_dtype(df.dtypes)]
+    for c in cols:
+        s = df[c]
+        if utc_z:
+            # Ensure strings end with Z
+            df[c] = s.dt.strftime("%Y-%m-%dT%H:%M:%S.%f").str.rstrip("0").str.rstrip(".") + "Z"
+        else:
+            df[c] = s.dt.strftime("%Y-%m-%dT%H:%M:%S.%f").str.rstrip("0").str.rstrip(".")
+    return df
+    
+
 def run_sm_ols(df_in,YKEY =None):
     if YKEY == None:
         YKEY = df_in.keys()[0]
@@ -239,92 +397,18 @@ def run_sm_ols(df_in,YKEY =None):
     # Return to apply call as a series (3 separate columns)
     return pd.Series(results, index=labels)
 
- 
-def DF_UNSTRING(df_IN):
-    if df_IN.empty:
-        return df_IN
-    
-    df_IN=df_IN.copy()
-    df_IN=df_IN.replace('',np.nan)
-    #df_IN=df_IN.loc[:,~df_IN.columns.duplicated()]
-
-    #DATES
-    DATECOLS = [col for col in df_IN.columns if 'DATE' in str(col).upper()]
-    DROPLIST = []
-    for k in DATECOLS:
-        row_count = np.nan
-        try:
-            row_count = pd.to_datetime(df_IN[k].dropna().astype(str)).dropna().shape[0]
-            #print(f'{f}: {row_count}')
-            if ((df_IN[k].dropna().astype(str).replace(re.compile('^(NONE|NAN|NAT)$',re.I),None,regex=True).dropna().shape[0]) > (row_count*2)) or np.isnan(row_count):
-                 DROPLIST.append(k)
-        except Exception as error:
-            #print(f'remove for error: {k} for {error}')
-            DROPLIST.append(k)
-        
-    DATECOLS = list(set(DATECOLS)-set(DROPLIST))
+    _RE_EMPTY = re.compile(r"^\s*$")
+    _RE_DATE_NAME = re.compile(r"(date|dt|time|timestamp)", re.I)
+    _RE_DATE_LIKE = re.compile(
+        r"""
+        (?:\b\d{4}[-/_]\d{1,2}[-/_]\d{1,2}\b) |                 # YYYY-MM-DD (or / or _)
+        (?:\b\d{1,2}[-/_]\d{1,2}[-/_]\d{2,4}\b) |               # MM-DD-YYYY (or DD-MM-YYYY)
+        (?:\b\d{4}\d{2}\d{2}\b)                                 # YYYYMMDD
+        """,
+        re.VERBOSE,
+    )
 
 
-    #for k in df_IN.keys():
-    #print(k+" :: "+str(df_IN[k].dropna().iloc[0]))
-
-    pattern = re.compile(r'[0-9]{4}[-_:/\\ ][0-9]{2}[-_:/\\ ][0-9]{2}[-_:/\\ ]*[0-9]{0,2}[-_:/\\ ]*[0-9]{0,2}[-_:/\\ ]*[0-9]{0,2}[-_:/\\ ]*')
-
-    for k in df_IN.keys():
-        #check if just strings
-        if (df_IN[k].astype(str).str.replace(r'[0-9\._\-\/\\]','',regex=True).str.len().mean() > 5) and (df_IN[k].dropna().astype(str).str.replace(r'[A-Za-z\._\-\/\\]*','',regex=True).str.len().mean() > 5):
-            continue
-        A = df_IN[k].dropna().astype(str).str.replace(r'[^\d*]','_', regex = True).str.split('_', expand=True).apply(pd.to_numeric, errors = 'ignore', axis =0)
-        if A.empty:
-            continue
-        elif A.shape[1]>5:
-            continue
-        else:
-            A = A.describe(percentiles = None)
-        YearTest = (A.loc['max']<3000) *(A.loc['min']>1000)
-        MonthTest = (A.loc['max']<12) *(A.loc['min']>0)
-        DayTest = (A.loc['max']<30) *(A.loc['min']>0)
-
-        #date condition test
-        if not (YearTest.max()>=1) * (MonthTest.max()>=1) * (DayTest.max()>=1) * ((MonthTest+DayTest).sum()>=2):
-            # if not true then do not add k to DATECOLS
-            continue           
-            
-        mask = df_IN[k].astype(str).str.count(pattern)>0
-        mask = ~df_IN[k].isna() & mask
-
-        if df_IN.loc[mask,k].count() == df_IN.loc[mask,k].count() & mask.sum()>0:
-            DATECOLS.append(k)
-    DATECOLS = list(set(DATECOLS))
-
-    #DATECOLS
-    for k in DATECOLS:
-        df_IN[k] = pd.to_datetime(df_IN[k],errors='coerce')
-
-    #FLOATS
-    FLOAT_MASK = (df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce').count() - df_IN.count())==0
-    FLOAT_KEYS = df_IN.keys()[FLOAT_MASK]
-
-    #INTEGERS
-    INT_MASK = (df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce').fillna(0.0).apply(np.floor)-df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce')==0).fillna(0.0).max()
-    #INT_MASK = (df_IN.apply(pd.to_numeric, downcast = 'integer', errors = 'coerce') - df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce') == 0).max()
-    INT_KEYS = df_IN[FLOAT_KEYS].keys()[INT_MASK]
-
-    #xx=(df_IN.apply(pd.to_numeric, downcast = 'integer', errors = 'coerce') - df_IN.apply(pd.to_numeric, downcast = 'float', errors = 'coerce') == 0)
-    #for k in  df_IN.keys():
-    #    df_IN.loc[xx[k]==False,k]
-
-    #Force Unique Key Lists
-    FLOAT_KEYS = list(set(FLOAT_KEYS)-set(INT_KEYS) - set(DATECOLS))
-    INT_KEYS = list(set(INT_KEYS) - set(DATECOLS))
-
-    df_IN[FLOAT_KEYS] = df_IN[FLOAT_KEYS].apply(pd.to_numeric, downcast = 'float', errors = 'coerce')
-    df_IN[INT_KEYS] = df_IN[INT_KEYS].apply(pd.to_numeric, downcast = 'integer', errors = 'coerce')
-
-    #Clean Up Strings?
-    #df_IN.keys()[df_IN.dtypes=='O']
-
-    return(df_IN)
 
 def GetKey(df,key):
     # returns list of matches to <key> in <df>.keys() as regex search
