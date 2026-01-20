@@ -1196,8 +1196,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
             RefXMin=min(X_fit.iloc[:,0])
             RefXMax=max(X_fit.iloc[:,0])
             XY_fit = pca.transform(xdf[xdf.keys()[[XPATH,YPATH]]])
-            xdf['Xfit']=XY_fit[:,0]
-            xdf['Yfit']=XY_fit[:,1]
+            xdf['Xfit']=XY_fit.iloc[:,0]
+            xdf['Yfit']=XY_fit.iloc[:,1]
             
             # clip to overlapping wells
             m = xdf['Xfit'] >= RefXMin
