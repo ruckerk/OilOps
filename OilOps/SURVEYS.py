@@ -1087,7 +1087,7 @@ def XYZSpacing(xxdf, df_UWI, DATELIMIT, xxUWI10, *, INC_LIMIT: float = 87.0, max
             uwikey = (~xxdf[uwikeys].isna()).sum().sort_values(ascending = False).index[0]
         elif len(uwikeys)==1:
             uwikey = uwikey[0]
-        else
+        else:
             uwikey = None
                       
         # SCOLS is either a dict-like mapping of names, or an ordered list; handle both
