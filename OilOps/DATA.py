@@ -886,7 +886,8 @@ def Get_Scouts(UWIs, db=None, TABLE_NAME = 'CO_SCOUT'):
         UWIs = list(UWIs)
 
     UWIs = [WELLAPI(x).STRING(10) for x in UWIs]
-
+    UWIs = list(set(UWIs))
+           
     for UWI in UWIs:
         #if 1==1:
         UWI = WELLAPI(UWI).STRING(10)
