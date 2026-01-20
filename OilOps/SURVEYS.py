@@ -1017,7 +1017,234 @@ def Condense_Surveys(xdf):
     return RESULT
           
 # Define function for nearest neighbors
-def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
+
+def XYZSpacing(xxdf, df_UWI, DATELIMIT, xxUWI10, *, INC_LIMIT: float = 87.0, max_neighbors: int = 5):
+    """
+    Compute nearest-neighbor spacing metrics for lateral wells based on directional surveys.
+
+    Parameters
+    - xxdf: DataFrame of survey records (one survey row per measured-depth sample or per survey)
+    - df_UWI: DataFrame of well header / completion info (must contain date columns to compute MAX_COMPLETION_DATE)
+    - DATELIMIT: integer days. A candidate neighbor is only considered if its completion date is within
+                +/- DATELIMIT days of the target well's completion date (see doc).
+    - xxUWI10: list-like of target UWI10 values to calculate spacing for.
+    - INC_LIMIT: minimum inclination (deg) to treat a survey as lateral (default 87 deg).
+    - max_neighbors: maximum number of neighbors to report (default 5).
+
+    Returns:
+    - OUTPUT: DataFrame with one row per target UWI10 and columns:
+      UWI10, LatLen, MeanTVD, MeanX, MeanY, overlap{1..N}, dz{1..N}, dxy{1..N}, UWI{1..N}, Days{1..N}
+    """
+    # defensive copies
+    xxdf = xxdf.copy(deep=True)
+    df_UWI = df_UWI.copy(deep=True)
+
+    # normalize target UWI list
+    xxUWI10 = convert_to_list(xxUWI10)
+    xxUWI10 = pd.DataFrame(xxUWI10).iloc[:, 0].unique().tolist()
+
+    # Prepare output columns (structure compatible with prior implementation)
+    base_cols = {
+        'UWI10': int(),
+        'LatLen': float(),
+        'MeanTVD': float(),
+        'MeanX': float(),
+        'MeanY': float(),
+    }
+    for n in range(1, max_neighbors + 1):
+        base_cols.update({
+            f'overlap{n}': float(),
+            f'dz{n}': float(),
+            f'dxy{n}': float(),
+            f'UWI{n}': float(),   # UWI10 may be large; keep numeric
+            f'Days{n}': float(),
+        })
+    OUTPUT = pd.DataFrame(base_cols, index=[])
+
+    # Identify completion/date columns in df_UWI and compute MAX_COMPLETION_DATE
+    comp_date_cols = df_UWI.columns[df_UWI.columns.str.contains(
+        r'.*(JOB.*DATE.*|STIM.*DATE[^0-9].*|.*COMP.*DATE.*|.*FIRST.*(PROD|DATE).*|.*SPUD.*DATE.*)',
+        regex=True, case=False)]
+    if len(comp_date_cols) == 0:
+        # Fallback to any column with 'DATE' in name
+        comp_date_cols = df_UWI.columns[df_UWI.columns.str.contains('DATE', case=False)]
+    # convert to datetimes where possible
+    for c in comp_date_cols:
+        df_UWI[c] = pd.to_datetime(df_UWI[c], errors='coerce')
+    # fill missing completion dates with a distant-past sentinel so they are handled consistently
+    df_UWI['MAX_COMPLETION_DATE'] = df_UWI[comp_date_cols].max(axis=1)
+    df_UWI['MAX_COMPLETION_DATE'] = df_UWI['MAX_COMPLETION_DATE'].fillna(pd.Timestamp('1900-01-01'))
+    df_UWI = df_UWI.reset_index(drop=True)
+
+    # Standardize survey columns using SurveyCols helper
+    scols = SurveyCols(xxdf.head(5))
+    # Ensure we have the expected keys in scols; abort early with empty OUTPUT if not
+    required_survey_keys = ['MD', 'DIP', 'TVD', 'EAST_X_XX', 'NORTH_Y_XX', 'UWI']
+    # SurveyCols may return mapping or iterable; try to fetch expected keys robustly
+    try:
+        # SCOLS is either a dict-like mapping of names, or an ordered list; handle both
+        if isinstance(scols, dict):
+            # map to convenient keys
+            md_key = next((scols[k] for k in scols if 'MD' in k.upper() or k.upper().startswith('MD')), None)
+            tvd_key = next((scols[k] for k in scols if 'TVD' in k.upper()), None)
+            x_key = next((scols[k] for k in scols if 'EAST' in k.upper() or 'X' in k.upper()), None)
+            y_key = next((scols[k] for k in scols if 'NORTH' in k.upper() or 'Y' in k.upper()), None)
+            uwikey = next((scols[k] for k in scols if 'UWI' in k.upper() or 'API' in k.upper()), None)
+        else:
+            # list-like: try to index known positions used in original code
+            md_key = list(scols)[0]
+            dip_key = list(scols)[1] if len(list(scols)) > 1 else None
+            tvd_key = list(scols)[3] if len(list(scols)) > 3 else None
+            x_key = list(scols)[5] if len(list(scols)) > 5 else None
+            y_key = list(scols)[4] if len(list(scols)) > 4 else None
+            uwikey = xxdf.columns[xxdf.columns.str.contains('.*UWI.*', regex=True, case=False)].tolist()
+            uwikey = uwikey[0] if uwikey else None
+    except Exception:
+        # If we can't find keys, return empty result
+        return OUTPUT
+
+    # required keys check
+    if any(k is None for k in (md_key, tvd_key, x_key, y_key, uwikey)):
+        return OUTPUT
+
+    # Coerce to numeric
+    for k in (md_key, tvd_key, x_key, y_key):
+        xxdf[k] = pd.to_numeric(xxdf[k], errors='coerce')
+
+    # Exclude non-lateral surveys by inclination if present
+    if 'INC' in xxdf.columns:
+        xxdf = xxdf.loc[xxdf['INC'] >= INC_LIMIT].copy()
+    else:
+        # If INC not present, assume all provided surveys are relevant (caller should filter upstream)
+        xxdf = xxdf.copy()
+
+    # Aggregate survey data per UWI: mean X/Y/TVD, MD range, lateral length
+    agg = xxdf.groupby(uwikey).agg(
+        MeanX=(x_key, 'mean'),
+        MeanY=(y_key, 'mean'),
+        MeanTVD=(tvd_key, 'mean'),
+        MD_min=(md_key, 'min'),
+        MD_max=(md_key, 'max'),
+    ).reset_index().rename(columns={uwikey: 'UWI_RAW'})
+
+    # compute lateral length and ensure numeric UWI10 (use WELLAPI if UWI_RAW not numeric)
+    def to_uwi10(val):
+        try:
+            return int(val)
+        except Exception:
+            try:
+                return WELLAPI(val).API2INT(10)
+            except Exception:
+                return np.nan
+
+    agg['UWI10'] = agg['UWI_RAW'].apply(to_uwi10)
+    agg['LatLen'] = (agg['MD_max'] - agg['MD_min']).abs()
+    agg['MAX_MD'] = agg['MD_max']
+
+    # Merge completion dates for each agg row from df_UWI (df_UWI might have UWI10 column)
+    if 'UWI10' in df_UWI.columns:
+        df_uwi_dates = df_UWI[['UWI10', 'MAX_COMPLETION_DATE']].drop_duplicates(subset='UWI10')
+        # ensure types align
+        df_uwi_dates['UWI10'] = df_uwi_dates['UWI10'].astype(float)
+        agg = agg.merge(df_uwi_dates, on='UWI10', how='left')
+    else:
+        # try mapping by raw UWI string
+        if 'UWI' in df_UWI.columns:
+            df_uwi_dates = df_UWI[['UWI', 'MAX_COMPLETION_DATE']].drop_duplicates(subset='UWI')
+            agg = agg.merge(df_uwi_dates, left_on='UWI_RAW', right_on='UWI', how='left')
+            agg.rename(columns={'MAX_COMPLETION_DATE': 'MAX_COMPLETION_DATE'}, inplace=True)
+        else:
+            agg['MAX_COMPLETION_DATE'] = pd.Timestamp('1900-01-01')
+
+    # default missing completion dates to sentinel
+    agg['MAX_COMPLETION_DATE'] = pd.to_datetime(agg['MAX_COMPLETION_DATE']).fillna(pd.Timestamp('1900-01-01'))
+
+    # index agg by UWI10 for efficient lookups
+    agg = agg.set_index('UWI10', drop=False)
+
+    # iterate over requested UWI10 targets and compute neighbors
+    for target in xxUWI10:
+        try:
+            target = int(target)
+        except Exception:
+            # try WELLAPI
+            target = to_uwi10(target)
+        if pd.isna(target) or target not in agg.index:
+            # nothing to compute, append blank row with UWI10
+            row = {'UWI10': target}
+            OUTPUT = pd.concat([OUTPUT, pd.DataFrame([row])], ignore_index=True)
+            continue
+
+        targ = agg.loc[target]
+        # candidate pool: exclude self and check completion date within DATELIMIT window
+        window_start = targ['MAX_COMPLETION_DATE'] - pd.Timedelta(days=int(DATELIMIT))
+        window_end = targ['MAX_COMPLETION_DATE'] + pd.Timedelta(days=int(DATELIMIT))
+        candidates = agg.loc[(agg.index != target) &
+                             (agg['MAX_COMPLETION_DATE'] >= window_start) &
+                             (agg['MAX_COMPLETION_DATE'] <= window_end)].copy()
+
+        if candidates.empty:
+            row = {'UWI10': target,
+                   'LatLen': targ.get('LatLen', np.nan),
+                   'MeanTVD': targ.get('MeanTVD', np.nan),
+                   'MeanX': targ.get('MeanX', np.nan),
+                   'MeanY': targ.get('MeanY', np.nan)}
+            OUTPUT = pd.concat([OUTPUT, pd.DataFrame([row])], ignore_index=True)
+            continue
+
+        # compute horizontal distance (dxy) and vertical separation (dz) and overlap fraction
+        # Using Euclidean distance in the coordinate system provided (assumes same projection)
+        dx = candidates['MeanX'].to_numpy() - targ['MeanX']
+        dy = candidates['MeanY'].to_numpy() - targ['MeanY']
+        dxy = np.hypot(dx, dy)
+        dz = (candidates['MeanTVD'].to_numpy() - targ['MeanTVD']).astype(float)
+        # MD overlap: intersection length / min(total lengths)
+        targ_min, targ_max = targ['MD_min'], targ['MD_max']
+        cand_min = candidates['MD_min'].to_numpy()
+        cand_max = candidates['MD_max'].to_numpy()
+        # intersection
+        inter_len = np.maximum(0.0, np.minimum(targ_max, cand_max) - np.maximum(targ_min, cand_min))
+        targ_len = max(1e-9, targ_max - targ_min)
+        cand_len = (cand_max - cand_min)
+        # overlap fraction relative to the smaller of the two MD spans
+        min_len = np.maximum(1e-9, np.minimum(targ_len, cand_len))
+        overlap_frac = inter_len / min_len
+
+        candidates = candidates.assign(dxy=dxy, dz=dz, overlap=overlap_frac, Days=(candidates['MAX_COMPLETION_DATE'] - targ['MAX_COMPLETION_DATE']).dt.days.abs())
+
+        # sort candidates by horizontal distance then by overlap (closer first, prefer larger overlap)
+        candidates = candidates.sort_values(by=['dxy', 'overlap'], ascending=[True, False])
+
+        # pick top neighbors up to max_neighbors
+        picked = candidates.head(max_neighbors)
+
+        # Build row dictionary
+        row = {
+            'UWI10': target,
+            'LatLen': targ.get('LatLen', np.nan),
+            'MeanTVD': targ.get('MeanTVD', np.nan),
+            'MeanX': targ.get('MeanX', np.nan),
+            'MeanY': targ.get('MeanY', np.nan),
+        }
+        for idx, (_, cand) in enumerate(picked.iterrows(), start=1):
+            row[f'overlap{idx}'] = float(cand['overlap'])
+            row[f'dz{idx}'] = float(cand['dz'])
+            row[f'dxy{idx}'] = float(cand['dxy'])
+            row[f'UWI{idx}'] = float(cand['UWI10'])
+            row[f'Days{idx}'] = float(cand['Days'])
+        # Missing neighbor slots remain NaN
+
+        OUTPUT = pd.concat([OUTPUT, pd.DataFrame([row])], ignore_index=True)
+
+    # finalize dtypes where possible
+    try:
+        OUTPUT['UWI10'] = OUTPUT['UWI10'].astype('Int64')
+    except Exception:
+        pass
+
+    return OUTPUT
+
+def XXXYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
     INC_LIMIT = 87
           
     # condensed SURVEYS in xxdf
