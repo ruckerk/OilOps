@@ -1193,8 +1193,8 @@ def XYZSpacing(xxUWI10, xxdf, df_UWI, DATELIMIT, SAVE = False):
             #    fmin_cobyla(objective, x0=[0.5,0.5], cons=[c1])
             pca.fit(refXYZ.iloc[:,[1,2]])
             X_fit = pca.transform(refXYZ[xdf.keys()[[XPATH,YPATH]]])
-            RefXMin=min(X_fit[:,0])
-            RefXMax=max(X_fit[:,0])
+            RefXMin=min(X_fit.iloc[:,0])
+            RefXMax=max(X_fit.iloc[:,0])
             XY_fit = pca.transform(xdf[xdf.keys()[[XPATH,YPATH]]])
             xdf['Xfit']=XY_fit[:,0]
             xdf['Yfit']=XY_fit[:,1]
