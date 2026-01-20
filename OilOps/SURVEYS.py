@@ -1082,6 +1082,14 @@ def XYZSpacing(xxdf, df_UWI, DATELIMIT, xxUWI10, *, INC_LIMIT: float = 87.0, max
     required_survey_keys = ['MD', 'DIP', 'TVD', 'EAST_X_XX', 'NORTH_Y_XX', 'UWI']
     # SurveyCols may return mapping or iterable; try to fetch expected keys robustly
     try:
+        uwikeys = GetKey(xxdf,'UWI|API')
+        if len(uwikeys)>1:
+            uwikey = (~xxdf[uwikeys].isna()).sum().sort_values(ascending = False).index[0]
+        elif len(uwikeys)==1:
+            uwikey = uwikey[0]
+        else
+            uwikey = None
+                      
         # SCOLS is either a dict-like mapping of names, or an ordered list; handle both
         if isinstance(scols, dict):
             # map to convenient keys
@@ -1089,7 +1097,6 @@ def XYZSpacing(xxdf, df_UWI, DATELIMIT, xxUWI10, *, INC_LIMIT: float = 87.0, max
             tvd_key = next((scols[k] for k in scols if 'TVD' in k.upper()), None)
             x_key = next((scols[k] for k in scols if 'EAST' in k.upper() or 'X' in k.upper()), None)
             y_key = next((scols[k] for k in scols if 'NORTH' in k.upper() or 'Y' in k.upper()), None)
-            uwikey = next((scols[k] for k in scols if 'UWI' in k.upper() or 'API' in k.upper()), None)
         else:
             # list-like: try to index known positions used in original code
             md_key = list(scols)[0]
@@ -1097,8 +1104,6 @@ def XYZSpacing(xxdf, df_UWI, DATELIMIT, xxUWI10, *, INC_LIMIT: float = 87.0, max
             tvd_key = list(scols)[3] if len(list(scols)) > 3 else None
             x_key = list(scols)[5] if len(list(scols)) > 5 else None
             y_key = list(scols)[4] if len(list(scols)) > 4 else None
-            uwikey = xxdf.columns[xxdf.columns.str.contains('.*UWI.*', regex=True, case=False)].tolist()
-            uwikey = uwikey[0] if uwikey else None
     except Exception:
         # If we can't find keys, return empty result
         return OUTPUT
