@@ -333,7 +333,7 @@ def Get_LAS(
     UWIS = [WELLAPI(x).STRING(10) for x in UWIS]  # uses your existing helper
 
     # Where to put downloads (Selenium will download here)
-    base_dir = Path(os.getcwd())
+    base_dir = Path(getcwd())
     logs_dir = (base_dir / logs_folder).resolve()
     logs_dir.mkdir(parents=True, exist_ok=True)
 
