@@ -236,218 +236,271 @@ def CO_BASEDATA(FRACFOCUS = True, COGCC_SQL = True, COGCC_SHP = True):
         #   zipObj.extractall()
         remove(filename)
 
-def _requests_session_with_retries(
-    total=5,
-    backoff_factor=0.5,
-    status_forcelist=(429, 500, 502, 503, 504),
-):
-    s = requests.Session()
-    retry = Retry(
-        total=total,
-        connect=total,
-        read=total,
-        status=total,
-        backoff_factor=backoff_factor,
-        status_forcelist=status_forcelist,
-        allowed_methods=("GET", "HEAD"),
-        raise_on_status=False,
-    )
-    adapter = HTTPAdapter(max_retries=retry)
-    s.mount("http://", adapter)
-    s.mount("https://", adapter)
-    s.headers.update(
-        {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Accept": "*/*",
-        }
-    )
-    return s
-
-
-def _extract_download_links_and_table(html: str):
+def _wait_for_download_complete(download_dir: Path, timeout: int = 120) -> Path:
     """
-    Returns (df, download_hrefs) for the first table on the page.
-    download_hrefs is a list of href strings for anchors whose text is 'Download'
-    in the SAME order they appear in the table.
+    Wait for a new file to appear and finish downloading.
+    Works for Chrome/Edge (.crdownload / .tmp).
+    Returns the completed file path.
+    """
+    download_dir = Path(download_dir)
+    start = time.time()
+
+    # snapshot existing files
+    before = {p.name for p in download_dir.glob("*")}
+
+    while True:
+        # any new files?
+        now_files = list(download_dir.glob("*"))
+        new_files = [p for p in now_files if p.name not in before]
+
+        # ignore partials
+        partials = [p for p in now_files if p.suffix.lower() in {".crdownload", ".tmp", ".part"}]
+
+        # if we have at least one new non-partial file and no partials are growing
+        completed = [p for p in new_files if p.suffix.lower() not in {".crdownload", ".tmp", ".part"}]
+
+        if completed and not partials:
+            # choose the most recent completed file
+            return max(completed, key=lambda p: p.stat().st_mtime)
+
+        if time.time() - start > timeout:
+            raise TimeoutError(f"Download did not complete within {timeout}s in {download_dir}")
+
+        time.sleep(0.5)
+
+
+def _safe_click(driver, element, timeout: int = 20):
+    WebDriverWait(driver, timeout).until(EC.element_to_be_clickable(element))
+    element.click()
+
+
+def _extract_rows_from_docs_table(html: str) -> pd.DataFrame:
+    """
+    Parse the first table on the ECMC docs page and add a LINK column containing
+    href for anchors whose visible text is 'Download'.
     """
     soup = BS(html, "lxml")
     tables = soup.find_all("table")
     if not tables:
-        return None, []
+        return pd.DataFrame()
 
     table = tables[0]
-    # Dataframe from table HTML
     dfs = pd.read_html(str(table), header=0)
-    df = dfs[0] if dfs else None
+    if not dfs:
+        return pd.DataFrame()
 
-    # Extract hrefs for Download anchors
-    download_hrefs = []
-    for a in table.find_all("a"):
-        if (a.get_text(strip=True) or "").lower() == "download":
-            href = a.get("href")
-            if href:
-                download_hrefs.append(href)
+    df = dfs[0].copy()
 
-    return df, download_hrefs
+    # build list of hrefs for each Download anchor in DOM order
+    download_anchors = table.find_all("a", string=lambda s: isinstance(s, str) and s.strip().lower() == "download")
+    hrefs = [a.get("href") for a in download_anchors]
 
+    # ECMC tables usually have a "Download" column; align by rows where Download == "Download"
+    if "Download" in df.columns:
+        mask = df["Download"].astype(str).str.strip().str.lower().eq("download")
+        df["LINK"] = None
+        # best-effort alignment: assign hrefs in order to masked rows
+        idxs = list(df.index[mask])
+        for i, ridx in enumerate(idxs):
+            if i < len(hrefs):
+                df.at[ridx, "LINK"] = hrefs[i]
+    else:
+        df["LINK"] = None
 
-def _looks_like_las(filename: str, content_head: bytes) -> bool:
-    name = (filename or "").lower()
-    if name.endswith(".las"):
-        return True
-
-    # LAS files are text; check first chunk for common section markers
-    try:
-        head_txt = content_head.decode("utf-8", errors="ignore").upper()
-    except Exception:
-        return False
-
-    markers = ["~V", "~W", "~C", "~A", "VERS.", "WRAP.", "STRT.", "STOP."]
-    return any(m in head_txt for m in markers)
-
-
-def _filename_from_headers_or_url(headers, url, default="downloaded_file"):
-    cd = headers.get("Content-Disposition") or headers.get("content-disposition") or ""
-    m = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', cd, flags=re.IGNORECASE)
-    if m:
-        return m.group(1)
-
-    path_name = os.path.basename(urlparse(url).path.rstrip("/"))
-    return path_name or default
+    return df
 
 
 def Get_LAS(
     UWIS,
-    URL_BASE="https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX",
-    out_folder="LOGS",
-    timeout=60,
+    *,
+    url_base: str = "https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX",
+    logs_folder: str | Path = "LOGS",
+    timeout_page: int = 30,
+    timeout_download: int = 180,
+    headless_ok: bool = True,
 ):
     """
-    Downloads LAS well logs for Colorado UWIs (API) from ECMC docs page.
-    Saves into ./LOGS by default.
+    Selenium-based LAS downloader for Colorado ECMC docs.
 
-    Returns: dict with keys {"downloaded": [paths], "bad_links": [urls], "notes": [str]}
+    Returns:
+        downloaded_files: list[Path]
+        bad_links: list[str]
     """
-    # Normalize UWIs -> list of 10-digit API strings using your WELLAPI helper
+    # Normalize UWIS
     if isinstance(UWIS, (str, float, int)):
         UWIS = [UWIS]
-    else:
-        UWIS = list(UWIS)
+    UWIS = list(UWIS)
+    UWIS = [WELLAPI(x).STRING(10) for x in UWIS]  # uses your existing helper
 
-    UWIS = [WELLAPI(x).STRING(10) for x in UWIS]
+    # Where to put downloads (Selenium will download here)
+    base_dir = Path(os.getcwd())
+    logs_dir = (base_dir / logs_folder).resolve()
+    logs_dir.mkdir(parents=True, exist_ok=True)
 
-    out_dir = Path(os.getcwd()) / out_folder
-    out_dir.mkdir(parents=True, exist_ok=True)
+    downloaded_files: list[Path] = []
+    bad_links: list[str] = []
 
-    s = _requests_session_with_retries()
+    # IMPORTANT:
+    # If your existing get_driver() already sets prefs for downloads, great.
+    # If not, update get_driver() to set Chrome/Edge prefs:
+    #   prefs = {
+    #       "download.default_directory": str(logs_dir),
+    #       "download.prompt_for_download": False,
+    #       "download.directory_upgrade": True,
+    #       "safebrowsing.enabled": True
+    #   }
+    # and pass them into ChromeOptions/EdgeOptions.
 
-    downloaded = []
-    bad_links = []
-    notes = []
+    with get_driver(download_dir=str(logs_dir), headless=headless_ok) as browser:
+        wait = WebDriverWait(browser, timeout_page)
 
-    for UWI in UWIS:
-        if not str(UWI).startswith("05"):
-            notes.append(f"Skipped non-Colorado UWI: {UWI}")
-            continue
+        for uwi in UWIS:
+            if not str(uwi).startswith("05"):
+                continue
 
-        cowell = str(UWI)[2:10]
-        docurl = URL_BASE.replace("XNUMBERX", cowell)
+            cowell = str(uwi)[2:10]  # matches your original intent
+            docurl = url_base.replace("XNUMBERX", cowell)
 
-        try:
-            resp = s.get(docurl, timeout=timeout)
-            resp.raise_for_status()
-        except Exception as e:
-            notes.append(f"Failed to load docs page for {UWI}: {docurl} ({e})")
-            continue
-
-        df, dl_hrefs = _extract_download_links_and_table(resp.text)
-        if df is None or df.empty:
-            notes.append(f"No table found for {UWI}: {docurl}")
-            continue
-
-        # Ensure we have a LINK column aligned with the Download column if present
-        # If the site changes, we still have dl_hrefs and can just iterate them.
-        # Filter rows that appear to be well logs.
-        # (your original logic: Class contains 'Well Logs')
-        if "Class" in df.columns:
-            log_rows = df["Class"].astype(str).str.contains("Well Logs", case=False, na=False)
-            df_logs = df.loc[log_rows].copy()
-        else:
-            # fallback: grab everything and let LAS sniffing decide
-            df_logs = df.copy()
-
-        # Some pages have multiple rows but href extraction order should match "Download" anchors,
-        # not necessarily df rows after filtering. The robust approach is:
-        #   - Build a list of candidate download URLs from the hrefs
-        #   - Download each and keep those that sniff as LAS
-        candidate_urls = []
-        for href in dl_hrefs:
-            candidate_urls.append(urljoin(docurl, href))
-
-        if not candidate_urls:
-            notes.append(f"No download links found for {UWI}: {docurl}")
-            continue
-
-        # If we can parse dates from df, we’ll use them for filenames; otherwise fallback.
-        # (Date column name varies; your code expects 'Date')
-        date_series = None
-        for c in df.columns:
-            if str(c).strip().lower() == "date":
-                date_series = pd.to_datetime(df[c], errors="coerce").dt.strftime("%Y_%m_%d")
-                break
-
-        for idx, url in enumerate(candidate_urls):
             try:
-                r = s.get(url, timeout=timeout, stream=True)
-                r.raise_for_status()
+                browser.get(docurl)
+            except Exception as ex:
+                print(f"[Get_LAS] Error connecting to {docurl}: {ex}")
+                bad_links.append(docurl)
+                continue
 
-                # read a small head chunk for sniffing
-                head = b""
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        head += chunk
-                        if len(head) >= 32768:
-                            break
+            # sort / stabilize table if the UI has sortable headers
+            # (wrapped in try because sometimes the column labels differ)
+            try:
+                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
+                # Your original clicked "Class". Keep but guard it:
+                try:
+                    browser.find_element(By.LINK_TEXT, "Class").click()
+                except Exception:
+                    pass
+            except Exception as ex:
+                print(f"[Get_LAS] No table found at {docurl}: {ex}")
+                bad_links.append(docurl)
+                continue
 
-                fname = _filename_from_headers_or_url(r.headers, url, default=f"doc_{cowell}_{idx}")
-                # If we have a date series, try to incorporate it (best-effort).
-                date_tag = None
-                if date_series is not None and idx < len(date_series):
-                    date_tag = date_series.iloc[idx]
-                date_tag = date_tag if (date_tag and date_tag != "NaT") else None
+            # We’ll iterate pages if pagination exists.
+            # Strategy: discover page numbers from the bottom table, then click them.
+            def collect_current_page_rows() -> pd.DataFrame:
+                df = _extract_rows_from_docs_table(browser.page_source)
+                if df.empty:
+                    return df
+                # filter to Well Logs in Class column
+                if "Class" in df.columns:
+                    m = df["Class"].astype(str).str.contains("Well Logs", case=False, na=False)
+                    df = df.loc[m].copy()
+                else:
+                    # if Class column missing, keep all rows (still only download .LAS later)
+                    pass
+                # standardize Date parsing
+                if "Date" in df.columns:
+                    df["DateString"] = pd.to_datetime(df["Date"], errors="coerce").dt.strftime("%Y_%m_%d")
+                else:
+                    df["DateString"] = None
+                return df
 
-                if not _looks_like_las(fname, head):
-                    # Not a LAS; skip silently or record note
+            all_rows = []
+            all_rows.append(collect_current_page_rows())
+
+            # try to detect pagination links like "2", "3", etc.
+            try:
+                soup = BS(browser.page_source, "lxml")
+                tables = soup.find_all("table")
+                if tables:
+                    last_table = tables[-1]
+                    # pull possible page link texts
+                    page_texts = []
+                    for a in last_table.find_all("a"):
+                        t = (a.get_text() or "").strip()
+                        if t.isdigit():
+                            page_texts.append(int(t))
+                    page_nums = sorted(set(page_texts))
+                else:
+                    page_nums = []
+            except Exception:
+                page_nums = []
+
+            # click through other pages if present
+            for p in page_nums:
+                if p <= 1:
+                    continue
+                try:
+                    # many sites use link text for pagination
+                    page_link = browser.find_element(By.PARTIAL_LINK_TEXT, str(p))
+                    page_link.click()
+                    time.sleep(0.5)
+                    all_rows.append(collect_current_page_rows())
+                except Exception:
+                    # ignore if pagination isn’t actually clickable
+                    pass
+
+            userows = pd.concat(all_rows, axis=0, ignore_index=True).drop_duplicates()
+
+            if userows.empty or "LINK" not in userows.columns:
+                print(f"[Get_LAS] No Well Logs rows found for {uwi} at {docurl}")
+                continue
+
+            # Download each candidate link; decide LAS by file extension AFTER download.
+            # (We can’t rely on Content-Disposition without requests; Selenium downloads directly.)
+            for _, row in userows.iterrows():
+                href = row.get("LINK", None)
+                if not href or not isinstance(href, str):
                     continue
 
-                # Guarantee .las extension (some servers name it .txt)
-                if not fname.lower().endswith(".las"):
-                    fname = re.sub(r"\.[A-Za-z0-9]{1,5}$", "", fname)  # drop existing extension
-                    fname = fname + ".las"
+                # The LINK in table is usually relative; make absolute if needed
+                if href.startswith("/"):
+                    base = f"{urlparse(docurl).scheme}://{urlparse(docurl).netloc}"
+                    dl_url = base + href
+                elif href.lower().startswith("http"):
+                    dl_url = href
+                else:
+                    # relative without leading slash
+                    base = f"{urlparse(docurl).scheme}://{urlparse(docurl).netloc}/"
+                    dl_url = base + href.lstrip("/")
 
-                # Build output filename
-                base = f"LOGDATA_{date_tag + '_' if date_tag else ''}{UWI}"
-                out_path = out_dir / (base + "_" + Path(fname).name)
+                # Open the download URL in the browser to trigger download
+                try:
+                    browser.get(dl_url)
+                except Exception as ex:
+                    print(f"[Get_LAS] Failed to open download link: {dl_url} ({ex})")
+                    bad_links.append(dl_url)
+                    continue
 
-                # Avoid overwrite
+                try:
+                    downloaded = _wait_for_download_complete(logs_dir, timeout=timeout_download)
+                except Exception as ex:
+                    print(f"[Get_LAS] Download timeout/failure for {dl_url}: {ex}")
+                    bad_links.append(dl_url)
+                    continue
+
+                # Keep only LAS (sometimes the “Well Logs” class still includes PDFs/TIFs)
+                ext = downloaded.suffix.lower()
+                if ext != ".las":
+                    # not LAS; keep or delete depending on preference.
+                    # I’ll keep it but not count it as a LAS download.
+                    continue
+
+                datestr = row.get("DateString") or "unknown_date"
+                target = logs_dir / f"LOGDATA_{datestr}_{uwi}{ext}"
+
+                # avoid overwrites
                 k = 1
-                while out_path.exists():
-                    out_path = out_dir / (base + f"_{k}_" + Path(fname).name)
+                while target.exists():
+                    target = logs_dir / f"LOGDATA_{datestr}_{uwi}_{k}{ext}"
                     k += 1
 
-                # Write full content (we already consumed some chunks; easiest is re-request without stream)
-                r2 = s.get(url, timeout=timeout)
-                r2.raise_for_status()
-                out_path.write_bytes(r2.content)
+                try:
+                    downloaded.rename(target)
+                    downloaded_files.append(target)
+                    print(f"[Get_LAS] Saved {target.name}")
+                except Exception as ex:
+                    print(f"[Get_LAS] Could not rename {downloaded} -> {target}: {ex}")
+                    downloaded_files.append(downloaded)
 
-                downloaded.append(str(out_path))
-
-            except Exception as e:
-                bad_links.append(url)
-                notes.append(f"Download failed for {UWI}: {url} ({e})")
-
-    return {"downloaded": downloaded, "bad_links": bad_links, "notes": notes}
-
+    return downloaded_files, bad_links
 
 
 def XXGet_LAS(UWIS):
