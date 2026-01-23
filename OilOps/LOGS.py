@@ -1690,7 +1690,7 @@ def Mechanics(lasfile, return_df=False, write_las=True):
     return exlas
 
 
-def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1, MINIMUM_PTS = 100, return_df=False, write_las=True):):
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1, MINIMUM_PTS = 100, return_df=False, write_las=True):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
