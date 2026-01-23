@@ -1602,7 +1602,7 @@ def DLOGR(LASfile, return_df=False, write_las=True):
     return exlas
       
 
-def Mechanics(lasfile, return_df=False, write_las=True):):
+def Mechanics(lasfile, return_df=False, write_las=True):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'MECH')
     if not path.exists(dir_add):
