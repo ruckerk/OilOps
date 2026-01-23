@@ -14,6 +14,7 @@ import statistics
 from os import path, listdir, remove, makedirs, walk, mkdir, rename, getlogin, getcwd, devnull, sep
 from requests import Session
 from requests.adapters import HTTPAdapter
+
 from requests.packages.urllib3.util.retry import Retry
 from selenium import webdriver
 from selenium.webdriver import Firefox, Chrome
@@ -108,7 +109,9 @@ import openpyxl, xlrd
 import xlsxwriter
 import shutil
 from urllib.request import urlopen 
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, urljoin, parse_qs
+from urllib3.util.retry import Retry
+
 from pathlib import Path
 import dateutil.parser
 
