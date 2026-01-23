@@ -748,7 +748,8 @@ def get_driver():
     #driver = webdriver.Chrome('\\\Server5\\Users\\KRucker\\chromedriver.exe',chrome_options=options)
  
     opts = Options()
-    Options.add_argument("--headless=new")
+    opts.headless = True (or use options.headless = True) f
+    #Options.add_argument("--headless=new")
 
     SNAP = False
     # Find local firefox program
