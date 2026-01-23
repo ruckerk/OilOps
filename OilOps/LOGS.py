@@ -827,6 +827,70 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     output.index=output.index.astype(str)
     return output
 
+
+def _valid_count(arr: np.ndarray, null_sentinels=(999, -999, 999.25, -999.25)) -> int:
+    """
+    Count valid (finite) samples, excluding LAS sentinel nulls.
+    """
+    a = np.asarray(arr, dtype="float64", order="C")
+    m = np.isfinite(a)
+    for s in null_sentinels:
+        m &= (a != s)
+    return int(m.sum())
+
+def get_alias_from_lasio(
+    las,
+    alias_dicts: dict,
+    *,
+    null_sentinels=(999, -999, 999.25, -999.25),
+    allow_colon_prefix_match: bool = True
+) -> dict:
+    """
+    Select best curve mnemonic for each canonical type using:
+      - your tier ranking (1 best)
+      - max valid samples within the best available tier
+    """
+    # LASIO keys can contain "MNEM:whatever"; you were splitting on ':'
+    las_keys = list(las.keys())
+
+    def base_mnem(k: str) -> str:
+        return re.split(r":", k)[0] if allow_colon_prefix_match else k
+
+    # Precompute valid counts once per curve key (fast + avoids repeated numpy work)
+    valid_counts = {}
+    for k in las_keys:
+        try:
+            valid_counts[k] = _valid_count(las[k], null_sentinels=null_sentinels)
+        except Exception:
+            valid_counts[k] = 0
+
+    out = {canon: "NULL" for canon in alias_dicts.keys()}
+
+    for canon, mnem_rank in alias_dicts.items():
+        # find rank levels in increasing preference
+        ranks = sorted(set(mnem_rank.values()))
+        chosen = None
+
+        for r in ranks:
+            # candidates mnemonics at this rank
+            tier_mnems = [mn for mn, rr in mnem_rank.items() if rr == r]
+            tier_mnems_set = set(tier_mnems)
+
+            # keys in LAS whose base mnemonic matches one of these
+            candidates = [k for k in las_keys if base_mnem(k) in tier_mnems_set]
+            if not candidates:
+                continue
+
+            # choose candidate with max valid samples
+            chosen = max(candidates, key=lambda k: valid_counts.get(k, 0))
+            if valid_counts.get(chosen, 0) > 0:
+                break  # accept first tier that yields a usable curve
+
+        out[canon] = chosen if chosen is not None else "NULL"
+
+    return out
+
+
 def Alias_Dictionary():
     AliasDicts={'BIT':{"BS":2,"BIT":1},
                 'CAL':{"CALI":1,"CAL":1,"CAL1":1,"C13":2,"C13A":2,
@@ -972,8 +1036,20 @@ def Alias_Dictionary():
                        "SSPK":2,"SPS":3,"AHSC":2,"AHSF":1,"SPA_":2,"SP_S":1}
                 }
     return AliasDicts
-           
+
 def GetAlias(las):
+
+    null_sentinels = [-999.25, -999.0, 999.25, 999.0]
+    try:
+        nv = float(getattr(las.well, "NULL").value)
+        if np.isfinite(nv):
+            null_sentinels = [nv] + null_sentinels
+    except Exception:
+        pass
+
+    return get_alias_from_lasio(las, Alias_Dictionary())
+    
+def XXGetAlias(las):
     # curve options = BIT,CALIPER,DEN_CORRECTION,SONIC_DTC
     # SONIC_DTS,GAMMA,SPECTRAL_K,SPECTRAL_U,SPECTRAL_TH,
     # NEUTRON_PHI,PHOTOELECTRIC,DENSITY,RDEEP,RMEDIUM,
@@ -981,6 +1057,8 @@ def GetAlias(las):
 
     # Dictionaries
     AliasDicts= Alias_Dictionary()
+
+    
            
     alias={}
     for i in set(AliasDicts): alias[i]="NULL"
@@ -993,8 +1071,6 @@ def GetAlias(las):
                     for k in aliases:
                         k_len=0
                         k_keep=None
-                        #print(k)
-                        #(np.array([np.array(las[k])[~np.isnan(np.array(las[k]))])
                         x=np.array([np.array(las[k])])
                         if (x[(~np.isnan(x))&(x!=999)].shape[0])>k_len:
                             k_keep=k
@@ -1132,7 +1208,7 @@ def reduce_mem_usage(props):
     #print("This is ",100*mem_usg/start_mem_usg,"% of the initial size")
     return props, NAlist
 
-def DLOGR(LASfile):
+def DLOGR(LASfile, return_df=False, write_las=True):
     #if 1==1:
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'DLOGR')       
@@ -1143,13 +1219,29 @@ def DLOGR(LASfile):
     try: las = lasio.read(LASfile)
     except: las=[[0]]
 
-    Alias = GetAlias(las)
+    null_val = None
+    try:
+        null_val = float(getattr(las.well, "NULL").value)   # las.well.NULL.value is typical
+    except Exception:
+        pass
+        
 
+    Alias = GetAlias(las)
+    newkeys = []
     step=las.well.STEP.value
            
     if (len(las[0])>100):
         
-        df = (las.df().astype(np.float32))
+        df = las.df().astype(np.float32)
+
+        # replace LAS null sentinel(s) with NaN so dropna/interpolate behave correctly
+        if null_val is not None and np.isfinite(null_val):
+            df.replace(null_val, np.nan, reminder=None, inplace=True)  # pandas replace
+        
+        # also cover common sentinels in case header is missing / wrong
+        df.replace([-999.25, -999.0, 999.25, 999.0], np.nan, inplace=True)
+
+
         df["DEPTH"] = las.df().index.astype(float)
         dfmask=df[[Alias['DEN'],Alias['NPHI']]].dropna(thresh=1).index
 
@@ -1354,6 +1446,8 @@ def DLOGR(LASfile):
                            
                 df['R0'] = Find_R0(df)
                 df['SW']=(df['R0']/df[Alias['RDEEP']])**0.5
+
+                newkeys = newkeys + ['R0','SW']
                 #####################
                 # Create Export LAS #
                 #####################
@@ -1382,6 +1476,8 @@ def DLOGR(LASfile):
                 df["ND_DIFF"]=(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69)
                 df["WKR_VCLAY"]=(-1.59488+234.513*(df[Alias["NPHI"]]-(2.69-df[Alias["DEN"]])/1.69))/100
 
+                newkeys = newkeys + ['ND_DIFF','WKR_VCLAY']
+
                 ##################
                 # Resource Model #
                 ##################
@@ -1394,6 +1490,9 @@ def DLOGR(LASfile):
                 df["WKR_BVW_269"]=(df["SW"])*df["WKR_DPHI_269"]
                 df["WKR_BVH_269"]=(1-df.SW.clip(lower=0,upper=1))*df["WKR_DPHI_269"]
                 df['WKR_Kirr']=(250*df.loc[df["WKR_DPHI_269"]>0,"SW"]**3)/(df["SW"].clip(lower=0,upper=1))**2
+
+                newkeys = newkeys + ['WKR_RHOFL','WKR_DPHI_269', 'WKR_DPHI_265', 'WKR_DPHI_271', 'WKR_DLOGRN' , 'WKR_BVW_269' , 'WKR_BVH_269', 'WKR_Kirr']
+                
                        
                 #    df["WKR_PHI_INV"]=df["Sw"]-((df["R0"]/df[Alias["RSHAL"]])**0.5)*df["WKR_Dphi_269"]
 
@@ -1468,6 +1567,8 @@ def DLOGR(LASfile):
                     exlas.append_curve('U_APPX', df.U_APPX, unit='barns/e', descr='Simplified Matrix Cross Section PE*RHOB')
                     exlas.append_curve('WKR_UMAA', df.WKR_UMAA, unit='barns/e', descr='Apparent Matrix Cross Section')
 
+                    newkeys = newkeys + ['U_APPX','WKR_UMAA']
+
                 # set curves
                 #exlas.append_curve('RHOB',df[Alias["DEN"]], unit='g/cc', descr='Density used for calculation')
                 #exlas.append_curve('NPHI',df[Alias["NPHI"]], unit='v/v', descr='Nphi used for calculation')
@@ -1494,9 +1595,14 @@ def DLOGR(LASfile):
             else: 0
     else: exlas="FALSE"
 
-    return exlas           
+    if return_df:
+        return df.set_index("DEPTH")[newkeys]
+    if write_las:
+        exlas.write(...)
+    return exlas
+      
 
-def Mechanics(lasfile):
+def Mechanics(lasfile, return_df=False, write_las=True):):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'MECH')
     if not path.exists(dir_add):
@@ -1504,14 +1610,36 @@ def Mechanics(lasfile):
                    
     try: las=lasio.read(lasfile)
     except: las=[[0]]
+
+    null_val = None
+    try:
+        null_val = float(getattr(las.well, "NULL").value)   # las.well.NULL.value is typical
+    except Exception:
+        pass
+
+    
     Alias=GetAlias(las)
+
+    newkeys = []
     if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL"):
-        df=las.df()
+        df = las.df().astype(np.float32)
+
+        # ✅ replace LAS null sentinel(s) with NaN so dropna/interpolate behave correctly
+        if null_val is not None and np.isfinite(null_val):
+            df.replace(null_val, np.nan, reminder=None, inplace=True)  # pandas replace
+        
+        # also cover common sentinels in case header is missing / wrong
+        df.replace([-999.25, -999.0, 999.25, 999.0], np.nan, inplace=True)
+        
+        
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
         df["Zp"]=df[Alias["DEN"]]*df["Vp"]/1000
         df["UCS_WFD"]=150.79*(304.8*df[Alias["DTC"]])**3.5
         df["VpMod"] = 1000*df[Alias["DEN"]]*(df["Vp"]**2)*(10**(-9))
+
+        newkeys = newkeys + ['Vp', 'Zp', 'UCS_WFD', 'VpMod']
+
         
         if  (Alias["DTS"]!="NULL"):
             df["Vs"]=304800/df[Alias["DTS"]]
@@ -1526,7 +1654,8 @@ def Mechanics(lasfile):
             df["LambdaMu"]=df["Lame1"]*df["ShearMod"]*10**18
             df["LambdaRho"]=df["Lame1"]*df[Alias["DEN"]]/1000*10**9
 
-        
+            newkeys = newkeys + ['Vs','Zs','Lame1','ShearMod', 'E_Youngs', 'K_Bulk', 'Poisson', 'MuRho','LambdaMu', 'LambdaRho']
+            
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
         exlas.well.Date=str(datetime.datetime.today())
@@ -1553,9 +1682,15 @@ def Mechanics(lasfile):
         filename = str(dir_add)+"\\"+str(exlas.well.uwi.value)+"_WKR_MECH.las"
         exlas.write(filename, version = 2.0)
     else: exlas=False
+        
+    if return_df:
+        return df.set_index("DEPTH")[newkeys]
+    if write_las:
+        exlas.write(...)
     return exlas
 
-def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1, MINIMUM_PTS = 100):
+
+def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS = False, DEGREE_VP = 1, DEGREE_MOD = 1, MINIMUM_PTS = 100, return_df=False, write_las=True):):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'EATON')
     if not path.exists(dir_add):
@@ -1563,9 +1698,28 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
     
     try: las=lasio.read(lasfile)
     except: las=[[0]]
+
+    null_val = None
+    try:
+        null_val = float(getattr(las.well, "NULL").value)   # las.well.NULL.value is typical
+    except Exception:
+        pass
+        
     Alias=GetAlias(las)
+    newkeys = []
+
     if (len(las[0])>(MINIMUM_PTS*3)) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL") and (Alias["PE"]!="NULL") :
-        df=las.df()
+        
+        df = las.df().astype(np.float32)
+
+        # replace LAS null sentinel(s) with NaN so dropna/interpolate behave correctly
+        if null_val is not None and np.isfinite(null_val):
+            df.replace(null_val, np.nan, reminder=None, inplace=True)  # pandas replace
+        
+        # also cover common sentinels in case header is missing / wrong
+        df.replace([-999.25, -999.0, 999.25, 999.0], np.nan, inplace=True)
+
+
         df['Depth'] = df.index       
         df["Vp"]=304800/df[Alias["DTC"]]
         df["VpMod"] = 1000 * df[Alias["DEN"]] * (df["Vp"]**2) * (10**(-9))
@@ -1638,10 +1792,14 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
         df['Vp_NPT'] = (df['VpMod_NPT']/df['RHOB2']/1000/(10**(-9)))**0.5
         df['Eaton_VpMod'] = (df['OVERBURDEN'] - (df['OVERBURDEN']-df['PHYD']))*(df['VP_200']/df['Vp_NPT'])**EATON_EXP
 
+        newkeys = newkeys + ['VpMod_NPT','Vp_NPT','Eaton_VpMod']
+
         # Mud Weight Scales
         df['OVERBURDEN_MW'] = df.OVERBURDEN/df.TVD/0.05194805
         df['PHYD_MW'] = df.PHYD/df.TVD/0.05194805
         df['Eaton_VpMod_Mw'] = df.Eaton_VpMod/df.TVD/0.05194805
+
+        newkeys = newkeys + ['OVERBURDEN_MW','PHYD_MW','Eaton_VpMod_Mw']
         
         # INITIALIZE EXPORT LAS
         exlas.well=las.well
@@ -1686,4 +1844,49 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
             plt.show()
            
     else: exlas=False
+
+    if return_df:
+        return df.set_index("DEPTH")[newkeys]
+    if write_las:
+        exlas.write(...)
     return exlas
+
+def products_from_lasfile(las_path: str) -> dict[str, pd.DataFrame]:
+    las = lasio.read(las_path)
+
+    # Use your improved alias selection
+    alias = get_alias_from_lasio(las, Alias_Dictionary())
+
+    df = las.df().apply(pd.to_numeric, errors="coerce")
+    df["DEPTH"] = df.index.astype(float)
+
+    products = {}
+
+    # --- DLOGR-like outputs ---
+    # (pull the core outputs you care about into a DF)
+    if alias["NPHI"] != "NULL" and alias["DEN"] != "NULL" and alias["RDEEP"] != "NULL":
+        d = df[[alias["NPHI"], alias["DEN"], alias["RDEEP"], "DEPTH"]].copy()
+
+        # your logic (trimmed, keep what you need)
+        if d[alias["NPHI"]].median() > 2:
+            d[alias["NPHI"]] = d[alias["NPHI"]] / 100.0
+
+        # ---- PLACEHOLDER: call your existing Find_R0(df) etc ----
+        d["WKR_R0"] = Find_R0(d.rename(columns={alias["RDEEP"]: "RDEEP"}))  # adapt as needed
+        d["WKR_SW"] = (d["WKR_R0"] / d[alias["RDEEP"]]) ** 0.5
+
+        products["dlogr_core"] = d.set_index("DEPTH")
+
+    # --- Mechanics outputs ---
+    if alias["DTC"] != "NULL" and alias["DEN"] != "NULL":
+        m = df[[alias["DTC"], alias["DEN"], "DEPTH"]].copy()
+        m["Vp"] = 304800.0 / m[alias["DTC"]]
+        m["VpMod"] = 1000.0 * m[alias["DEN"]] * (m["Vp"] ** 2) * 1e-9
+        products["mech_core"] = m.set_index("DEPTH")
+
+    # --- Eaton outputs ---
+    # For MVP: you can keep EatonPP as “later”
+    # or wrap it similarly.
+
+    return products
+
