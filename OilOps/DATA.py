@@ -313,7 +313,7 @@ def _extract_rows_from_docs_table(html: str) -> pd.DataFrame:
 def Get_LAS(
     UWIS,
     *,
-    url_base: str = "https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX",
+    url_base: str = "https://ecmc.state.co.us/cogisdb/Resources/Docs?id=",
     logs_folder: str | Path = "LOGS",
     timeout_page: int = 30,
     timeout_download: int = 180,
@@ -351,7 +351,7 @@ def Get_LAS(
     #   }
     # and pass them into ChromeOptions/EdgeOptions.
 
-    with get_driver(download_dir=str(logs_dir), headless=headless_ok) as browser:
+    with get_driver(download_dir=str(logs_dir), headless=False) as browser:
         wait = WebDriverWait(browser, timeout_page)
 
         for uwi in UWIS:
@@ -359,14 +359,20 @@ def Get_LAS(
                 continue
 
             cowell = str(uwi)[2:10]  # matches your original intent
-            docurl = url_base.replace("XNUMBERX", cowell)
-
+            docurl = f"https://ecmc.state.co.us/cogisdb/Resources/Docs?id={cowell}"
+           
             try:
                 browser.get(docurl)
             except Exception as ex:
                 print(f"[Get_LAS] Error connecting to {docurl}: {ex}")
                 bad_links.append(docurl)
                 continue
+                
+            print("TITLE:", browser.title)
+            print("URL:", browser.current_url)
+            print("HTML bytes:", len(browser.page_source))
+            browser.save_screenshot("debug_docs.png")
+
 
             # sort / stabilize table if the UI has sortable headers
             # (wrapped in try because sometimes the column labels differ)
