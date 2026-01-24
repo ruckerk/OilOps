@@ -27,7 +27,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import subprocess
 
 #from shapely.geometry import Polygon, Point, LineString
-from sys import argv, exec_prefix, platform
+import sys
+from sys import argv, exec_prefix
 from time import perf_counter, sleep
 from tkinter import filedialog
 from zipfile import ZipFile, BadZipfile
@@ -873,7 +874,7 @@ def XXget_driver():
 
     SNAP = False
     # Find local firefox program
-    if bool(re.match(r'.*linux.*',platform, re.I)):
+    if bool(re.match(r'.*linux.*',sys.platform, re.I)):
         P = subprocess.run(['whereis','firefox'], capture_output = True, text = True)
         P = P.stdout.strip()
         P = re.split(r'\s+',P)[1:]
@@ -883,7 +884,7 @@ def XXget_driver():
             opts.binary_location = subprocess.getoutput("find /snap/firefox -name firefox").split("\n")[-1]
             SNAP = True
         
-    if bool(re.match(r'.*win.*',platform, re.I)):
+    if bool(re.match(r'.*win.*',sys.platform, re.I)):
         Possible_Locations = FullFileScan(r'firefox.exe$')
     
     opts.set_preference("browser.download.folderList", 2)
