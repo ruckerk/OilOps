@@ -43,6 +43,7 @@ from operator import itemgetter
 import base64
 import itertools
 import socket
+import platform
 
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
