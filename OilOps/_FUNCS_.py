@@ -765,96 +765,66 @@ def _linux_geckodriver_from_snap() -> str | None:
 
 
 def get_driver(
-    download_dir: str | os.PathLike | None = None,
+    download_dir: str | os.PathLike,
     *,
     headless: bool = True,
-    firefox_binary: str | None = None,
     geckodriver_path: str | None = None,
-    extra_mime_types: list[str] | None = None,
+    firefox_binary: str | None = None,
+    page_load_timeout: int = 60,
 ) -> webdriver.Firefox:
     """
-    Create a Firefox WebDriver configured for silent downloads to `download_dir`.
-
-    Args:
-        download_dir: Where files should be downloaded. Defaults to current working dir.
-        headless: Whether to run headless.
-        firefox_binary: Optional explicit path to firefox binary.
-        geckodriver_path: Optional explicit path to geckodriver.
-        extra_mime_types: Optional extra MIME types to allow auto-download without prompts.
-
-    Returns:
-        selenium.webdriver.Firefox
+    Firefox webdriver configured to auto-download common file types to download_dir.
     """
-    ddir = Path(download_dir) if download_dir is not None else Path.cwd()
-    ddir = ddir.expanduser().resolve()
-    ddir.mkdir(parents=True, exist_ok=True)
+    download_dir = Path(download_dir).expanduser().resolve()
+    download_dir.mkdir(parents=True, exist_ok=True)
 
     opts = Options()
-    opts.headless = headless
+    if headless:
+        opts.add_argument("-headless")
 
-    # If the user provides a binary, prefer it
     if firefox_binary:
-        opts.binary_location = firefox_binary
-    else:
-        # Heuristic: on Linux, detect snap firefox and set binary if present
-        if platform.system().lower() == "linux":
-            snap_bin = _linux_firefox_snap_binary()
-            if snap_bin:
-                opts.binary_location = snap_bin
+        opts.binary_location = firefox_binary  # e.g., SNAP path or custom install
 
-    # MIME types that should download without prompting
-    mime_types = [
-        # common ones
-        "application/octet-stream",
+    # ---- Download behavior ----
+    # 2 = use custom download directory
+    opts.set_preference("browser.download.folderList", 2)
+    opts.set_preference("browser.download.dir", str(download_dir))
+    opts.set_preference("browser.download.useDownloadDir", True)
+
+    # Don't show the download panel
+    opts.set_preference("browser.download.manager.showWhenStarting", False)
+    opts.set_preference("browser.download.alwaysOpenPanel", False)
+    opts.set_preference("browser.download.panel.shown", False)
+
+    # IMPORTANT: disable built-in PDF viewer so PDFs download instead of opening
+    opts.set_preference("pdfjs.disabled", True)
+
+    # Don't ask what to do — just save
+    mime_types = ",".join([
+        "application/pdf",
         "application/zip",
+        "application/octet-stream",
         "application/x-zip-compressed",
         "application/x-gzip",
-        "application/gzip",
         "application/x-tar",
-        "application/pdf",
         "text/plain",
         "text/csv",
         "text/xml",
         "application/xml",
-        # LAS-specific (not always consistent across servers)
-        "application/x-las",
-        "application/las",
-        "application/x-laf",
-    ]
-    if extra_mime_types:
-        mime_types.extend(extra_mime_types)
-
-    mime_str = ", ".join(sorted(set(mime_types)))
-
-    # --- Download prefs (the important stuff) ---
-    opts.set_preference("browser.download.folderList", 2)                # 0=Desktop,1=Downloads,2=custom
-    opts.set_preference("browser.download.dir", str(ddir))
-    opts.set_preference("browser.download.useDownloadDir", True)
-    opts.set_preference("browser.download.manager.showWhenStarting", False)
-    opts.set_preference("browser.download.manager.focusWhenStarting", False)
-    opts.set_preference("browser.download.panel.shown", False)
-    opts.set_preference("browser.helperApps.neverAsk.saveToDisk", mime_str)
-
-    # Don't try to open files in the browser
-    opts.set_preference("pdfjs.disabled", True)
+        "application/json",
+        # LAS files are often served as text/plain or octet-stream; include both above.
+    ])
+    opts.set_preference("browser.helperApps.neverAsk.saveToDisk", mime_types)
+    opts.set_preference("browser.helperApps.neverAsk.openFile", mime_types)
     opts.set_preference("browser.helperApps.alwaysAsk.force", False)
 
-    # Reduce “save password” / first-run noise
-    opts.set_preference("signon.rememberSignons", False)
-    opts.set_preference("browser.shell.checkDefaultBrowser", False)
+    # Some sites behave differently if they detect automation; this can help slightly.
+    opts.set_preference("dom.webdriver.enabled", False)
 
-    # Build Service (geckodriver)
-    service = None
-    if geckodriver_path:
-        service = Service(executable_path=geckodriver_path)
-    else:
-        # Optional: snap geckodriver path if present; otherwise Selenium will use PATH resolution
-        if platform.system().lower() == "linux":
-            snap_gecko = _linux_geckodriver_from_snap()
-            if snap_gecko:
-                service = Service(executable_path=snap_gecko)
+    service = Service(executable_path=geckodriver_path) if geckodriver_path else Service()
 
-    driver = webdriver.Firefox(options=opts, service=service) if service else webdriver.Firefox(options=opts)
+    driver = webdriver.Firefox(service=service, options=opts)
+    driver.set_page_load_timeout(page_load_timeout)
     return driver
  
 def XXget_driver():
