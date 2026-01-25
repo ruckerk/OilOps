@@ -33,6 +33,8 @@ from tkinter import filedialog
 from zipfile import ZipFile, BadZipfile
 import zipfile
 import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import futures3 as cfutures
 import csv
 import datetime
