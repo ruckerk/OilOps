@@ -793,11 +793,15 @@ def get_driver(
     opts.set_preference("browser.download.dir", str(download_dir))
     opts.set_preference("browser.download.useDownloadDir", True)
 
+    
     # Don't show the download panel
     opts.set_preference("browser.download.manager.showWhenStarting", False)
     opts.set_preference("browser.download.alwaysOpenPanel", False)
     opts.set_preference("browser.download.panel.shown", False)
 
+    opts.set_preference("browser.download.manager.focusWhenStarting", False)
+    opts.set_preference("browser.helperApps.alwaysAsk.force", False)
+ 
     # IMPORTANT: disable built-in PDF viewer so PDFs download instead of opening
     opts.set_preference("pdfjs.disabled", True)
 
