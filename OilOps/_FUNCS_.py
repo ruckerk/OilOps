@@ -96,6 +96,7 @@ import magic
 import lasio
 import psutil
 import fnmatch
+import random
 
 from scipy import signal, stats, interpolate
 from scipy.optimize import curve_fit, fmin_cobyla, least_squares
