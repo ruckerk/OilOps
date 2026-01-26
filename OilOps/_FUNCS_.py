@@ -23,7 +23,7 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, UnexpectedAlertPresentException
-
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 
 import contextlib
 import subprocess
@@ -791,8 +791,18 @@ def get_driver(
     if headless:
         opts.add_argument("-headless")
 
+ 
     if firefox_binary:
         opts.binary_location = firefox_binary  # e.g., SNAP path or custom install
+
+    profile = FirefoxProfile()
+    profile.set_preference("permissions.default.image", 2)
+    profile.set_preference("browser.cache.disk.enable", True)
+    profile.set_preference("browser.cache.memory.enable", True)
+    profile.set_preference("network.http.pipelining", True)
+    profile.set_preference("network.prefetch-next", False)
+    profile.set_preference("network.dns.disablePrefetch", True)
+    profile.set_preference("media.autoplay.default", 5)
 
     # ---- Download behavior ----
     # 2 = use custom download directory
