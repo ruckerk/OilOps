@@ -36,7 +36,7 @@ from tkinter import filedialog
 from zipfile import ZipFile, BadZipfile
 import zipfile
 import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FutTimeout
 
 import futures3 as cfutures
 import csv
