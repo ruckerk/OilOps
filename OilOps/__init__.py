@@ -8,6 +8,7 @@ from .SURVEYS import *
 from .GUNBARREL import *
 from .DATABASE import *
 from .PRODUCTION import *
+from .FORMS import *
 
 __version__ = '0.0.209'
 
