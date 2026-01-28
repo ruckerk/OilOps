@@ -79,6 +79,7 @@ def Replace_Doc_Text(DOCNAME,REP_DICT, unhighlight=True):
     doc.save(DOCNAME2)
 
 def CO505(Template = False,Final = False):
+    adir = getcwd()
     if Template:
         FILE = Find_Doc_Template()
         t = getText(FILE)
