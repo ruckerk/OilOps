@@ -309,318 +309,1009 @@ def _extract_rows_from_docs_table(html: str) -> pd.DataFrame:
 
     return df
 
+class CheckpointWriter:
+    """
+    Very lightweight checkpointing:
+      - appends completed UWI10 lines to a text file (one per line)
+      - thread-safe
+    On restart you can load the file and skip those UWIs.
+    """
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.lock = threading.Lock()
+
+    def load_completed(self) -> set[str]:
+        if not self.path.exists():
+            return set()
+        try:
+            return {line.strip() for line in self.path.read_text(encoding="utf-8", errors="ignore").splitlines() if line.strip()}
+        except Exception:
+            return set()
+
+    def mark_done(self, uwi10: str) -> None:
+        with self.lock:
+            with self.path.open("a", encoding="utf-8") as f:
+                f.write(str(uwi10).strip() + "\n")
+
+                
+def _safe_name(s: str) -> str:
+    s = re.sub(r"[^\w\-\.]+", "_", str(s).strip())
+    return s[:180] if len(s) > 180 else s
+
+def _write_text(p: Path, s: str) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(s, encoding="utf-8", errors="replace")
+
+def _write_json(p: Path, obj: Any) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(obj, indent=2, default=str), encoding="utf-8")
+
+def _sniff_kind_bytes(b: bytes) -> str:
+    # --- Fast binary signatures ---
+    if b.startswith(b"%PDF"):
+        return "PDF"
+    if b[:2] == b"PK":
+        return "ZIP"
+    if b[:4] in (b"II*\x00", b"MM\x00*"):
+        return "TIF"
+
+    # --- Text detection (LAS is text) ---
+    try:
+        t = b.decode("utf-8", errors="ignore").upper()
+    except Exception:
+        return "UNKNOWN"
+
+    # Strip leading whitespace, nulls, BOMs
+    t = t.lstrip("\x00 \t\r\n")
+
+    # LAS markers can appear later, not just first 4k
+    if "~V" in t or "~VERSION" in t or "WRAP." in t or "VERS." in t:
+        return "LAS"
+
+    if t.startswith("<!DOCTYPE HTML") or t.startswith("<HTML"):
+        return "HTML"
+
+    return "UNKNOWN"
+
+
+def _guess_ext(kind: str) -> str:
+    return {"LAS": ".las", "PDF": ".pdf", "TIF": ".tif", "ZIP": ".zip"}.get(kind, "")
+
+def _to_uwi10(x) -> str:
+    s = re.sub(r"\D", "", str(x).strip())
+    if len(s) == 9:
+        s = "0" + s
+    s = s[-10:]
+    if len(s) == 10 and not s.startswith("05"):
+        s = "05" + s[2:]
+    return s
+
+def _cowell_from_uwi10(uwi10: str) -> str:
+    return str(uwi10)[2:10]  # 0512332615 -> 12332615
+
+def _sha256(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for b in iter(lambda: f.read(chunk_size), b""):
+            h.update(b)
+    return h.hexdigest()
+
+def _files_identical(a: Path, b: Path) -> bool:
+    try:
+        if a.stat().st_size != b.stat().st_size:
+            return False
+    except FileNotFoundError:
+        return False
+    return _sha256(a) == _sha256(b)
+
+def _unique_path(p: Path) -> Path:
+    if not p.exists():
+        return p
+    stem, suf = p.stem, p.suffix
+    k = 1
+    while True:
+        cand = p.with_name(f"{stem}_{k}{suf}")
+        if not cand.exists():
+            return cand
+        k += 1
+
+
+def _normalize_allowed_kinds(allowed_kinds) -> set[str]:
+    if allowed_kinds is None:
+        return {"LAS"}
+    # If user passed a single string like "LAS", treat as one token
+    if isinstance(allowed_kinds, str):
+        allowed_kinds = [allowed_kinds]
+    return {str(k).upper().strip() for k in allowed_kinds if str(k).strip()}
+
+
+def _finalize_download_with_dupes(
+    tmp_path: Path,
+    final_path: Path,
+    *,
+    dupe_dirname: str = "DUPES",
+) -> Path:
+    """
+    Moves tmp_path -> final_path, but if final_path exists:
+      - if identical: delete tmp and return final_path
+      - else: move tmp into DUPES/ with same filename (unique suffixed if needed)
+    Returns the path where the downloaded file ended up.
+    """
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if final_path.exists():
+        if _files_identical(final_path, tmp_path):
+            tmp_path.unlink(missing_ok=True)
+            return final_path
+
+        dupe_dir = final_path.parent / dupe_dirname
+        dupe_dir.mkdir(parents=True, exist_ok=True)
+        dupe_target = _unique_path(dupe_dir / final_path.name)
+        tmp_path.replace(dupe_target)
+        return dupe_target
+
+    tmp_path.replace(final_path)
+    return final_path
+
+# ----------------------------
+# Parse docs table
+# ----------------------------
+
+def _extract_docs_table(page_html: str, page_url: str) -> pd.DataFrame:
+    soup = BS(page_html, "lxml")
+    
+    tables = soup.find_all("table")
+    if not tables:
+        return pd.DataFrame()
+
+    target = None
+    for t in tables:
+        ths = [th.get_text(strip=True) for th in t.find_all("th")]
+        if "Document Identifier" in ths and "Download" in ths:
+            target = t
+            break
+    if target is None:
+        return pd.DataFrame()
+
+    headers = [th.get_text(strip=True) for th in target.find_all("th")]
+
+    rows = []
+    for tr in target.find_all("tr"):
+        tds = tr.find_all("td")
+        if not tds:
+            continue
+        cells = [td.get_text(" ", strip=True) for td in tds]
+        row = dict(zip(headers, cells))
+
+        a = tr.find("a", string=re.compile(r"^\s*Download\s*$", re.I))
+        href = a.get("href") if a else None
+        row["DOWNLOAD_HREF"] = href
+        row["DOWNLOAD_URL"] = urljoin(page_url, href) if href else None
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+# ----------------------------
+# Requests session from Selenium
+# ----------------------------
+
+def _requests_session_from_selenium(driver) -> requests.Session:
+    s = requests.Session()
+
+    # Use browser UA and language headers
+    try:
+        ua = driver.execute_script("return navigator.userAgent;")
+    except Exception:
+        ua = None
+    if ua:
+        s.headers["User-Agent"] = ua
+
+    # A few headers can matter for “looks like browser”
+    s.headers.setdefault("Accept", "*/*")
+    s.headers.setdefault("Accept-Language", "en-US,en;q=0.9")
+    s.headers.setdefault("Connection", "keep-alive")
+
+    # Transfer cookies
+    for c in driver.get_cookies():
+        s.cookies.set(c["name"], c["value"], domain=c.get("domain"), path=c.get("path", "/"))
+
+    return s
+
+
+def _make_pooled_retry_session(base_session: requests.Session | None = None) -> requests.Session:
+    """
+    Adds connection pooling + retries for GETs (good for many doc pages + downloads).
+    Safe to call on an existing session (keeps cookies/headers).
+    """
+    s = base_session or requests.Session()
+
+    retry = Retry(
+        total=5,
+        connect=5,
+        read=5,
+        backoff_factor=0.4,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("GET",),
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(pool_connections=50, pool_maxsize=50, max_retries=retry)
+    s.mount("http://", adapter)
+    s.mount("https://", adapter)
+
+    # These help speed + reduce bytes
+    # Avoid brotli ("br") because requests may not decode it, which breaks sniffing.
+    s.headers["Accept-Encoding"] = "gzip, deflate"
+    s.headers.setdefault("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
+    return s
+
+
+def _fetch_docs_html_fast(session: requests.Session, docurl: str, *, timeout_page: int = 20) -> str:
+    """
+    Fetch docs HTML via requests (FAST) instead of Selenium rendering.
+    If table is present in server HTML, this is much faster than selenium.get().
+    """
+    # (connect_timeout, read_timeout)
+    timeout = (10, timeout_page)
+    r = session.get(docurl, timeout=timeout, allow_redirects=True)
+    # If blocked or bad status, still return text for debug/inspection
+    # but generally we want to treat non-200 as failure
+    if r.status_code != 200:
+        raise RuntimeError(f"HTTP {r.status_code} fetching docs page")
+    return r.text
+
+def _kind_hint_from_url(url: str) -> str | None:
+    u = (url or "").lower()
+    if "downloaddocumentpdf" in u:
+        return "PDF"
+    if "downloaddocumenttif" in u or "downloaddocumenttiff" in u:
+        return "TIF"
+    if "downloaddocumentzip" in u:
+        return "ZIP"
+    if "download" in u and u.endswith(".las"):
+        return "LAS"
+    return None
+
+
+def _kind_hint_from_content_type(ct: str | None) -> str | None:
+    if not ct:
+        return None
+    ct = ct.lower()
+    if "pdf" in ct:
+        return "PDF"
+    if "tif" in ct or "tiff" in ct:
+        return "TIF"
+    if "zip" in ct:
+        return "ZIP"
+    # LAS sometimes comes as text/plain or application/octet-stream; we can't trust this.
+    return None
+# ----------------------------
+# Download (fast)
+# ----------------------------
+
+def _download_one(
+    session: requests.Session,
+    url: str,
+    out_dir: Path,
+    *,
+    referer: Optional[str],
+    timeout: int,
+    allowed_kinds: set[str],
+    name_hint: str,
+    dupe_dirname: str = "DUPES",
+    debug: bool = False,
+) -> tuple[bool, dict]:
+    info = {
+        "url": url,
+        "final_url": None,
+        "status": None,
+        "content_type": None,
+        "sniffed_kind": None,
+        "saved_as": None,
+        "bytes": 0,
+        "note": None,
+    }
+
+    
+    headers = {}
+    if referer:
+        headers["Referer"] = referer
+
+    try:
+        r = session.get(url, headers=headers, stream=True, timeout=timeout, allow_redirects=True)
+        info["status"] = r.status_code
+        info["final_url"] = str(r.url)
+        info["content_type"] = r.headers.get("Content-Type")
+    except Exception as ex:
+        info["note"] = f"requests.get failed: {ex}"
+        return False, info
+
+    if r.status_code != 200:
+        info["note"] = f"HTTP {r.status_code}"
+        return False, info
+
+    # Peek first chunk to sniff
+    try:
+        first = next(r.iter_content(chunk_size=8192))
+    except StopIteration:
+        info["note"] = "empty response"
+        return False, info
+    except Exception as ex:
+        info["note"] = f"iter_content failed: {ex}"
+        return False, info
+
+    kind = _sniff_kind_bytes(first)
+    info["sniffed_kind"] = kind
+
+    if kind == "HTML":
+        info["note"] = "got HTML (blocked page / needs cookies or referer)"
+        return False, info
+
+    if kind not in allowed_kinds:
+        info["note"] = f"kind {kind} not in allowed_kinds={sorted(allowed_kinds)}"
+        return False, info
+
+    ext = _guess_ext(kind) or ""
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    final = out_dir / f"{name_hint}{ext}"
+    tmp = out_dir / f"{name_hint}{ext}.part"
+
+    # Write to tmp
+    nbytes = 0
+    try:
+        with tmp.open("wb") as f:
+            f.write(first)
+            nbytes += len(first)
+            for chunk in r.iter_content(chunk_size=256 * 1024):
+                if chunk:
+                    f.write(chunk)
+                    nbytes += len(chunk)
+    except Exception as ex:
+        info["note"] = f"write failed: {ex}"
+        try:
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False, info
+
+    info["bytes"] = nbytes
+
+    # --- DUPE HANDLING ---
+    if final.exists():
+        try:
+            # If identical, drop tmp and skip
+            if _files_identical(final, tmp):
+                tmp.unlink(missing_ok=True)
+                info["saved_as"] = str(final)
+                info["note"] = "SKIPPED_IDENTICAL (already exists)"
+                return True, info
+
+            # Different content -> move into DUPES with same name
+            dupe_dir = out_dir / dupe_dirname
+            dupe_dir.mkdir(parents=True, exist_ok=True)
+            dupe_target = dupe_dir / final.name
+            dupe_target = _unique_path(dupe_target)
+
+            tmp.replace(dupe_target)
+            info["saved_as"] = str(dupe_target)
+            info["note"] = f"SAVED_DUPE (existing differed; moved to {dupe_dirname})"
+            return True, info
+
+        except Exception as ex:
+            info["note"] = f"dupe-check failed: {ex}"
+            # fall back: don't overwrite; keep tmp as unique dupe
+            dupe_dir = out_dir / dupe_dirname
+            dupe_dir.mkdir(parents=True, exist_ok=True)
+            dupe_target = _unique_path(dupe_dir / final.name)
+            try:
+                tmp.replace(dupe_target)
+                info["saved_as"] = str(dupe_target)
+                info["note"] = f"SAVED_DUPE_FALLBACK ({ex})"
+                return True, info
+            except Exception as ex2:
+                info["note"] = f"failed to save dupe fallback: {ex2}"
+                return False, info
+
+    # Normal: no existing file
+    try:
+        tmp.replace(final)
+    except Exception as ex:
+        info["note"] = f"finalize failed: {ex}"
+        try:
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False, info
+
+    info["saved_as"] = str(final)
+    return True, info
+
+
+class TokenBucket:
+    """
+    Global bandwidth limiter shared across threads.
+    rate_bytes_per_sec: refill rate
+    capacity_bytes: max burst
+    """
+    def __init__(self, rate_bytes_per_sec: int, capacity_bytes: int | None = None):
+        self.rate = float(rate_bytes_per_sec)
+        self.capacity = float(capacity_bytes if capacity_bytes is not None else rate_bytes_per_sec)
+        self.tokens = self.capacity
+        self.updated = time.monotonic()
+        self.lock = threading.Lock()
+
+    def consume(self, nbytes: int):
+        """Block until nbytes tokens available."""
+        n = float(nbytes)
+        while True:
+            with self.lock:
+                now = time.monotonic()
+                elapsed = now - self.updated
+                if elapsed > 0:
+                    self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+                    self.updated = now
+
+                if self.tokens >= n:
+                    self.tokens -= n
+                    return
+
+                # not enough tokens; compute wait
+                missing = n - self.tokens
+                wait = missing / self.rate if self.rate > 0 else 0.1
+
+            time.sleep(min(max(wait, 0.005), 0.25))
+
+            
+def _ext_from_content_disposition(cd: str | None) -> str | None:
+    """
+    Extract extension from Content-Disposition filename, if present.
+    """
+    if not cd:
+        return None
+    # e.g. Content-Disposition: attachment; filename="ABC.las"
+    m = re.search(r'filename\*?=(?:UTF-8\'\')?"?([^";]+)"?', cd, flags=re.I)
+    if not m:
+        return None
+    fname = m.group(1).strip()
+    suf = Path(fname).suffix.lower()
+    if suf in (".las", ".pdf", ".tif", ".tiff", ".zip"):
+        return ".tif" if suf == ".tiff" else suf
+    return None
+
+def _is_probably_text(b: bytes) -> bool:
+    # crude but effective: LAS is almost entirely ASCII-ish text
+    if not b:
+        return False
+    # allow tabs/newlines/carriage returns + printable ascii
+    good = sum((c in b"\t\r\n") or (32 <= c <= 126) for c in b)
+    return (good / max(len(b), 1)) > 0.92
+
+
+def _sniff_kind_bytes_las_friendly(b: bytes) -> str:
+    # binary signatures
+    if b.startswith(b"%PDF"):
+        return "PDF"
+    if b[:2] == b"PK":
+        return "ZIP"
+    if b[:4] in (b"II*\x00", b"MM\x00*"):
+        return "TIF"
+
+    # if it looks like HTML
+    bb = b.lstrip()
+    if bb.lower().startswith(b"<!doctype html") or bb.lower().startswith(b"<html"):
+        return "HTML"
+
+    # LAS: text + LAS section markers somewhere early
+    if _is_probably_text(b):
+        t = b.decode("utf-8", errors="ignore").upper()
+        # common LAS section markers
+        if "~V" in t or "~VERSION" in t or "~W" in t or "~WELL" in t or "~A" in t:
+            return "LAS"
+
+    return "UNKNOWN"
+
+
+def _download_one_managed(
+    session: requests.Session,
+    url: str,
+    base_path: Path,  # no extension
+    *,
+    referer: str | None,
+    allowed_kinds: set[str],
+    timeout_http: int = 60,
+    max_retries: int = 3,
+    backoff_base: float = 0.8,
+    limiter: TokenBucket | None = None,
+    chunk_size: int = 256 * 1024,
+) -> dict:
+    info = {
+        "url": url,
+        "final_url": None,
+        "status": None,
+        "kind": None,
+        "saved_as": None,
+        "bytes": 0,
+        "note": None,
+        "ok": False,
+        "referer": referer,
+    }
+
+    headers = {}
+    if referer:
+        headers["Referer"] = referer
+
+    base_path.parent.mkdir(parents=True, exist_ok=True)
+    req_timeout = (15, timeout_http)
+
+    for attempt in range(max_retries + 1):
+        try:
+            with session.get(url, headers=headers, stream=True, timeout=req_timeout, allow_redirects=True) as r:
+                info["status"] = r.status_code
+                info["final_url"] = str(r.url)
+
+                if r.status_code != 200:
+                    info["note"] = f"HTTP {r.status_code}"
+                    raise RuntimeError(info["note"])
+
+                it = r.iter_content(chunk_size=chunk_size)
+
+                # Read a larger "sniff window" so LAS markers (~V etc) are likely included
+                sniff_buf = b""
+                while len(sniff_buf) < 64 * 1024:  # 64KB sniff
+                    chunk = next(it, b"")
+                    if not chunk:
+                        break
+                    sniff_buf += chunk
+
+                if not sniff_buf:
+                    info["note"] = "empty response"
+                    raise RuntimeError(info["note"])
+
+                # Use Content-Disposition extension if present; otherwise sniff-based
+                cd_ext = _ext_from_content_disposition(r.headers.get("Content-Disposition"))
+                kind = _sniff_kind_bytes_las_friendly(sniff_buf)
+                info["kind"] = kind
+
+                if kind == "HTML":
+                    info["note"] = "got HTML (blocked/auth page)"
+                    raise RuntimeError(info["note"])
+
+                if kind not in allowed_kinds:
+                    info["note"] = f"SKIP (sniffed {kind}, allowed={sorted(allowed_kinds)})"
+                    return info
+
+                sniff_ext = _guess_ext(kind) or ""
+                ext = cd_ext or sniff_ext or ".bin"
+
+                final_path = base_path.with_suffix(ext)
+                tmp_path = final_path.with_suffix(final_path.suffix + ".part")
+
+                # Write sniffed bytes + remainder of stream
+                with tmp_path.open("wb") as f:
+                    if limiter is not None:
+                        limiter.consume(len(sniff_buf))
+                    f.write(sniff_buf)
+                    info["bytes"] += len(sniff_buf)
+
+                    for chunk in it:
+                        if not chunk:
+                            continue
+                        if limiter is not None:
+                            limiter.consume(len(chunk))
+                        f.write(chunk)
+                        info["bytes"] += len(chunk)
+
+                saved = _finalize_download_with_dupes(tmp_path, final_path, dupe_dirname="DUPES")
+                info["saved_as"] = str(saved)
+                info["ok"] = True
+                info["note"] = "DOWNLOADED"
+                return info
+
+        except Exception as ex:
+            if info["note"] is None:
+                info["note"] = str(ex)
+
+        if attempt < max_retries:
+            time.sleep(backoff_base * (2 ** attempt) + random.random() * 0.3)
+
+    return info
+
+def download_many_managed(
+    base_session: requests.Session,
+    items: list[tuple[str, Path, str | None, str]],  # (url, out_path, referer, uwi10)
+    *,
+    allowed_kinds: set[str],
+    max_workers: int = 6,
+    bandwidth_limit_mb_s: float | None = None,
+    timeout_http: int = 60,
+    progress_every: int = 200,  # print every N completed downloads
+) -> list[dict]:
+    """
+    Thread-safe: each worker thread gets its own Session cloned from base_session (cookies+headers),
+    but they share the same TokenBucket limiter for global bandwidth control.
+    """
+
+    limiter = None
+    if bandwidth_limit_mb_s is not None:
+        rate = int(bandwidth_limit_mb_s * 1024 * 1024)
+        limiter = TokenBucket(rate_bytes_per_sec=rate, capacity_bytes=rate)
+
+    # Thread-local sessions
+    tls = threading.local()
+
+    def _clone_session() -> requests.Session:
+        s = requests.Session()
+
+        # copy headers
+        s.headers.update(base_session.headers)
+
+        # copy cookies
+        s.cookies.update(base_session.cookies)
+
+        # mount adapters (pool + retries) like your pooled session
+        retry = Retry(
+            total=5, connect=5, read=5,
+            backoff_factor=0.4,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=("GET",),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(pool_connections=50, pool_maxsize=50, max_retries=retry)
+        s.mount("http://", adapter)
+        s.mount("https://", adapter)
+
+        # helpful defaults
+        # Avoid brotli for same reason
+        s.headers["Accept-Encoding"] = "gzip, deflate"
+        s.headers.setdefault("Connection", "keep-alive")
+
+        return s
+
+    def _get_thread_session() -> requests.Session:
+        s = getattr(tls, "session", None)
+        if s is None:
+            tls.session = _clone_session()
+            s = tls.session
+        return s
+
+    def _wrap(url: str, out_path: Path, ref: str | None, uwi10: str) -> dict:
+        s = _get_thread_session()
+        res = _download_one_managed(
+            s, url, out_path,
+            referer=ref,
+            allowed_kinds=allowed_kinds,
+            timeout_http=timeout_http,
+            limiter=limiter,
+        )
+        res["uwi"] = uwi10
+        return res
+
+    results: list[dict] = []
+    total = len(items)
+    done = 0
+    t0 = time.time()
+
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futs = [ex.submit(_wrap, url, out_path, ref, uwi10) for (url, out_path, ref, uwi10) in items]
+
+        per_future_timeout = timeout_http + 45
+
+        for f in as_completed(futs):
+            try:
+                res = f.result(timeout=per_future_timeout)
+            except FutTimeout:
+                res = {"ok": False, "note": "future timeout (hung worker)"}
+            except Exception as ex2:
+                res = {"ok": False, "note": f"future raised: {ex2}"}
+
+            results.append(res)
+            done += 1
+
+            # ultra-light progress (prints rarely)
+            if progress_every and (done % progress_every == 0 or done == total):
+                dt = max(time.time() - t0, 1e-6)
+                rate = done / dt
+                print(f"[download] {done}/{total} complete  (~{rate:.1f}/s)  ok={sum(1 for r in results if r.get('ok'))}")
+
+    return results
+
 
 def Get_LAS(
-    UWIS,
+    UWIS: Iterable[str | int | float],
     *,
-    url_base: str = "https://ecmc.state.co.us/cogisdb/Resources/Docs?id=",
+    url_base: str = "https://ecmc.state.co.us/cogisdb/Resources/Docs?ClassID=07&ID=",
     logs_folder: str | Path = "LOGS",
-    timeout_page: int = 30,
-    timeout_download: int = 180,
+    only_class: str = "Well Logs",
+    allowed_kinds: Optional[set[str]] = None,   # {"LAS"} or {"LAS","PDF","TIF","ZIP"}
+    # ---------- performance controls ----------
+    collect_workers: int = 16,                  # doc-page fetch+parse concurrency
+    download_workers: int = 6,                  # file download concurrency
+    bandwidth_limit_mb_s: float | None = 10.0,  # global cap; set None to disable
+    timeout_page: int = 20,                     # doc-page read timeout (requests)
+    timeout_http: int = 90,                     # download read timeout
     headless_ok: bool = True,
+    debug: bool = False,
+    debug_dir: str | Path = "LAS_DEBUG",
+    max_files_per_uwi: Optional[int] = None,
+    # ---------- progress + restart ----------
+    progress_every_wells: int = 10,             # print every N completed wells
+    checkpoint_file: str | Path | None = "LAS_DEBUG/completed_uwis.txt",
+    resume: bool = True,
 ):
     """
-    Selenium-based LAS downloader for Colorado ECMC docs.
+    Stable solution:
+      Selenium once → parallel requests doc fetch → parse → one global download pool.
 
     Returns:
         downloaded_files: list[Path]
         bad_links: list[str]
+        report: list[dict]
     """
-    # Normalize UWIS
+    # normalize inputs
     if isinstance(UWIS, (str, float, int)):
         UWIS = [UWIS]
-    UWIS = list(UWIS)
-    UWIS = [WELLAPI(x).STRING(10) for x in UWIS]  # uses your existing helper
+    UWIS_10 = [_to_uwi10(x) for x in UWIS]
 
-    # Where to put downloads (Selenium will download here)
-    base_dir = Path(getcwd())
-    logs_dir = (base_dir / logs_folder).resolve()
+    allowed_kinds = _normalize_allowed_kinds(allowed_kinds)
+
+    base_dir = Path.cwd()
+    logs_dir = (base_dir / Path(logs_folder)).resolve()
     logs_dir.mkdir(parents=True, exist_ok=True)
+
+    debug_root = (base_dir / Path(debug_dir)).resolve()
+    if debug or checkpoint_file:
+        debug_root.mkdir(parents=True, exist_ok=True)
+
+    # checkpointing
+    cp = None
+    completed_set: set[str] = set()
+    if checkpoint_file is not None:
+        cp_path = Path(checkpoint_file)
+        if not cp_path.is_absolute():
+            cp_path = (base_dir / cp_path).resolve()
+        cp = CheckpointWriter(cp_path)
+        if resume:
+            completed_set = cp.load_completed()
+
+    # filter UWIs if resuming
+    if resume and completed_set:
+        UWIS_10 = [u for u in UWIS_10 if u not in completed_set]
 
     downloaded_files: list[Path] = []
     bad_links: list[str] = []
+    report: list[dict] = []
 
-    # IMPORTANT:
-    # If your existing get_driver() already sets prefs for downloads, great.
-    # If not, update get_driver() to set Chrome/Edge prefs:
-    #   prefs = {
-    #       "download.default_directory": str(logs_dir),
-    #       "download.prompt_for_download": False,
-    #       "download.directory_upgrade": True,
-    #       "safebrowsing.enabled": True
-    #   }
-    # and pass them into ChromeOptions/EdgeOptions.
+    # Selenium ONCE: establish cookies/UA for a requests session
+    browser = get_driver(download_dir=str(logs_dir), headless=(headless_ok and not debug))
+    try:
+        sess = _requests_session_from_selenium(browser)
+        sess = _make_pooled_retry_session(sess)  # add pooling + retries
 
-    with get_driver(download_dir=str(logs_dir), headless=False) as browser:
-        wait = WebDriverWait(browser, timeout_page)
+        # --------------------------
+        # Phase A: collect all jobs
+        # --------------------------
+        # We'll build:
+        #   all_jobs: list[(download_url, base_path_no_ext, referer_docurl)]
+        #   per_well_report: store counts + notes
+        all_jobs: list[tuple[str, Path, str | None, str]] = []  # (url, base_path, referer, uwi10)
+        report_by_uwi: dict[str, dict] = {}
+        expected_jobs_by_uwi: dict[str, int] = {}
 
-        for uwi in UWIS:
-            if not str(uwi).startswith("05"):
-                continue
+        # minimal progress without overhead
+        done_lock = threading.Lock()
+        done_count = 0
+        total_wells = len(UWIS_10)
 
-            cowell = str(uwi)[2:10]  # matches your original intent
-            docurl = f"https://ecmc.state.co.us/cogisdb/Resources/Docs?id={cowell}"
-           
+        def collect_one(uwi10: str) -> tuple[str, dict, list[tuple[str, Path, str | None]]]:
+            cowell = _cowell_from_uwi10(uwi10)
+            docurl = f"{url_base}{cowell}"
+
+            uwi_rep = {
+                "uwi": uwi10,
+                "docurl": docurl,
+                "rows_total": 0,
+                "rows_after_class_filter": 0,
+                "download_jobs": 0,
+                "notes": [],
+                "artifacts": {},
+            }
+
+            # fetch docs HTML via requests
             try:
-                browser.get(docurl)
+                html = _fetch_docs_html_fast(sess, docurl, timeout_page=timeout_page)
             except Exception as ex:
-                print(f"[Get_LAS] Error connecting to {docurl}: {ex}")
-                bad_links.append(docurl)
-                continue
-                
-            print("TITLE:", browser.title)
-            print("URL:", browser.current_url)
-            print("HTML bytes:", len(browser.page_source))
-            browser.save_screenshot("debug_docs.png")
+                uwi_rep["notes"].append(f"docs fetch failed: {ex}")
+                return uwi10, uwi_rep, []
 
+            if debug:
+                # html dump only (cheap); avoid screenshots
+                htm = debug_root / f"{uwi10}_docs.html"
+                _write_text(htm, html)
+                uwi_rep["artifacts"]["html"] = str(htm)
 
-            # sort / stabilize table if the UI has sortable headers
-            # (wrapped in try because sometimes the column labels differ)
+            # parse HTML table
             try:
-                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
-                # Your original clicked "Class". Keep but guard it:
-                try:
-                    browser.find_element(By.LINK_TEXT, "Class").click()
-                except Exception:
-                    pass
+                df = _extract_docs_table(html, docurl)
             except Exception as ex:
-                print(f"[Get_LAS] No table found at {docurl}: {ex}")
-                bad_links.append(docurl)
+                uwi_rep["notes"].append(f"extract table failed: {ex}")
+                return uwi10, uwi_rep, []
+
+            uwi_rep["rows_total"] = int(df.shape[0])
+            if df.empty:
+                uwi_rep["notes"].append("no rows extracted")
+                return uwi10, uwi_rep, []
+
+            # filter class
+            if "Class" in df.columns and only_class:
+                want = only_class.strip().lower()
+                df = df[df["Class"].astype(str).str.strip().str.lower().eq(want)].copy()
+
+            uwi_rep["rows_after_class_filter"] = int(df.shape[0])
+            if df.empty:
+                uwi_rep["notes"].append(f"no rows after Class == {only_class!r}")
+                return uwi10, uwi_rep, []
+
+            # require URLs
+            df = df[df["DOWNLOAD_URL"].astype(str).str.startswith("http", na=False)].copy()
+            if max_files_per_uwi is not None:
+                df = df.head(int(max_files_per_uwi)).copy()
+
+            jobs: list[tuple[str, Path, str | None]] = []
+            for _, row in df.iterrows():
+                dl_url = row.get("DOWNLOAD_URL")
+                if not isinstance(dl_url, str) or not dl_url.strip():
+                    continue
+
+                doc_num = row.get("Document Number")
+                doc_name = row.get("Document Name")
+                doc_date = row.get("Date")
+
+                hint_parts = [uwi10]
+                if isinstance(doc_date, str) and doc_date.strip():
+                    hint_parts.append(_safe_name(doc_date))
+                if isinstance(doc_num, str) and doc_num.strip():
+                    hint_parts.append(_safe_name(doc_num))
+                if isinstance(doc_name, str) and doc_name.strip():
+                    hint_parts.append(_safe_name(doc_name)[:80])
+
+                hint = "_".join(hint_parts)
+                base_path = logs_dir / hint  # no extension yet
+                jobs.append((dl_url.strip(), base_path, docurl, uwi10))
+
+            uwi_rep["download_jobs"] = len(jobs)
+
+            return uwi10, uwi_rep, jobs
+
+        with ThreadPoolExecutor(max_workers=collect_workers) as ex:
+            futs = [ex.submit(collect_one, u) for u in UWIS_10]
+            for f in as_completed(futs):
+                uwi10, uwi_rep, jobs = f.result()
+
+                report_by_uwi[uwi10] = uwi_rep
+                expected_jobs_by_uwi[uwi10] = len(jobs)
+                all_jobs.extend(jobs)
+
+                # If a well has zero jobs, it's truly "done" immediately
+                if cp is not None and len(jobs) == 0:
+                    cp.mark_done(uwi10)
+
+                # lightweight progress
+                with done_lock:
+                    done_count += 1
+                    if progress_every_wells and (done_count % progress_every_wells == 0 or done_count == total_wells):
+                        # prints one line occasionally; negligible overhead
+                        print(f"[collect] {done_count}/{total_wells} wells complete (last: {uwi10})  jobs_total={len(all_jobs)}")
+
+        # build report in original order
+        for u in UWIS_10:
+            report.append(report_by_uwi.get(u, {"uwi": u, "notes": ["missing report"]}))
+
+        # de-dupe exact (url, base_path) pairs BUT KEEP uwi for regroup/checkpoint
+        seen = set()
+        deduped: list[tuple[str, Path, str | None, str]] = []
+        for url, p, ref, uwi in all_jobs:
+            key = (url, str(p))
+            if key in seen:
                 continue
+            seen.add(key)
+            deduped.append((url, p, ref, uwi))
 
-            # We’ll iterate pages if pagination exists.
-            # Strategy: discover page numbers from the bottom table, then click them.
-            def collect_current_page_rows() -> pd.DataFrame:
-                df = _extract_rows_from_docs_table(browser.page_source)
-                if df.empty:
-                    return df
-                # filter to Well Logs in Class column
-                if "Class" in df.columns:
-                    m = df["Class"].astype(str).str.contains("Well Logs", case=False, na=False)
-                    df = df.loc[m].copy()
-                else:
-                    # if Class column missing, keep all rows (still only download .LAS later)
-                    pass
-                # standardize Date parsing
-                if "Date" in df.columns:
-                    df["DateString"] = pd.to_datetime(df["Date"], errors="coerce").dt.strftime("%Y_%m_%d")
-                else:
-                    df["DateString"] = None
-                return df
+        all_jobs = deduped
 
-            all_rows = []
-            all_rows.append(collect_current_page_rows())
+        if debug:
+            _write_json(debug_root / "collect_summary.json", {
+                "wells": len(UWIS_10),
+                "jobs": len(all_jobs),
+                "allowed_kinds": sorted(allowed_kinds),
+            })
 
-            # try to detect pagination links like "2", "3", etc.
+        if not all_jobs:
+            return [], bad_links, report
+
+        if debug and all_jobs:
+            test_url, test_path, test_ref, test_uwi = all_jobs[0]
+            print(f"[debug] smoke test first download uwi={test_uwi} url={test_url}")
             try:
-                soup = BS(browser.page_source, "lxml")
-                tables = soup.find_all("table")
-                if tables:
-                    last_table = tables[-1]
-                    # pull possible page link texts
-                    page_texts = []
-                    for a in last_table.find_all("a"):
-                        t = (a.get_text() or "").strip()
-                        if t.isdigit():
-                            page_texts.append(int(t))
-                    page_nums = sorted(set(page_texts))
-                else:
-                    page_nums = []
-            except Exception:
-                page_nums = []
+                r = sess.get(test_url, headers={"Referer": test_ref} if test_ref else None,
+                             stream=True, timeout=(15, 30), allow_redirects=True)
+                b = next(r.iter_content(chunk_size=4096), b"")
+                print(f"[debug] smoke status={r.status_code} ct={r.headers.get('Content-Type')} sniff={_sniff_kind_bytes(b)} first16={b[:16]!r}")
+            except Exception as ex:
+                print(f"[debug] smoke test failed: {ex}")
 
-            # click through other pages if present
-            for p in page_nums:
-                if p <= 1:
+        # --------------------------
+        # Phase B: global download pool
+        # --------------------------
+        # NOTE: download_many_managed uses your TokenBucket limiter globally.
+        # It currently returns list[dict]. We’ll also add minimal progress prints
+        # without adding per-chunk overhead.
+
+        # Wrap your existing downloader to add occasional progress prints without slowing downloads.
+        results: list[dict] = []
+        total_jobs = len(all_jobs)
+        dl_done = 0
+        dl_lock = threading.Lock()
+
+        # sanity check
+        print(f"[download] starting: {len(all_jobs)} jobs, allowed={sorted(allowed_kinds)}, workers={download_workers}")
+        print(f"[download] example url: {all_jobs[0][0]}")
+        print(f"[download] starting {len(all_jobs)} downloads with workers={download_workers}, timeout_http={timeout_http}s")
+
+        # Use your existing download_many_managed if you prefer.
+        # BUT: it currently builds its own ThreadPool and limiter; that’s fine.
+        # We keep it and just print every so often after futures complete.
+        results = download_many_managed(
+            sess,
+            all_jobs,
+            allowed_kinds=allowed_kinds,
+            max_workers=download_workers,
+            bandwidth_limit_mb_s=bandwidth_limit_mb_s,
+            timeout_http=timeout_http,
+            progress_every=25,   # print occasionally even with 2 workers
+        )
+        # Collect results -> downloaded_files/bad_links
+        for res in results:
+            if res.get("ok") and res.get("saved_as"):
+                downloaded_files.append(Path(res["saved_as"]))
+            else:
+                if res.get("url"):
+                    bad_links.append(str(res["url"]))
+
+        # -------- checkpoint after downloads complete per well --------
+        if cp is not None:
+            ok_jobs_by_uwi: dict[str, int] = {}
+
+            for res in results:
+                u = res.get("uwi")
+                if not u:
                     continue
-                try:
-                    # many sites use link text for pagination
-                    page_link = browser.find_element(By.PARTIAL_LINK_TEXT, str(p))
-                    page_link.click()
-                    time.sleep(0.5)
-                    all_rows.append(collect_current_page_rows())
-                except Exception:
-                    # ignore if pagination isn’t actually clickable
-                    pass
+                if res.get("ok"):
+                    ok_jobs_by_uwi[u] = ok_jobs_by_uwi.get(u, 0) + 1
 
-            userows = pd.concat(all_rows, axis=0, ignore_index=True).drop_duplicates()
-
-            if userows.empty or "LINK" not in userows.columns:
-                print(f"[Get_LAS] No Well Logs rows found for {uwi} at {docurl}")
-                continue
-
-            # Download each candidate link; decide LAS by file extension AFTER download.
-            # (We can’t rely on Content-Disposition without requests; Selenium downloads directly.)
-            for _, row in userows.iterrows():
-                href = row.get("LINK", None)
-                if not href or not isinstance(href, str):
+            # Mark done only if all jobs succeeded for that UWI
+            for u, n_expected in expected_jobs_by_uwi.items():
+                if n_expected <= 0:
+                    # already handled during collection, but safe
                     continue
-
-                # The LINK in table is usually relative; make absolute if needed
-                if href.startswith("/"):
-                    base = f"{urlparse(docurl).scheme}://{urlparse(docurl).netloc}"
-                    dl_url = base + href
-                elif href.lower().startswith("http"):
-                    dl_url = href
-                else:
-                    # relative without leading slash
-                    base = f"{urlparse(docurl).scheme}://{urlparse(docurl).netloc}/"
-                    dl_url = base + href.lstrip("/")
-
-                # Open the download URL in the browser to trigger download
-                try:
-                    browser.get(dl_url)
-                except Exception as ex:
-                    print(f"[Get_LAS] Failed to open download link: {dl_url} ({ex})")
-                    bad_links.append(dl_url)
-                    continue
-
-                try:
-                    downloaded = _wait_for_download_complete(logs_dir, timeout=timeout_download)
-                except Exception as ex:
-                    print(f"[Get_LAS] Download timeout/failure for {dl_url}: {ex}")
-                    bad_links.append(dl_url)
-                    continue
-
-                # Keep only LAS (sometimes the “Well Logs” class still includes PDFs/TIFs)
-                ext = downloaded.suffix.lower()
-                if ext != ".las":
-                    # not LAS; keep or delete depending on preference.
-                    # I’ll keep it but not count it as a LAS download.
-                    continue
-
-                datestr = row.get("DateString") or "unknown_date"
-                target = logs_dir / f"LOGDATA_{datestr}_{uwi}{ext}"
-
-                # avoid overwrites
-                k = 1
-                while target.exists():
-                    target = logs_dir / f"LOGDATA_{datestr}_{uwi}_{k}{ext}"
-                    k += 1
-
-                try:
-                    downloaded.rename(target)
-                    downloaded_files.append(target)
-                    print(f"[Get_LAS] Saved {target.name}")
-                except Exception as ex:
-                    print(f"[Get_LAS] Could not rename {downloaded} -> {target}: {ex}")
-                    downloaded_files.append(downloaded)
-
-    return downloaded_files, bad_links
-
-
-def XXGet_LAS(UWIS):
-    #if 1==1:
-    URL_BASE = 'http://cogcc.state.co.us/weblink/results.aspx?id=XNUMBERX'
-    URL_BASE = 'https://ecmc.state.co.us/cogisdb/Resources/Docs?id=XNUMBERX'
-    DL_BASE = 'http://cogcc.state.co.us/weblink/XLINKX'
-    DL_BASE = 'https://ecmc.state.co.us/weblink/DownloadDocumentPDF.aspx?DocumentId=XLINKX'
-           
-    pathname = path.dirname(argv[0])
-    adir = path.abspath(pathname)
-    dir_add = path.join(adir,"LOGS")
-    if path.isdir(dir_add) == False:
-        mkdir(dir_add)
-        
-    warnings.simplefilter("ignore")
-    
-    if isinstance(UWIS,(str,float,int)):
-        UWIS = [UWIS]
-    else:
-        UWIS = list(UWIS)
-    UWIS = [WELLAPI(x).STRING(10) for x in UWIS]
-    BADLINKS = []
-    with get_driver() as browser:
-        for UWI in UWIS:
-            print(UWI)
-            ERROR=0
-            while ERROR == 0: #if 1==1:
-                connection_attempts = 0 
-                #Screen for Colorado wells
-                userows=pd.DataFrame()
-                if UWI[:2] == '05':
-                    #Reduce well to county and well numbers
-                    COWELL=UWI[2:10]
-                    docurl=re.sub('XNUMBERX',COWELL,URL_BASE)
-                    #page = requests.get(docurl)
-                    #if str(page.status_code)[0] == '2':
-                    #ADD# APPEND ERROR CODE TO LOG FILE
-                    #option = webdriver.ChromeOptions()
-                    #option.add_argument(' — incognito')
-                    #browser = webdriver.Chrome('\\\Server5\\Users\\KRucker\\chromedriver.exe')
+                if ok_jobs_by_uwi.get(u, 0) >= n_expected:
+                    cp.mark_done(u)
                     
-                    try:
-                        browser.get(docurl)
-                    except Exception as ex:
-                        print(f'Error connecting to {base_url}.')
-                        ERROR=1
 
-                    browser.find_element(By.LINK_TEXT,"Class").click()
-                    #browser.find_element_by_link_text('Class').click()    
-                    soup = BS(browser.page_source, 'lxml')
-                    parsed_table = soup.find_all('table')[0]
+        if debug:
+            ok_n = sum(1 for r in results if r.get("ok"))
+            print(f"[download] ok={ok_n}/{len(results)}  workers={download_workers}  cap={bandwidth_limit_mb_s} MB/s")
+            _write_json(debug_root / "download_results.json", results)
+            _write_json(debug_root / "final_report.json", report)
 
-                    pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
-                    links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
-                    pdf['LINK']=None
-                    pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
+        return downloaded_files, bad_links, report
 
-                    userows=pdf.loc[(pdf.Class.astype(str).str.contains('Well Logs')==True)]
-                    
-                    # If another page, scan it too
-                    # select next largest number
-                    tables=len(soup.find_all('table'))
-                    parsed_table = soup.find_all('table')[tables-1]
-                    data = [[td.a['href'] if td.find('a') else
-                             '\n'.join(td.stripped_strings)
-                            for td in row.find_all('td')]
-                            for row in parsed_table.find_all('tr')]
-                    pages=len(data[0])
-                    
-                    if pages>1:
-                        for p in range(1,pages):
-                            page_link = browser.find_element(By.PARTIAL_LINK_TEXT, str(1+p))
-                            #page_link = browser.find_element_by_partial_link_text(str(1+p))
-                            page_link.click()
-                            browser.page_source
-                            soup = BS(browser.page_source, 'lxml')
-                            parsed_table = soup.find_all('table')[0]
-                            pdf = pd.read_html(str(parsed_table),encoding='utf-8', header=0)[0]
-                            links = [np.where(tag.has_attr('href'),tag.get('href'),"no link") for tag in parsed_table.find_all('a',string='Download')]
-                            pdf['LINK']=None
-                            pdf.loc[pdf.Download.str.lower()=='download',"LINK"]=links
-                            
-                            #dirdata=[s for s in data if any(xs in s for xs in ['DIRECTIONAL DATA','DEVIATION SURVEY DATA'])]
-                            #surveyrows.append(dirdata)
-
-                            #concatenate to previous userows
-                            userows = pd.concat([userows, pdf.loc[(pdf.Class.astype(str).str.contains('Well Logs')==True)]], axis=0)
-                            
-                    #browser.quit()
-                    userows=pd.DataFrame(userows)
-                    LINKCOL=userows.columns.get_loc('LINK')
-                    if userows.empty:
-                        ERROR = 1
-                        continue
-                    userows['DateString'] = None
-                    #userows.loc[:,'DateString']=userows['Date'].astype('datetime64').dt.strftime('%Y_%m_%d')               
-                    userows['DateString'] = pd.to_datetime(userows['Date']).dt.strftime('%Y_%m_%d')
-                    for i in range(0,userows.shape[0]):
-                        dl_url = re.sub('XLINKX', str(userows.iloc[i,LINKCOL]),DL_BASE)
-                        r=requests.get(dl_url, allow_redirects=True)
-                        filetype=path.splitext(re.sub(r'.*filename=\"(.*)\"',r'\1',r.headers['content-disposition']))[1]
-                        #if not ("PDF" and 'TIF') in filetype.upper():
-                        if 'LAS' in filetype.upper():    
-                            filename=dir_add+'\\LOGDATA_'+str(userows.DateString.iloc[i])+'_'+str(UWI)+filetype
-                            while path.exists(filename):
-                                filename = re.sub(filetype,'_1'+filetype,filename)
-                            try:
-                                urllib.request.urlretrieve(dl_url, filename)
-                            except:
-                                print('ERROR: '+dl_url)
-                                BADLINKS = BADLINKS.append(dl_url)
-                                
-                ERROR = 1
+    finally:
+        with contextlib.suppress(Exception):
+            browser.quit()
  
 def Get_ProdData(UWIs,file='prod_data.db',SQLFLAG=0, PROD_DATA_TABLE = 'PRODDATA', PROD_SUMMARY_TABLE = 'PRODUCTION_SUMMARY', FOLDER = 'PRODDATA', RETURN_DATA = False):
     #if 1==1:
