@@ -78,7 +78,7 @@ def Replace_Doc_Text(DOCNAME,REP_DICT, unhighlight=True):
     DOCNAME2 = DOCNAME2[0]+'REPLACED.'+DOCNAME2[1]
     doc.save(DOCNAME2)
 
-CO505(Template = False,Final = False):
+def CO505(Template = False,Final = False):
     if Template:
         FILE = Find_Doc_Template()
         t = getText(FILE)
