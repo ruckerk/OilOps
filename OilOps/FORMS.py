@@ -8,7 +8,7 @@ def getText(filename):
     return '\n'.join(fullText)
 
 def Find_Doc_Template(fpath = '.'):
-    for f in os.listdir(fpath):
+    for f in listdir(fpath):
         if '.DOC' in f.upper():
             FILE = f
     return FILE
@@ -16,7 +16,7 @@ def Find_Doc_Template(fpath = '.'):
 def Find_FileMatch(fpath = '.', TXT=None, CASE = False, regex = False):
     if regex:
         FILE = []
-        for f in os.listdir(fpath):
+        for f in listdir(fpath):
             if CASE:
                 x = re.match(rf'.*{TXT}.*',f)
             else:
@@ -33,7 +33,7 @@ def Find_FileMatch(fpath = '.', TXT=None, CASE = False, regex = False):
         TXT = str(TXT)
         if not CASE:
             TXT = TXT.upper()
-        for f in os.listdir(fpath):
+        for f in listdir(fpath):
             if not CASE:
                 f = f.upper()
             if TXT in f.upper():
@@ -46,7 +46,7 @@ def Create_Terms_Form(text,FORMFILE = None):
     terms = list(set(terms))
     if FORMFILE== None:
         FORMFILE = 'FORM_TERMS' + '_'+datetime.datetime.now().strftime('%Y%m%d') + '.xlsx'
-    if os.path.exists(FORMFILE):
+    if path.exists(FORMFILE):
         FF = FORMFILE.split('.')
 
         if datetime.datetime.now().strftime('%Y%m%d') in FORMFILE:
@@ -85,10 +85,10 @@ CO505(Template = False,Final = False):
         Create_Terms_Form(t)
     if Final:
         F_FORM = Find_FileMatch('.','TESTIMONY.*\.DOC',False, True)
-        files = filter(os.path.isfile, os.listdir())
+        files = filter(path.isfile, listdir())
         files = [f for f in files if 'FORM_TERMS' in  f.upper() and '.XLS' in f.upper()]
-        files = [os.path.join(adir, f) for f in files] # add path to each file
-        files.sort(key=lambda x: os.path.getmtime(x))
+        files = [path.join(adir, f) for f in files] # add path to each file
+        files.sort(key=lambda x: path.getmtime(x))
         F_TERMS_FILE = files[-1]
         #Pergamos 0315 Geology Testimony JAB_FORM TERMS.xlsx'
         FORM_DICT = Load_Terms_Form(F_TERMS_FILE)
