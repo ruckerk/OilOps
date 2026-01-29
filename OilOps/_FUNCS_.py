@@ -1509,3 +1509,30 @@ def zipwalk(zip_file_path):
         # Yield results in a similar fashion to os.walk
         for dir_path, (subdirs, files) in structure.items():
             yield dir_path, sorted(subdirs), sorted(files)
+
+def to_uwi10_from_api(api_like) -> str:
+    """
+    Normalize to 10-digit UWI with '05' state prefix.
+    - Accepts int/str with or without leading zeros.
+    - Accepts strings with junk (dashes/spaces).
+    """
+    s = re.sub(r"\D", "", str(api_like or "").strip())
+    if not s:
+        return ""
+
+    # If the shapefile API is 8 digits (common), prepend '05'
+    # If it's 9 digits, you might still be missing a leading 0.
+    if len(s) == 8:
+        s = "05" + s
+    elif len(s) == 9:
+        # ambiguous: could be missing one leading 0 OR missing state prefix.
+        # In CO workflow, most common is "0" missing somewhere -> pad left then enforce 05.
+        s = s.zfill(10)
+
+    # If longer, keep last 10; if shorter, zfill.
+    s = s[-10:].zfill(10)
+
+    # Enforce CO '05' prefix (if you want this strict)
+    if len(s) == 10 and not s.startswith("05"):
+        s = "05" + s[2:]
+    return s
