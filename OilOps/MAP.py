@@ -24,7 +24,8 @@ __all__ = ['EPSG_CODES',
     'elevation_function',
     'Items_in_Polygons',
     'df_to_geojson',
-    'epsg_from_prj']
+    'epsg_from_prj',
+    'read_shapefile_df']
 
 
 def epsg_from_prj(prj_path: str | Path) -> Optional[int]:
@@ -536,4 +537,40 @@ def df_to_geojson(dictionary):
         geojson['features'].append(feature)
     
     return geojson
-    
+
+def read_shapefile_df(shp_path: str | Path) -> pd.DataFrame:
+    """
+    Read a shapefile into a DataFrame (attributes + raw geometry).
+    geometry column:
+      - POINT: tuple(x,y)
+      - POLYLINE: list[tuple(x,y)]  (one-part) or list[list[tuple(x,y)]] (multi-part)
+    """
+    shp_path = Path(shp_path)
+    r = shapefile.Reader(str(shp_path))
+
+    fields = [f[0] for f in r.fields[1:]]
+    rows = []
+    for rec, shp in zip(r.records(), r.shapes()):
+        d = dict(zip(fields, rec))
+
+        if shp.shapeType in (shapefile.POINT, shapefile.POINTZ, shapefile.POINTM):
+            geom = tuple(shp.points[0]) if shp.points else None
+
+        elif shp.shapeType in (shapefile.POLYLINE, shapefile.POLYLINEZ, shapefile.POLYLINEM):
+            # pyshp: shp.points is flattened; shp.parts indexes part starts
+            pts = shp.points
+            parts = list(shp.parts) + [len(pts)]
+            if len(parts) <= 2:
+                geom = [tuple(xy) for xy in pts]
+            else:
+                geom = [[tuple(xy) for xy in pts[parts[i]:parts[i+1]]] for i in range(len(parts)-1)]
+
+        else:
+            # Expand later if you add polygons, etc.
+            geom = shp.points
+
+        d["geometry"] = geom
+        rows.append(d)
+
+    df = pd.DataFrame(rows)
+    return df
