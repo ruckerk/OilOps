@@ -24,7 +24,7 @@ classifiers = [
 dependencies = ['adjustText',
                 'beautifulsoup4',
                 'datetime',
-                'docx',
+                'docx',   #pip install python-docx
                 'easygui',
                 'futures3',
                 'geopandas',
@@ -44,7 +44,7 @@ dependencies = ['adjustText',
                 'pyproj',
                 'pyshp',
                 'python-dateutil',
-                'python_docx_replace',
+                'python_docx_replace',  #pip install python-docx-replace
                 'python-magic-bin;sys.platform=="win32"',
                 'requests',
                 'ruptures',
