@@ -23,7 +23,39 @@ __all__ = ['EPSG_CODES',
     'DistAzi',
     'elevation_function',
     'Items_in_Polygons',
-    'df_to_geojson']
+    'df_to_geojson',
+    'epsg_from_prj']
+
+
+def epsg_from_prj(prj_path: str | Path) -> Optional[int]:
+    """
+    Return EPSG integer if detectable from a .prj WKT, else None.
+    """
+    prj_path = Path(prj_path)
+    if not prj_path.exists():
+        return None
+
+    wkt = prj_path.read_text(encoding="utf-8", errors="ignore").strip()
+    if not wkt:
+        return None
+
+    # 1) Best: pyproj parses WKT and can often return EPSG
+    try:
+        from pyproj import CRS
+        crs = CRS.from_wkt(wkt)
+        epsg = crs.to_epsg()
+        if epsg:
+            return int(epsg)
+    except Exception:
+        pass
+
+    # 2) Fallback: WKT often embeds AUTHORITY["EPSG","26913"]
+    m = re.search(r'AUTHORITY\["EPSG"\s*,\s*"(\d+)"\]', wkt, flags=re.I)
+    if m:
+        return int(m.group(1))
+
+    return None
+
 
 def EPSG_CODES():
     print('''COMMON EPSG CODES ::
