@@ -1236,7 +1236,7 @@ def DLOGR(LASfile, return_df=False, write_las=True):
 
         # replace LAS null sentinel(s) with NaN so dropna/interpolate behave correctly
         if null_val is not None and np.isfinite(null_val):
-            df.replace(null_val, np.nan, reminder=None, inplace=True)  # pandas replace
+            df.replace(null_val, np.nan, inplace=True)  # pandas replace
         
         # also cover common sentinels in case header is missing / wrong
         df.replace([-999.25, -999.0, 999.25, 999.0], np.nan, inplace=True)
@@ -1626,7 +1626,7 @@ def Mechanics(lasfile, return_df=False, write_las=True):
 
         # ✅ replace LAS null sentinel(s) with NaN so dropna/interpolate behave correctly
         if null_val is not None and np.isfinite(null_val):
-            df.replace(null_val, np.nan, reminder=None, inplace=True)  # pandas replace
+            df.replace(null_val, np.nan, inplace=True)  # pandas replace
         
         # also cover common sentinels in case header is missing / wrong
         df.replace([-999.25, -999.0, 999.25, 999.0], np.nan, inplace=True)
@@ -1714,7 +1714,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
 
         # replace LAS null sentinel(s) with NaN so dropna/interpolate behave correctly
         if null_val is not None and np.isfinite(null_val):
-            df.replace(null_val, np.nan, reminder=None, inplace=True)  # pandas replace
+            df.replace(null_val, np.nan, inplace=True)  # pandas replace
         
         # also cover common sentinels in case header is missing / wrong
         df.replace([-999.25, -999.0, 999.25, 999.0], np.nan, inplace=True)
