@@ -1598,7 +1598,7 @@ def DLOGR(LASfile, return_df=False, write_las=True):
     if return_df:
         return df.set_index("DEPTH")[newkeys]
     if write_las:
-        exlas.write(path.join(dir_add, f'DLOGR_{lasfile}'))
+        exlas.write(path.join(dir_add, f'DLOGR_{LASfile}'))
     return exlas
       
 
