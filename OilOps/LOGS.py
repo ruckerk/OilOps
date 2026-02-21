@@ -1598,7 +1598,7 @@ def DLOGR(LASfile, return_df=False, write_las=True):
     if return_df:
         return df.set_index("DEPTH")[newkeys]
     if write_las:
-        exlas.write(...)
+        exlas.write(path.join(dir_add, f'DLOGR_{lasfile}'))
     return exlas
       
 
@@ -1686,7 +1686,7 @@ def Mechanics(lasfile, return_df=False, write_las=True):
     if return_df:
         return df.set_index("DEPTH")[newkeys]
     if write_las:
-        exlas.write(...)
+        exlas.write(path.join(dir_add, f'MECH_{lasfile}'))
     return exlas
 
 
@@ -1848,7 +1848,7 @@ def EatonPP(lasfile,ROLLINGWINDOW = 200, QUANTILE = 0.5, EATON_EXP = 2.5, PLOTS 
     if return_df:
         return df.set_index("DEPTH")[newkeys]
     if write_las:
-        exlas.write(...)
+        exlas.write(path.join(dir_add,f'EATON_{lasfile}'))
     return exlas
 
 def products_from_lasfile(las_path: str) -> dict[str, pd.DataFrame]:
