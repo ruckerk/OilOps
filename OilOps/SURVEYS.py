@@ -267,8 +267,8 @@ def ExtractSurvey(df_in): #if True:
 
             # check for excel issues from columns with merged cells
             df_0 = df_in[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
-            df_f = df_in.fillna(method='ffill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
-            df_b = df_in.fillna(method='bfill', axis=1)[newcols].apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
+            df_f = df_in[newcols].ffill().apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
+            df_b = df_in[newcols].bfill().apply(str2num).astype(str).replace(r'[^0-9\.-]','',regex = True).apply(pd.to_numeric, axis = 1, errors= 'coerce')
 
             m_0 = df_0.loc[(df_0.AZI>=0) * (df_0.AZI<=360) * (df_0.INC<=180) * (df_0.INC>=0)].dropna().index
             m_f = df_f.loc[(df_f.AZI>=0) * (df_f.AZI<=360) * (df_f.INC<=180) * (df_f.INC>=0)].dropna().index
@@ -283,9 +283,9 @@ def ExtractSurvey(df_in): #if True:
             if LTEST == 0:
                 outdf_in = df_in.loc[m_0, newcols].copy()
             if LTEST == 1:
-                outdf_in = df_in.fillna(method='ffill', axis=1).loc[m_f, newcols].copy()
+                outdf_in = df_in.loc[m_f, newcols].ffill().copy()
             if LTEST == 2:
-                outdf_in = df_in.fillna(method='bfill', axis=1).loc[m_b, newcols].copy()
+                outdf_in = df_in.loc[m_b, newcols].bfill().copy()
            
             outdf_in.reset_index(drop=True, inplace= True)
                               
