@@ -1428,7 +1428,7 @@ def Items_in_Polygons(ITEM_SHAPEFILE:str, POLYGON_SHAPEFILE:str, BUFFER :(int,fl
     POLYS['coords_old'] = POLYS['coords']
 
     if NameIndex == None:
-        NAMES = POLYS.applymap(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
+        NAMES = POLYS.map(lambda x:isinstance(x,str)).sum(axis=0).replace(0,np.nan).dropna()
         NAMES = POLYS[list(NAMES.index)].nunique(axis=0).sort_values(ascending=False).index[0]
     else:
         NAMES = POLYS.keys()[NameIndex]
