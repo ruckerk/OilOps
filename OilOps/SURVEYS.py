@@ -77,7 +77,7 @@ def Find_API_Col(df_inAPI):
             val = None
         return val
 
-    df2 = df2.applymap(STR2INT)
+    df2 = df2.map(lambda x: STR2INT(x))
     df2 = df2[(df2>lowlim) & (df2<highlim)].dropna(axis=0,how='all').dropna(axis=1,how='all')
 
     if df2.empty:
@@ -238,7 +238,7 @@ def ExtractSurvey(df_in): #if True:
 ##                    if (ReadUWI != None):
 ##                        outdf_in['UWI'] = ReadUWI
                 
-            outdf_in = outdf_in.applymap(str2num)
+            outdf_in = outdf_in.map(lambda x: str2num(x))
             #outdf_in = DF_UNSTRING(outdf_in)
             outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
@@ -290,7 +290,7 @@ def ExtractSurvey(df_in): #if True:
             outdf_in.reset_index(drop=True, inplace= True)
                               
             outdf_in['UWI'] = ReadUWI
-            outdf_in = outdf_in.applymap(str2num)
+            outdf_in = outdf_in.map(lambda x:str2num(x))
             outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                               
             outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
          
@@ -306,7 +306,7 @@ def ExtractSurvey(df_in): #if True:
                         #outdf_in = outdf_in.map(lambda x:WELLAPI(x).str2num())
                         #outdf_in = DF_UNSTRING(outdf_in)
                               
-                        #outdf_in = outdf_in.applymap(str2num)
+                        #outdf_in = outdf_in.map(lambda x: str2num(x))
                         #outdf_in = outdf_in.replace(r'[^0-9\.-]','',regex = True)                     
                               
                         #outdf_in = outdf_in.apply(pd.to_numeric, errors = 'coerce', axis=0)
@@ -479,7 +479,7 @@ def survey_from_excel(file:(str,tuple), ERRORS:bool = True): #if True:
             return None
         if not(UWI is None):            
             outdf['UWI'] = outdf.UWI.apply(lambda x: WELLAPI(x).API2INT())
-            outdf = outdf.applymap(str2num)
+            outdf = outdf.map(lambda x: str2num(x))
             outdf = outdf.apply(pd.to_numeric, errors='coerce')
             outdf['UWI'].fillna(0,inplace=True)
             UWI_df = outdf['UWI'].max()
@@ -636,7 +636,7 @@ def Survey_Join(SAVEFILE, FLIST, ERRORS = True): #if True:
                 rdf=rdf.rename(columns=SurveyCols(rdf))
             
                 # all columns to numeric while catching decimals in strings
-                rdf = rdf.applymap(str2num)
+                rdf = rdf.map(lambda x: str2num(x))
 
                 if rdf.shape[0]==0 or rdf.empty:
                     continue
