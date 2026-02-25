@@ -1208,7 +1208,7 @@ def reduce_mem_usage(props):
     #print("This is ",100*mem_usg/start_mem_usg,"% of the initial size")
     return props, NAlist
 
-def DLOGR(LASfile, return_df=False, write_las=True):
+def DLOGR(LASfile, return_df=False, write_las=True, alias = None):
     #if 1==1:
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'DLOGR')       
@@ -1225,8 +1225,11 @@ def DLOGR(LASfile, return_df=False, write_las=True):
     except Exception:
         pass
         
-
-    Alias = GetAlias(las)
+    if isinstance(alias,dict):
+        Alias = alias
+    else:
+        Alias = GetAlias(las)
+               
     newkeys = []
     step=las.well.STEP.value
            
