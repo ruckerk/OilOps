@@ -1225,10 +1225,15 @@ def DLOGR(LASfile, return_df=False, write_las=True, alias = None):
     except Exception:
         pass
         
-    if isinstance(alias,dict):
+    if isinstance(alias, dict):
         Alias = alias
+        keys = [Alias[x] for x in Alias if Alias[x] != 'NULL'] 
+        try:
+           las.df()[keys].shape[1] == len(keys):
+        except:
+            Alias=GetAlias(las)
     else:
-        Alias = GetAlias(las)
+        Alias=GetAlias(las)
                
     newkeys = []
     step=las.well.STEP.value
@@ -1605,7 +1610,7 @@ def DLOGR(LASfile, return_df=False, write_las=True, alias = None):
     return exlas
       
 
-def Mechanics(lasfile, return_df=False, write_las=True):
+def Mechanics(lasfile, return_df=False, write_las=True, alias = None):
     exlas=lasio.LASFile()
     dir_add = path.join(getcwd(),'MECH')
     if not path.exists(dir_add):
@@ -1620,8 +1625,15 @@ def Mechanics(lasfile, return_df=False, write_las=True):
     except Exception:
         pass
 
-    
-    Alias=GetAlias(las)
+    if isinstance(alias, dict):
+        Alias = alias
+        keys = [Alias[x] for x in Alias if Alias[x] != 'NULL'] 
+        try:
+           las.df()[keys].shape[1] == len(keys):
+        except:
+            Alias=GetAlias(las)
+    else:
+        Alias=GetAlias(las)
 
     newkeys = []
     if (len(las[0])>100) and (Alias["DTC"]!="NULL") and (Alias["DEN"]!="NULL"):
