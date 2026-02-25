@@ -1229,7 +1229,7 @@ def DLOGR(LASfile, return_df=False, write_las=True, alias = None):
         Alias = alias
         keys = [Alias[x] for x in Alias if Alias[x] != 'NULL'] 
         try:
-           las.df()[keys].shape[1] == len(keys):
+           las.df()[keys].shape[1] == len(keys)
         except:
             Alias=GetAlias(las)
     else:
@@ -1629,7 +1629,7 @@ def Mechanics(lasfile, return_df=False, write_las=True, alias = None):
         Alias = alias
         keys = [Alias[x] for x in Alias if Alias[x] != 'NULL'] 
         try:
-           las.df()[keys].shape[1] == len(keys):
+           las.df()[keys].shape[1] == len(keys)
         except:
             Alias=GetAlias(las)
     else:
