@@ -734,8 +734,10 @@ def R0_DLOGN(df,uwi,Archie_N,LABEL='0'):
     dir_add = path.join(getcwd(),'DLOGR')  
     if not path.exists(dir_add):
         makedirs(dir_add)
-        
-    dfx=df.dropna()
+               
+    dfx = df.copy()
+    dfx = dfx.dropna()
+           
     dfx["SW"]=None
     dfx["R0"]=None
     NPHI=dfx.keys()[0]      #1st column is NPHI track
