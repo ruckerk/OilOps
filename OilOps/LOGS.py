@@ -670,8 +670,8 @@ def Find_R0(df, sigma = 500, alias = None):
         phin = phin/100
             
     # --- Clean up ---
-    phin = np.clip(phin, 0.01, 0.7)
-    resd = np.clip(resd, 0.2, 2000)
+    phin = np.clip(phin, 0.005, 0.7)
+    resd = np.clip(resd, 0.1, 3000)
 
     log_phi = np.log10(phin)
     log_resd = np.log10(resd)
