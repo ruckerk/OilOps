@@ -645,10 +645,19 @@ def R0(phi,arw,m):
 
 def func(x, a, b): return a + x * b
 
-def Find_R0(df, sigma = 500):
+def Find_R0(df, sigma = 500, alias = None):
     df_in = df.copy()
     depth = df_in.index
-    ALIAS = GetAlias(df_in)        
+
+    if isinstance(alias, dict):
+        ALIAS = alias
+        keys = [ALIAS[x] for x in ALIAS if ALIAS[x] != 'NULL'] 
+        try:
+           las.df()[keys].shape[1] == len(keys)
+        except:
+            ALIAS=GetAlias(las)
+    else:
+        ALIAS=GetAlias(las)           
 
     # --- Required logs ---
     m_phi = df_in[ALIAS['NPHI']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').dropna().index
@@ -1451,7 +1460,7 @@ def DLOGR(LASfile, return_df=False, write_las=True, alias = None):
                 #             #     if ((df.loc[df.LABEL==i,'R0']/df.loc[df.LABEL==i,Alias['RDEEP']])**0.5).dropna().quantile(q=0.9) < 0.5:
                 #             #         df.loc[df.LABEL==i,'R0']=None
                            
-                df['R0'] = Find_R0(df)
+                df['R0'] = Find_R0(df, alias = Alias)
                 df['SW']=(df['R0']/df[Alias['RDEEP']])**0.5
 
                 newkeys = newkeys + ['R0','SW']
