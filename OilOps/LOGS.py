@@ -655,9 +655,9 @@ def Find_R0(df, sigma = 500, alias = None):
         try:
            las.df()[keys].shape[1] == len(keys)
         except:
-            ALIAS=GetAlias(las)
+            ALIAS=GetAlias(df_in)
     else:
-        ALIAS=GetAlias(las)           
+        ALIAS=GetAlias(df_in)           
 
     # --- Required logs ---
     m_phi = df_in[ALIAS['NPHI']].copy().replace([np.inf, -np.inf], np.nan).interpolate(limit_area='inside').dropna().index
