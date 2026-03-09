@@ -2827,14 +2827,14 @@ def SUMMARIZE_PROD_DATA(pdf, ADD_RATIOS = False):
             return None
            
     try: 
-        DATE     = pdf.iloc[:,pdf.keys().str.contains('.*FIRST.*MONTH.*|.*REPORT.*DATE.*', regex=True, case=False,na=False)].keys()[0]
-        DAYSON   = pdf.iloc[0,pdf.keys().str.contains('.*DAYS.*PROD.*|.*PROD.*DAYS.*', regex=True, case=False,na=False)].keys()[0]
-        OIL      = pdf.iloc[0,pdf.keys().str.contains('.*OIL.*PROD.*', regex=True, case=False,na=False)].keys()[0]
-        GAS      = pdf.iloc[0,pdf.keys().str.contains('.*GAS.*PROD.*', regex=True, case=False,na=False)].keys()[0]
-        WTR      = pdf.iloc[0,pdf.keys().str.contains('.*WATER.*VOLUME.*', regex=True, case=False,na=False)].keys()[0]
-        API      = pdf.iloc[0,pdf.keys().str.contains('.*OIL.*GRAVITY.*', regex=True, case=False,na=False)].keys()[0]
-        BTU      = pdf.iloc[0,pdf.keys().str.contains('.*GAS.*BTU.*', regex=True, case=False,na=False)].keys()[0]
-        FM       = pdf.iloc[0,pdf.keys().str.contains('.*Formation.*|.*POOL.*', regex=True, case=False,na=False)].keys()[0]
+        DATE     = ppdf.iloc[:,ppdf.keys().str.contains('.*FIRST.*MONTH.*|.*REPORT.*DATE.*|.*DATE.*REPORT.*', regex=True, case=False,na=False)].keys()[0]
+        DAYSON   = ppdf.iloc[0,ppdf.keys().str.contains('.*DAYS.*(ON|PROD).*', regex=True, case=False,na=False)].keys()[0]
+        OIL      = ppdf.iloc[0,ppdf.keys().str.contains('.*OIL.*(PROD|VOL).*|.*TOTAL.*OIL.*', regex=True, case=False,na=False)].keys()[0]
+        GAS      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*(PROD|VOL).*|.*TOTAL.*GAS.*', regex=True, case=False,na=False)].keys()[0]
+        WTR      = ppdf.iloc[0,ppdf.keys().str.contains('.*WATER.*(PROD|VOL).*|.*TOTAL.*WATER.*', regex=True, case=False,na=False)].keys()[0]
+        API      = ppdf.iloc[0,ppdf.keys().str.contains('.*OIL.*GRAVITY.*', regex=True, case=False,na=False)].keys()[0]
+        BTU      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*(GRAVITY|BTU).*', regex=True, case=False,na=False)].keys()[0]
+        FM       = ppdf.iloc[0,ppdf.keys().str.contains('.*Formation.*', regex=True, case=False,na=False)].keys()[0]
         #SEQ      = pdf.iloc[0,pdf.keys().str.contains('.*SEQUENCE.*', regex=True, case=False,na=False)].keys()[0]
 
     except:
