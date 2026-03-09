@@ -3008,7 +3008,7 @@ def SUMMARIZE_PROD_DATA2(ppdf, ADD_RATIOS = False):
             return None
            
     try: 
-        DATE     = ppdf.iloc[:,ppdf.keys().str.contains('.*FIRST.*MONTH.*', regex=True, case=False,na=False)].keys()[0]
+        DATE     = ppdf.iloc[:,ppdf.keys().str.contains('.*FIRST.*MONTH.*|.*REPORT.*DATE.*|.*DATE.*REPORT.*', regex=True, case=False,na=False)].keys()[0]
         DAYSON   = ppdf.iloc[0,ppdf.keys().str.contains('.*DAYS.*(ON|PROD).*', regex=True, case=False,na=False)].keys()[0]
         OIL      = ppdf.iloc[0,ppdf.keys().str.contains('.*OIL.*(PROD|VOL).*', regex=True, case=False,na=False)].keys()[0]
         GAS      = ppdf.iloc[0,ppdf.keys().str.contains('.*GAS.*(PROD|VOL).*', regex=True, case=False,na=False)].keys()[0]
