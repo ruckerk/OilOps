@@ -148,7 +148,7 @@ import base64
 import difflib
 import wellpathpy as wp
 
-import pymc as pm
+# import pymc as pm
 
 from .WELLAPI import WELLAPI as WELLAPI
 
