@@ -56,7 +56,7 @@ import threading
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib import colors
+from matplotlib import colors as mcolors
 import matplotlib.patches as mpatches
 
 import seaborn as sns
@@ -1536,3 +1536,12 @@ def to_uwi10_from_api(api_like) -> str:
     if len(s) == 10 and not s.startswith("05"):
         s = "05" + s[2:]
     return s
+
+def as_cmap(palette, name):
+    """
+    Converts a seaborn/matplotlib color list into a matplotlib colormap.
+    If palette is already a colormap, returns it unchanged.
+    """
+    if isinstance(palette, mcolors.Colormap):
+        return palette
+    return mcolors.LinearSegmentedColormap.from_list(name, palette)
