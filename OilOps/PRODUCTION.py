@@ -497,18 +497,29 @@ def fit_sigmoid_dual(df_daily,
         A0 = GORi_est
         K0 = GORf_est
         #A0, K0 = np.percentile(y_cgor, [5, 95])
-        B0, M0 = 0.05, 15
+        # M0=15 (fixed) was wildly off-scale: x=log10(MBT) for real wells
+        # here runs roughly 0-4 (MBT of 1 to ~10,000 days), so a hardcoded
+        # M0=15 starting guess sits far outside any data the fit will ever
+        # see, and the [0,100] bounds below made the same mistake. Confirmed
+        # this was the dominant remaining source of gas-forecast bias: with
+        # a perfect (full-history) oil trajectory but this GOR sigmoid fit
+        # on 12mo of data, median error was still -29% - almost as bad as
+        # the -37% with both models short-fit, meaning the GOR sigmoid was
+        # carrying most of the error on its own, not just inheriting it
+        # from oil. fit_cumWC_sigmoid (below) already anchors M0 to the
+        # data's own log10(MBT) median - mirror that fix here.
+        B0, M0 = 0.05, x_mbt.median()
         nu0    = 1.2
         p0 = [A0, K0, B0, M0, nu0]
 
     if bounds is None:
-        lb = [GORi_est/2, 0, 0,   0,   0.3]
+        lb = [GORi_est/2, 0, 0,   x_mbt.min(),   0.3]
         # K's upper bound must scale with the data-estimated terminal GOR
         # (K0=GORf_est is used as p0[1]) - a fixed 1000 scf/bbl cap made p0
         # infeasible and crashed least_squares outright for any well whose
         # late-life GOR climbs past 1000, which is routine for DJ Basin
         # Niobrara/Codell wells late in life.
-        ub = [GORi_est*2, max(GORf_est*3, 1000), 20,  100, 5.0]
+        ub = [GORi_est*2, max(GORf_est*3, 1000), 20,  x_mbt.max(), 5.0]
         bounds = (lb, ub)
 
     # --- residual combining both domains -----------------------
