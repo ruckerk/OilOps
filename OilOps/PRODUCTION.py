@@ -1,10 +1,13 @@
 from ._FUNCS_ import *
 __all__ = ['dpl',
+           'dpl_cum',
            'richards',
            'fit_dpl_with_cum',
            'dpl_residual',
            'ProductionToParams',
            'fit_sigmoid_dual',
+           'fit_cumWC_sigmoid',
+           'forecast_well',
            'interpolate_to_daily_by_prod_days']
 
 def richards(x, A,K,B,M,nu):
@@ -21,6 +24,21 @@ def richards5(x, A, K, B, M, nu):
            
 def dpl(t, q0, alpha, b1, b2, tx, m):
     return (q0 / (1 + alpha*t)**b1) * (1 + (t/tx)**m)**(-b2/m)
+
+def dpl_cum(t_array, params, dt=1.0):
+    """
+    Cumulative oil volume implied by the DPL rate model at arbitrary t (days).
+    dpl() has no closed-form integral, so integrate on a fine internal day-grid
+    and interpolate. Unlike np.interp on historical data, this stays correct
+    for t past the end of the fitted history, which is what makes forward
+    forecasting (not just backfilling) possible.
+    """
+    t_array = np.atleast_1d(np.asarray(t_array, float))
+    t_max = max(float(np.max(t_array)), dt)
+    grid = np.arange(0.0, t_max + dt, dt)
+    q_grid = dpl(grid, *params)
+    cum_grid = np.concatenate(([0.0], np.cumsum(0.5*(q_grid[1:]+q_grid[:-1])*np.diff(grid))))
+    return np.interp(t_array, grid, cum_grid)
 
 def dpl_rate(t, q0, alpha, b1, b2, tx, m):
     """
@@ -41,7 +59,7 @@ def dpl_rate(t, q0, alpha, b1, b2, tx, m):
 # -----------------------------------------------------------------
 def dpl_residual(theta, t, q_obs,
                  beta_cum=1.2,
-                 slope_gamma=10.0, N_tail=30):
+                 slope_gamma=10.0, N_tail=30, target_slope=-1.0):
 
     q_hat   = dpl(t, *theta)
     dt      = np.diff(np.r_[0,t])
@@ -51,35 +69,60 @@ def dpl_residual(theta, t, q_obs,
     cum_err = beta_cum*(cum_hat-cum_obs)/cum_obs.max()
 
     # ---- slope penalty last N_tail points ----
+    # target_slope=-1.0 pins late-time log(rate) vs log(MBT) to the classic
+    # unit-slope boundary-dominated-flow (BDF) signature. Exposed as a
+    # parameter rather than hardcoded since not every well's tail reaches
+    # true single-phase BDF (multiphase / stress-dependent perm can shift it).
     mbt_hat = cum_hat/(q_hat+1e-9)
     log_q_tail   = np.log(q_hat[-N_tail:])
     log_m_tail   = np.log(mbt_hat[-N_tail:])
     slope_tail   = np.diff(log_q_tail)/np.diff(log_m_tail)
-    slope_err    = slope_gamma*(slope_tail + 1.0)
+    slope_err    = slope_gamma*(slope_tail - target_slope)
 
     return np.r_[log_err, cum_err, slope_err]
 
-def fit_dpl_with_cum(t, q, beta_cum=1.2, p0=None, bounds=None, plot=True, t_EUR = None):
+def fit_dpl_with_cum(t, q, beta_cum=1.2, p0=None, bounds=None, plot=True, t_EUR = None,
+                     slope_gamma=10.0, N_tail=30, target_slope=-1.0, return_cov=False):
     q0 = q.copy()
     t = np.asarray(t, float)
     q = np.asarray(q, float)
 
-    # initial guess if not given
+    # initial guess if not given - scale tx0/alpha0 to this well's own time
+    # span instead of a fixed global default, since a well with 6 months of
+    # history and one with 8 years shouldn't share the same transition-time
+    # starting point.
     if p0 is None:
-        p0 = [q[0], 0.002, 0.2, 1.0, 300, 4.0]
+        t_span = max(float(t[-1] - t[0]), 30.0)
+        tx0 = np.clip(t_span / 3.0, 10.0, 5000.0)
+        alpha0 = 2.0 / t_span
+        p0 = [q[0], alpha0, 0.2, 1.0, tx0, 4.0]
     if bounds is None:
         bounds = ([0., 0., 0., 0.9, 10., 1.],
                   [np.inf, 10., 2., 1.1, 5000., 10.])
 
     res = least_squares(
             dpl_residual, p0,
-            args=(t, q, beta_cum, True),
+            args=(t, q, beta_cum, slope_gamma, N_tail, target_slope),
             bounds=bounds,
             loss='soft_l1',       # robust to outliers
             f_scale=0.3,          # “softness”; tune 0.1–1
             max_nfev=40000)
 
     pars = res.x
+
+    if return_cov:
+        # Approximate parameter covariance from the Jacobian at the solution
+        # (standard least_squares asymptotic covariance estimate). Lets
+        # callers flag wells whose fit is poorly constrained instead of
+        # trusting every point estimate equally when regressing curve-shape
+        # parameters against completion drivers downstream.
+        try:
+            J = res.jac
+            dof = max(len(res.fun) - len(pars), 1)
+            s_sq = 2.0 * res.cost / dof
+            pcov = np.linalg.inv(J.T @ J) * s_sq
+        except Exception:
+            pcov = np.full((len(pars), len(pars)), np.nan)
 
     if t_EUR != None:
         t_hat = np.arange(1, t_EUR+1, 1)
@@ -130,6 +173,8 @@ def fit_dpl_with_cum(t, q, beta_cum=1.2, p0=None, bounds=None, plot=True, t_EUR 
 
         plt.tight_layout(); plt.show()
 
+    if return_cov:
+        return pars, pcov
     return pars
 
 
@@ -222,15 +267,13 @@ def ProductionToParams(UWI_List:list,
 
     modelkeys = ['UWI10']
 
-    primary = fit_dpl_with_cum(np.arange(0,1000), np.arange(0,1000)**0.8, beta_cum=1.8, p0=None, bounds=None, plot=False, t_EUR = 365*5)
-    q2 = pd.DataFrame({'DailyRate':np.arange(0,1000)*3,'GasRate':np.arange(0,1000)**2,'ProducingDay':np.arange(1,1001)})
-    secondary = fit_sigmoid_dual(q2,
-                            w_time=1.0, w_mbt=1.0,
-                            p0=None, bounds=None,
-                            plot=False,
-                            OilKey = 'DailyRate',
-                            GasKey = 'GasRate',
-                            TimeKey = 'ProducingDay')[0]
+    # Fixed parameter counts for the two model families - dpl() always takes
+    # 6 params (q0, alpha, b1, b2, tx, m), richards() always takes 5
+    # (A, K, B, M, nu). Previously this ran two throwaway fits on synthetic
+    # data purely to count len(params), which wasted a fit per call and
+    # silently broke if either model's signature ever changed shape.
+    primary = [np.nan] * 6
+    secondary = [np.nan] * 5
 
     col_names = ['UWI10']  + [f'pOil_{ix}' for ix,xx in enumerate(primary)] +  [f'pNormOil_{ix}' for ix,xx in enumerate(primary)] +  [f'pCumGOR_{ix}' for ix,xx in enumerate(secondary)] +  [f'pCumWOC_{ix}' for ix,xx in enumerate(secondary)]
     WellModels = pd.DataFrame(columns = col_names)
@@ -304,6 +347,11 @@ def ProductionToParams(UWI_List:list,
 
         maxdays = ProdData.loc[m, 'Days On'].max()
         
+        # fit1 (this well's own raw-oil DPL params) is passed through as
+        # oil_params so cumGas_hat/cumW_hat can extrapolate past the end of
+        # history using the DPL forecast, not just backfill observed months.
+        fit1_valid = fit1 if np.all(np.isfinite(fit1)) else None
+
         try:
             mq = q2[['DailyRate','GasRate']].dropna().index
             cumgor_model = fit_sigmoid_dual(q2.loc[mq],
@@ -312,21 +360,23 @@ def ProductionToParams(UWI_List:list,
                             plot=False,
                             OilKey = 'DailyRate',
                             GasKey = 'GasRate',
-                            TimeKey = 'ProducingDay')
+                            TimeKey = 'ProducingDay',
+                            oil_params = fit1_valid)
         except:
             cumgor_model = [[np.nan]*len(secondary)]
 
         try:
             mw = q2[['DailyRate','WaterRate']].dropna().index
             cumwoc_model = fit_cumWC_sigmoid(q2.loc[mw],
-                            w_time=1.0, 
+                            w_time=1.0,
                             w_mbt=1.0,
-                            p0=None, 
+                            p0=None,
                             bounds=None,
                             plot=False,
                             OilKey = 'DailyRate',
                             WaterKey = 'WaterRate',
-                            TimeKey = 'ProducingDay')
+                            TimeKey = 'ProducingDay',
+                            oil_params = fit1_valid)
         except:
             cumwoc_model = [[np.nan]*len(secondary)]
                         
@@ -344,11 +394,17 @@ def fit_sigmoid_dual(df_daily,
                      plot=True,
                      OilKey = 'Oil',
                      GasKey = 'Gas',
-                     TimeKey = 'ProducingDays'):
+                     TimeKey = 'ProducingDays',
+                     oil_params=None):
 
 
     """
     df_daily must contain:  'Days' (int), 'Oil', 'Gas' (volumes for that day)
+    oil_params: optional 6-param dpl() fit for this well (from fit_dpl_with_cum).
+        When given, cumGas_hat can be evaluated at times past the end of the
+        historical record - MBT is computed from the DPL model's own oil
+        forecast instead of np.interp on history, which just holds the last
+        observed value flat. Without it, cumGas_hat only backfills history.
     Returns: parameter vector (A,K,B,M,nu) and callable predictors.
     """
 
@@ -388,7 +444,12 @@ def fit_sigmoid_dual(df_daily,
 
     if bounds is None:
         lb = [GORi_est/2, 0, 0,   0,   0.3]
-        ub = [GORi_est*2, 1000, 20,  100, 5.0]
+        # K's upper bound must scale with the data-estimated terminal GOR
+        # (K0=GORf_est is used as p0[1]) - a fixed 1000 scf/bbl cap made p0
+        # infeasible and crashed least_squares outright for any well whose
+        # late-life GOR climbs past 1000, which is routine for DJ Basin
+        # Niobrara/Codell wells late in life.
+        ub = [GORi_est*2, max(GORf_est*3, 1000), 20,  100, 5.0]
         bounds = (lb, ub)
 
     # --- residual combining both domains -----------------------
@@ -413,10 +474,17 @@ def fit_sigmoid_dual(df_daily,
         return richards(np.log10(mbt_arr), *pars)
 
     def cumGas_hat(days_arr):
-        # need CumOil(days)  – build simple interpolant from history
-        oil_interp = np.interp(days_arr, df['Days'], df['Oil'])
-        cumOil_int = np.interp(days_arr, df['Days'], df['CumOil'])
-        return cumOil_int * cgor_hat(cumOil_int / oil_interp.clip(1e-6))
+        days_arr = np.atleast_1d(np.asarray(days_arr, float))
+        if oil_params is not None:
+            # extrapolates correctly beyond history via the fitted DPL model
+            oil_interp = dpl(days_arr, *oil_params)
+            cumOil_int = dpl_cum(days_arr, oil_params)
+        else:
+            # history-only fallback: clamps at the last observed value past
+            # the end of df['Days'], so this branch cannot forecast forward
+            oil_interp = np.interp(days_arr, df['Days'], df['Oil'])
+            cumOil_int = np.interp(days_arr, df['Days'], df['CumOil'])
+        return cumOil_int * cgor_hat(cumOil_int / np.clip(oil_interp, 1e-6, None))
 
     # --- QC plot -----------------------------------------------
     if plot:
@@ -443,13 +511,19 @@ def fit_cumWC_sigmoid(df_daily,
                       w_time=1.0, w_mbt=1.0,
                       p0=None, bounds=None,
                       plot=True,
-                      OilKey='Oil', WaterKey='Water', TimeKey='ProducingDays'):
+                      OilKey='Oil', WaterKey='Water', TimeKey='ProducingDays',
+                      oil_params=None):
     """
     Fits a decreasing sigmoid to cumulative water-cut
     (starts near 1 ➜ drops to plateau).  Returns:
         pars   : (A, K, B, M, nu) of Richards on deficit (1-CumWC)
         wc_hat : callable Cum-WC(mbt_array)
         cumW_hat : callable Cum Water (days_array)
+
+    oil_params: optional 6-param dpl() fit for this well. When given,
+        cumW_hat extrapolates past history using the DPL oil forecast for
+        MBT instead of clamping at the last observed value (see
+        fit_sigmoid_dual's oil_params for the same rationale).
     """
 
     # ---------------- rename & cumulative --------------------
@@ -513,12 +587,17 @@ def fit_cumWC_sigmoid(df_daily,
         return 1.0 - richards(np.log10(mbt_arr), *pars)
 
     def cumW_hat(days_arr):
-        oil_interp = np.interp(days_arr, df['Days'], df['Oil'])
-        cumOil_int = np.interp(days_arr, df['Days'], df['CumOil'])
-        mbt_arr    = cumOil_int / oil_interp.clip(1e-6)
-        return (wc_hat(mbt_arr) * (cumOil_int +  # total fluids so far
-                                   np.interp(days_arr, df['Days'],
-                                             df['CumWater'])))
+        days_arr = np.atleast_1d(np.asarray(days_arr, float))
+        if oil_params is not None:
+            oil_interp = dpl(days_arr, *oil_params)
+            cumOil_int = dpl_cum(days_arr, oil_params)
+        else:
+            oil_interp = np.interp(days_arr, df['Days'], df['Oil'])
+            cumOil_int = np.interp(days_arr, df['Days'], df['CumOil'])
+        mbt_arr = cumOil_int / np.clip(oil_interp, 1e-6, None)
+        wc      = wc_hat(mbt_arr)
+        # CumWC = CumWater/(CumOil+CumWater)  =>  CumWater = CumWC*CumOil/(1-CumWC)
+        return wc * cumOil_int / np.clip(1.0 - wc, 1e-9, None)
 
     # -------- plots ------------------------------------------
     if plot:
@@ -539,3 +618,47 @@ def fit_cumWC_sigmoid(df_daily,
         plt.tight_layout(); plt.show()
 
     return pars, wc_hat, cumW_hat
+
+
+def forecast_well(oil_params, gor_params, wc_params, t_array):
+    """
+    Reconstruct a full 3-phase (oil/gas/water) forecast at arbitrary times
+    t_array (days since first production), spanning both history and future,
+    from three already-fitted parameter sets alone - no dependence on raw
+    production data past this point:
+
+        oil_params : 6 dpl() params from fit_dpl_with_cum on raw daily oil rate
+        gor_params : 5 richards() params from fit_sigmoid_dual (CumGOR vs log10 MBT)
+        wc_params  : 5 richards() params from fit_cumWC_sigmoid (deficit vs log10 MBT)
+
+    The oil DPL model is the spine: it generates OilRate(t) and CumOil(t),
+    from which MBT(t) = CumOil(t)/OilRate(t) is derived. GOR and water-cut
+    are then evaluated as sigmoids of that same MBT(t), and differentiated
+    back to rates. This is the explicit form of the cascade that
+    fit_sigmoid_dual/fit_cumWC_sigmoid's oil_params argument makes possible.
+
+    Returns a DataFrame: Days, OilRate, CumOil, MBT_Oil, CumGOR, GasRate,
+    CumGas, CumWC, WaterRate, CumWater.
+    """
+    t_array = np.atleast_1d(np.asarray(t_array, float))
+
+    oil_rate = dpl(t_array, *oil_params)
+    cum_oil  = dpl_cum(t_array, oil_params)
+    mbt      = cum_oil / np.clip(oil_rate, 1e-9, None)
+    log_mbt  = np.log10(np.clip(mbt, 1e-9, None))
+
+    cum_gor  = richards(log_mbt, *gor_params)
+    cum_gas  = cum_oil * cum_gor
+    gas_rate = np.gradient(cum_gas, t_array, edge_order=2)
+
+    deficit    = richards(log_mbt, *wc_params)
+    cum_wc     = 1.0 - deficit
+    # invert CumWC = CumWater/(CumOil+CumWater) for CumWater
+    cum_water  = cum_wc * cum_oil / np.clip(1.0 - cum_wc, 1e-9, None)
+    water_rate = np.gradient(cum_water, t_array, edge_order=2)
+
+    return pd.DataFrame({
+        'Days': t_array, 'OilRate': oil_rate, 'CumOil': cum_oil, 'MBT_Oil': mbt,
+        'CumGOR': cum_gor, 'GasRate': gas_rate, 'CumGas': cum_gas,
+        'CumWC': cum_wc, 'WaterRate': water_rate, 'CumWater': cum_water,
+    })
