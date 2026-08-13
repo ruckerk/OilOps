@@ -8,7 +8,10 @@ __all__ = ['dpl',
            'fit_sigmoid_dual',
            'fit_cumWC_sigmoid',
            'forecast_well',
-           'interpolate_to_daily_by_prod_days']
+           'interpolate_to_daily_by_prod_days',
+           'estimate_gor_endpoints',
+           'estimate_wc_endpoints',
+           'population_prior']
 
 def richards(x, A,K,B,M,nu):
     return A + (K-A) / (1 + np.exp(-B*(x-M)))**(1/nu)
@@ -24,6 +27,155 @@ def richards5(x, A, K, B, M, nu):
            
 def dpl(t, q0, alpha, b1, b2, tx, m):
     return (q0 / (1 + alpha*t)**b1) * (1 + (t/tx)**m)**(-b2/m)
+
+def mbt_coverage(x_mbt_max, M, coverage_scale=1.0):
+    """
+    Diagnostic only: how far a well's own data reaches past a fitted
+    Richards sigmoid's inflection point (M, in log10(MBT) units), as a 0-1
+    fraction of coverage_scale decades. Not used to gate anything in
+    fit_sigmoid_dual/fit_cumWC_sigmoid (a short-history well's own M is
+    just as underidentified as K, so using this to weight a per-well
+    correction is circular - confirmed empirically, see A_fixed/K_fixed's
+    docstring). Returned alongside fitted params purely as an FYI for
+    callers who want a quick read on how far into the asymptotic region a
+    given fit's own data reached.
+    """
+    return float(np.clip((x_mbt_max - M) / coverage_scale, 0.0, 1.0))
+
+def estimate_gor_endpoints(df_daily, OilKey='Oil', GasKey='Gas', TimeKey='ProducingDays',
+                           flat_cv_threshold=0.15, mbt_threshold=200, min_tail_points=20):
+    """
+    Direct (non-fit) estimates of initial and final GOR - read off the data
+    rather than extrapolated from a curve fit. "Mapped", not fit: two
+    earlier attempts at fitting K freely then shrinking it toward a prior
+    (one gated by MBT coverage, one by Jacobian-based parameter
+    uncertainty) were tested on a 30-well holdout against 4+ years of real
+    production and both made things worse or were a wash - fixing a
+    genuinely-known endpoint and only fitting the transition shape avoids
+    the identifiability problem instead of trying to patch around it after
+    the fact. See fit_sigmoid_dual's A_fixed/K_fixed.
+
+    Initial GOR (A): averaged over the near-peak-rate window (NormOil >
+    0.98). Many wells sit above bubble point pressure there - no free gas
+    has evolved yet, so GOR is genuinely flat and a simple average is a
+    real measurement, not an extrapolation. A_confident checks that this
+    window's own GOR coefficient of variation is below flat_cv_threshold -
+    if GOR is already rising even at near-peak rate, this well never showed
+    a clean pre-bubble-point regime and the estimate shouldn't be trusted
+    blindly.
+
+    Final GOR (K): the actual cumulative Gas/Oil ratio using only
+    production after a material-balance-time threshold (mbt_threshold) -
+    a direct measurement of the late-life regime, not a guess about where
+    a sigmoid will asymptote. K_confident requires at least min_tail_points
+    of data past that threshold.
+
+    Returns a dict: A, A_confident, K, K_confident, n_tail_points. When a
+    well's own confidence is False for either endpoint, fall back to an
+    external estimate for that one - a population median (see
+    population_prior()), a play/zone P10-P90 surface, or engineering
+    judgment - and pass IT as A_fixed/K_fixed instead.
+    """
+    df = df_daily.copy()
+    df.rename(columns={OilKey: 'Oil', GasKey: 'Gas', TimeKey: 'Days'}, inplace=True)
+    df['CumOil'] = df['Oil'].cumsum()
+    df['MBT_Oil'] = df['CumOil'] / df['Oil'].replace(0, np.nan)
+    df['NormOil'] = df['Oil'] / df['Oil'].cummax()
+
+    m_a = df.index[df['NormOil'] > 0.98]
+    gor_a_window = (df.loc[m_a, 'Gas'] / df.loc[m_a, 'Oil'].replace(0, np.nan)).dropna()
+    if len(gor_a_window) >= 5 and gor_a_window.mean() > 0:
+        A = float(df.loc[m_a, 'Gas'].sum() / df.loc[m_a, 'Oil'].sum())
+        cv = float(gor_a_window.std() / gor_a_window.mean())
+        A_confident = cv < flat_cv_threshold
+    else:
+        A = float(max(0.1, df['Gas'].iloc[:5].sum() / max(df['Oil'].iloc[:5].sum(), 1e-6)))
+        A_confident = False
+
+    m_k = df.index[df['MBT_Oil'] > mbt_threshold]
+    if len(m_k) >= min_tail_points and df.loc[m_k, 'Oil'].sum() > 0:
+        K = float(df.loc[m_k, 'Gas'].sum() / df.loc[m_k, 'Oil'].sum())
+        K_confident = True
+    else:
+        K = None
+        K_confident = False
+
+    return {'A': A, 'A_confident': A_confident, 'K': K, 'K_confident': K_confident,
+            'n_tail_points': int(len(m_k))}
+
+def population_prior(values, confident_flags):
+    """
+    Simple stand-in for a play/zone P10-P90 surface, until one exists: the
+    median and variance of an endpoint (K from estimate_gor_endpoints, or
+    the water-cut equivalent) among wells whose own direct estimate was
+    confident. Same interface either way - a single (value, variance) pair
+    per well - so a real spatial surface can drop in later as a richer
+    source for exactly the same A_fixed/K_fixed inputs, without changing
+    anything about how the fit itself is called.
+
+    Returns (None, None) if no wells qualify.
+    """
+    values = np.asarray(values, float)
+    confident_flags = np.asarray(confident_flags, bool)
+    trusted = values[confident_flags]
+    if len(trusted) == 0:
+        return None, None
+    median = float(np.median(trusted))
+    variance = float(np.var(trusted, ddof=1)) if len(trusted) > 1 else 0.0
+    return median, variance
+
+def estimate_wc_endpoints(df_daily, OilKey='Oil', WaterKey='Water', TimeKey='ProducingDays',
+                          mbt_threshold=200, min_tail_points=15):
+    """
+    Direct (non-fit) estimates of initial and terminal water cut - the
+    water-cut equivalent of estimate_gor_endpoints() (see its docstring
+    for the full rationale for measuring rather than fitting-then-
+    shrinking these). Feed into fit_cumWC_sigmoid's wc_init_fixed/
+    wc_final_fixed.
+
+    Initial WC: averaged over the near-peak-rate window (OilRate >= 90% of
+    peak) - wells genuinely start near 100% water cut before oil breaks
+    through, so this window is a direct measurement in practice, not an
+    extrapolation; always confident given at least a few points in that
+    window; low n is the only failure mode.
+
+    Final WC: the actual cumulative water-cut using only production after
+    a material-balance-time threshold - not extrapolated via a sigmoid
+    asymptote. WC_final_confident requires at least min_tail_points of
+    data past that threshold.
+
+    Returns a dict: WC_init, WC_init_confident, WC_final, WC_final_confident.
+    """
+    df = df_daily.copy()
+    df.rename(columns={OilKey: 'Oil', WaterKey: 'Water', TimeKey: 'Days'}, inplace=True)
+    df['CumOil'] = df['Oil'].cumsum()
+    df['CumWater'] = df['Water'].cumsum()
+    df['MBT_Oil'] = df['CumOil'] / df['Oil'].clip(1e-6)
+    cum_total = df['CumOil'] + df['CumWater']
+    df['CumWC'] = df['CumWater'] / cum_total.clip(1e-6)
+
+    peak_rate = df['Oil'].max()
+    pre_decl = df['Oil'] >= 0.90 * peak_rate
+    pre_decl = binary_dilation(pre_decl.to_numpy(bool), iterations=3)
+    n_init = int(pre_decl.sum())
+    if n_init >= 3 and df.loc[pre_decl, 'Oil'].sum() > 0:
+        WC_init = float(np.average(df.loc[pre_decl, 'CumWC'], weights=df.loc[pre_decl, 'Oil']))
+        WC_init_confident = True
+    else:
+        WC_init = 1.0
+        WC_init_confident = False
+
+    m_k = df.index[df['MBT_Oil'] > mbt_threshold]
+    if len(m_k) >= min_tail_points and df.loc[m_k, 'Oil'].sum() > 0:
+        WC_final = float(np.average(df.loc[m_k, 'CumWC'], weights=df.loc[m_k, 'Oil']))
+        WC_final_confident = True
+    else:
+        WC_final = None
+        WC_final_confident = False
+
+    return {'WC_init': WC_init, 'WC_init_confident': WC_init_confident,
+            'WC_final': WC_final, 'WC_final_confident': WC_final_confident,
+            'n_tail_points': int(len(m_k))}
 
 def dpl_cum(t_array, params, dt=1.0):
     """
@@ -454,7 +606,8 @@ def fit_sigmoid_dual(df_daily,
                      OilKey = 'Oil',
                      GasKey = 'Gas',
                      TimeKey = 'ProducingDays',
-                     oil_params=None):
+                     oil_params=None,
+                     A_fixed=None, K_fixed=None):
 
 
     """
@@ -464,7 +617,31 @@ def fit_sigmoid_dual(df_daily,
         historical record - MBT is computed from the DPL model's own oil
         forecast instead of np.interp on history, which just holds the last
         observed value flat. Without it, cumGas_hat only backfills history.
-    Returns: parameter vector (A,K,B,M,nu) and callable predictors.
+
+    A_fixed / K_fixed: hold the initial/final GOR asymptotes constant
+    instead of fitting them, and only fit the transition shape (B, M, nu).
+    Use estimate_gor_endpoints() to get a direct, non-extrapolated estimate
+    of either from this well's own data when its A_confident/K_confident
+    come back True; when they don't (short-history wells whose data
+    doesn't reach a clean pre-bubble-point window or far enough past the
+    MBT threshold), supply an external value instead - population_prior()
+    over a set of long-history wells' confident estimates, a play/zone
+    P10-P90 surface, or engineering judgment.
+
+    Two earlier designs tried to keep K a free-fit parameter and shrink it
+    toward a prior after the fact (one gated by MBT coverage, one by
+    Jacobian-based parameter uncertainty) - both tested on a 30-well
+    holdout against 4+ years of real production, and both made things
+    worse or were a wash: freely-fit K is generally underidentified from
+    short data (routinely trades off against M in ways a marginal-variance
+    estimate doesn't catch), so trying to correct it after fitting doesn't
+    reliably work. Fixing a genuinely-known endpoint and only fitting the
+    shape avoids the problem instead of trying to patch around it.
+
+    Returns: parameter vector (A,K,B,M,nu), callable predictors, and this
+    well's own MBT coverage fraction (0-1, see mbt_coverage() if imported
+    separately) - only meaningful for long-history wells; not used
+    internally here, kept for callers who want it.
     """
 
     # --- build cumulative & MBT --------------------------------
@@ -494,20 +671,12 @@ def fit_sigmoid_dual(df_daily,
         GORf_est = 10
     # --- initial guesses ---------------------------------------
     if p0 is None:
-        A0 = GORi_est
-        K0 = GORf_est
-        #A0, K0 = np.percentile(y_cgor, [5, 95])
+        A0 = A_fixed if A_fixed is not None else GORi_est
+        K0 = K_fixed if K_fixed is not None else GORf_est
         # M0=15 (fixed) was wildly off-scale: x=log10(MBT) for real wells
-        # here runs roughly 0-4 (MBT of 1 to ~10,000 days), so a hardcoded
-        # M0=15 starting guess sits far outside any data the fit will ever
-        # see, and the [0,100] bounds below made the same mistake. Confirmed
-        # this was the dominant remaining source of gas-forecast bias: with
-        # a perfect (full-history) oil trajectory but this GOR sigmoid fit
-        # on 12mo of data, median error was still -29% - almost as bad as
-        # the -37% with both models short-fit, meaning the GOR sigmoid was
-        # carrying most of the error on its own, not just inheriting it
-        # from oil. fit_cumWC_sigmoid (below) already anchors M0 to the
-        # data's own log10(MBT) median - mirror that fix here.
+        # here runs roughly 0-4 (MBT of 1 to ~10,000 days) - anchor to the
+        # data's own log10(MBT) median instead (fit_cumWC_sigmoid already
+        # did this correctly).
         B0, M0 = 0.05, x_mbt.median()
         nu0    = 1.2
         p0 = [A0, K0, B0, M0, nu0]
@@ -522,9 +691,27 @@ def fit_sigmoid_dual(df_daily,
         ub = [GORi_est*2, max(GORf_est*3, 1000), 20,  x_mbt.max(), 5.0]
         bounds = (lb, ub)
 
+    # --- reduced parameter set when A/K are held fixed ----------
+    fixed = {}
+    if A_fixed is not None: fixed[0] = A_fixed
+    if K_fixed is not None: fixed[1] = K_fixed
+    free_idx = [i for i in range(5) if i not in fixed]
+
+    def expand(theta_free):
+        theta = np.empty(5)
+        for i, v in fixed.items():
+            theta[i] = v
+        for i, v in zip(free_idx, theta_free):
+            theta[i] = v
+        return theta
+
+    p0_free = [p0[i] for i in free_idx]
+    bounds_free = ([bounds[0][i] for i in free_idx], [bounds[1][i] for i in free_idx])
+    p0_free = list(np.clip(np.asarray(p0_free, float), bounds_free[0], bounds_free[1]))
+
     # --- residual combining both domains -----------------------
-    def residual(theta):
-        A,K,B,M,nu = theta
+    def residual(theta_free):
+        theta = expand(theta_free)
         cgor_hat   = richards(x_mbt, *theta)              # CumGOR(t)
         cumGas_hat = df['CumOil'] * cgor_hat              # CumGas(t)
 
@@ -535,9 +722,10 @@ def fit_sigmoid_dual(df_daily,
         return np.r_[w_time*r_time, w_mbt*r_mbt]
 
     # --- robust fit --------------------------------------------
-    res = least_squares(residual, p0, bounds=bounds,
+    res = least_squares(residual, p0_free, bounds=bounds_free,
                         loss='soft_l1', f_scale=0.3, max_nfev=40000)
-    pars = res.x
+    pars = expand(res.x)
+    coverage = mbt_coverage(x_mbt.max(), pars[3])
 
     # predictors
     def cgor_hat(mbt_arr):
@@ -575,25 +763,38 @@ def fit_sigmoid_dual(df_daily,
         ax[2].set_title('Daily Gas'); ax[2].legend()
         plt.tight_layout(); plt.show()
 
-    return pars, cgor_hat, cumGas_hat
+    return pars, cgor_hat, cumGas_hat, coverage
 
 def fit_cumWC_sigmoid(df_daily,
                       w_time=1.0, w_mbt=1.0,
                       p0=None, bounds=None,
                       plot=True,
                       OilKey='Oil', WaterKey='Water', TimeKey='ProducingDays',
-                      oil_params=None):
+                      oil_params=None,
+                      wc_init_fixed=None, wc_final_fixed=None):
     """
     Fits a decreasing sigmoid to cumulative water-cut
     (starts near 1 ➜ drops to plateau).  Returns:
-        pars   : (A, K, B, M, nu) of Richards on deficit (1-CumWC)
-        wc_hat : callable Cum-WC(mbt_array)
+        pars     : (A, K, B, M, nu) of Richards on deficit (1-CumWC)
+        wc_hat   : callable Cum-WC(mbt_array)
         cumW_hat : callable Cum Water (days_array)
+        coverage : this well's own MBT coverage fraction (0-1, diagnostic
+                   only - see mbt_coverage())
 
     oil_params: optional 6-param dpl() fit for this well. When given,
         cumW_hat extrapolates past history using the DPL oil forecast for
         MBT instead of clamping at the last observed value (see
         fit_sigmoid_dual's oil_params for the same rationale).
+
+    wc_init_fixed / wc_final_fixed: hold the initial/terminal water-cut
+        asymptotes constant (as water-cut fractions, 0-1) instead of
+        fitting them, and only fit the transition shape. Same rationale
+        and same two-pass-shrinkage designs abandoned in favor of this, as
+        fit_sigmoid_dual's A_fixed/K_fixed - see that docstring. Use
+        estimate_wc_endpoints() for a direct, non-extrapolated estimate
+        from this well's own data when confident, else supply an external
+        value (population_prior() over confident long-history wells, a
+        play/zone P10-P90 surface, or engineering judgment).
     """
 
     # ---------------- rename & cumulative --------------------
@@ -624,10 +825,12 @@ def fit_cumWC_sigmoid(df_daily,
     tail     = df.loc[df['OilRate']>1].tail(15)   # last ~15 days with oil
     WC_final = np.average(tail['CumWC'], weights=tail['Oil'])
 
-    # initial guesses for deficit (=1-CumWC)
+    # initial guesses for deficit (=1-CumWC); A/K here are the deficit's
+    # own asymptotes, so a fixed water-cut fraction wc gets passed through
+    # as (1-wc).
     if p0 is None:
-        A0 = 1-WC_init               # near 0
-        K0 = 1-WC_final              # plateau value
+        A0 = (1 - wc_init_fixed) if wc_init_fixed is not None else (1 - WC_init)
+        K0 = (1 - wc_final_fixed) if wc_final_fixed is not None else (1 - WC_final)
         B0, M0, nu0 = 0.05, x_mbt.median(), 1.3
         p0 = [A0, K0, B0, M0, nu0]
 
@@ -636,10 +839,29 @@ def fit_cumWC_sigmoid(df_daily,
         ub = [1-WC_init*0.5,   1,   20,   x_mbt.max(), 5]
         bounds = (lb, ub)
 
+    # -------- reduced parameter set when A/K are held fixed -----
+    fixed = {}
+    if wc_init_fixed is not None: fixed[0] = 1 - wc_init_fixed
+    if wc_final_fixed is not None: fixed[1] = 1 - wc_final_fixed
+    free_idx = [i for i in range(5) if i not in fixed]
+
+    def expand(theta_free):
+        theta = np.empty(5)
+        for i, v in fixed.items():
+            theta[i] = v
+        for i, v in zip(free_idx, theta_free):
+            theta[i] = v
+        return theta
+
+    p0_free = [p0[i] for i in free_idx]
+    bounds_free = ([bounds[0][i] for i in free_idx], [bounds[1][i] for i in free_idx])
+    p0_free = list(np.clip(np.asarray(p0_free, float), bounds_free[0], bounds_free[1]))
+
     # -------- residual (time + MBT) ---------------------------
     cumW_obs = df['CumWater'].to_numpy(float)
 
-    def residual(theta):
+    def residual(theta_free):
+        theta = expand(theta_free)
         d_hat = richards(x_mbt, *theta)
         wc_hat = 1.0 - d_hat
         cumW_hat = wc_hat * (df['CumOil'] + df['CumWater'])
@@ -648,9 +870,10 @@ def fit_cumWC_sigmoid(df_daily,
         return np.r_[w_time*r_time, w_mbt*r_mbt]
 
     # -------- robust fit -------------------------------------
-    res  = least_squares(residual, p0, bounds=bounds,
+    res  = least_squares(residual, p0_free, bounds=bounds_free,
                          loss='soft_l1', f_scale=0.3, max_nfev=40000)
-    pars = res.x
+    pars = expand(res.x)
+    coverage = mbt_coverage(x_mbt.max(), pars[3])
 
     # -------- predictors -------------------------------------
     def wc_hat(mbt_arr):
@@ -687,7 +910,7 @@ def fit_cumWC_sigmoid(df_daily,
         ax[2].set_title('Daily Water'); ax[2].legend()
         plt.tight_layout(); plt.show()
 
-    return pars, wc_hat, cumW_hat
+    return pars, wc_hat, cumW_hat, coverage
 
 
 def forecast_well(oil_params, gor_params, wc_params, t_array):
