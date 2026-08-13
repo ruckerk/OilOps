@@ -642,20 +642,39 @@ def forecast_well(oil_params, gor_params, wc_params, t_array):
     """
     t_array = np.atleast_1d(np.asarray(t_array, float))
 
-    oil_rate = dpl(t_array, *oil_params)
-    cum_oil  = dpl_cum(t_array, oil_params)
-    mbt      = cum_oil / np.clip(oil_rate, 1e-9, None)
-    log_mbt  = np.log10(np.clip(mbt, 1e-9, None))
+    def _cums(t):
+        oil_rate = dpl(t, *oil_params)
+        cum_oil  = dpl_cum(t, oil_params)
+        mbt      = cum_oil / np.clip(oil_rate, 1e-9, None)
+        log_mbt  = np.log10(np.clip(mbt, 1e-9, None))
+        cum_gor  = richards(log_mbt, *gor_params)
+        cum_gas  = cum_oil * cum_gor
+        deficit  = richards(log_mbt, *wc_params)
+        cum_wc   = 1.0 - deficit
+        # invert CumWC = CumWater/(CumOil+CumWater) for CumWater
+        cum_water = cum_wc * cum_oil / np.clip(1.0 - cum_wc, 1e-9, None)
+        return oil_rate, cum_oil, mbt, cum_gor, cum_gas, cum_wc, cum_water
 
-    cum_gor  = richards(log_mbt, *gor_params)
-    cum_gas  = cum_oil * cum_gor
-    gas_rate = np.gradient(cum_gas, t_array, edge_order=2)
+    oil_rate, cum_oil, mbt, cum_gor, cum_gas, cum_wc, cum_water = _cums(t_array)
 
-    deficit    = richards(log_mbt, *wc_params)
-    cum_wc     = 1.0 - deficit
-    # invert CumWC = CumWater/(CumOil+CumWater) for CumWater
-    cum_water  = cum_wc * cum_oil / np.clip(1.0 - cum_wc, 1e-9, None)
-    water_rate = np.gradient(cum_water, t_array, edge_order=2)
+    # GasRate/WaterRate need a local time-derivative. np.gradient requires
+    # >=3 points for edge_order=2 and raises outright on a single point -
+    # but callers legitimately want a rate at one forecast date (e.g. "as
+    # of today"), not just a curve. When too few points were requested,
+    # evaluate on a small internal +/-1 day window instead and interpolate
+    # the derivative back onto the caller's t_array, rather than requiring
+    # every caller to pad their own input.
+    if len(t_array) >= 3:
+        gas_rate = np.gradient(cum_gas, t_array, edge_order=2)
+        water_rate = np.gradient(cum_water, t_array, edge_order=2)
+    else:
+        t_dense = np.unique(np.concatenate([t_array - 1.0, t_array, t_array + 1.0]))
+        t_dense = t_dense[t_dense > 0]
+        _, _, _, _, cum_gas_d, _, cum_water_d = _cums(t_dense)
+        gas_rate_d = np.gradient(cum_gas_d, t_dense, edge_order=1)
+        water_rate_d = np.gradient(cum_water_d, t_dense, edge_order=1)
+        gas_rate = np.interp(t_array, t_dense, gas_rate_d)
+        water_rate = np.interp(t_array, t_dense, water_rate_d)
 
     return pd.DataFrame({
         'Days': t_array, 'OilRate': oil_rate, 'CumOil': cum_oil, 'MBT_Oil': mbt,
