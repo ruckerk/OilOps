@@ -150,6 +150,14 @@ def fit_dpl_with_cum(t, q, beta_cum=1.2, p0=None, bounds=None, plot=True, t_EUR 
         bounds = ([0., 0., 0., 0.9, 10., 1.],
                   [np.inf, 10., 2., 1.1, 5000., 10.])
 
+    # p0's defaults (or a caller-supplied p0 combined with caller-supplied
+    # bounds) can land outside custom bounds - e.g. the default b2 guess of
+    # 1.0 is infeasible against any bounds with a b2 ceiling below that.
+    # least_squares raises outright in that case rather than clipping, so
+    # do it here instead of making every caller with custom bounds
+    # rediscover this by hitting the same crash.
+    p0 = np.clip(np.asarray(p0, float), bounds[0], bounds[1])
+
     res = least_squares(
             dpl_residual, p0,
             args=(t, q, beta_cum, slope_gamma, N_tail, target_slope,
