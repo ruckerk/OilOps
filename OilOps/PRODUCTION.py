@@ -173,9 +173,27 @@ def spatial_prior(lat, lon, index, k=40, max_dist_ft=5 * 5280.0):
     54.3%), and beats the flat median for 70% of individual wells. Same
     pattern for late-life water cut (5.5% vs 9.0% MAPE, 67% of wells).
     Initial GOR and late-life water cut both vary spatially across a field
-    in ways a single field-wide number can't capture - this is the
-    empirical basis for using it instead of population_prior() whenever
-    well locations are available.
+    in ways a single field-wide number can't capture.
+
+    BUT: that isolated-prediction win does NOT carry through to the actual
+    downstream forecast. Two independent end-to-end tests on Wattenberg
+    holdout wells (fit with K_fixed from spatial vs flat priors, compare
+    forecasted vs actual gas at 4+ years) both came back null:
+      - 6mo cutoff, n=223: 91.8% MAPE (spatial) vs 89.1% (flat)
+      - 7mo cutoff, n=264: 89.8% MAPE (spatial) vs 91.5% (flat), and the
+        spatial version's median signed error was actually WORSE
+        (-57.0% vs -48.6%)
+    At the short-history maturities where a fallback prior is actually
+    used, the oil decline model's own instability dominates forecast
+    error and swamps whatever gain a more accurate GOR prior provides.
+    Also worth knowing: the population that needs a fallback at all
+    collapses fast - ~46% of wells at 6mo, ~19% at 7mo, ~3% at 8mo, ~0% by
+    9-10mo - so this only ever matters in a narrow 6-8mo window in the
+    first place. Net: do not use this as the default K_fixed/
+    wc_final_fixed fallback based on current evidence - it's a real,
+    correctly-built tool, kept available for other uses (e.g. building the
+    spatial P10/P90 surfaces themselves), just not shown to improve the
+    fitting pipeline it was originally built for.
     """
     FT_PER_DEG_LAT = 364000.0
     x = (lon - index['lon0']) * FT_PER_DEG_LAT * np.cos(np.radians(index['lat0']))
