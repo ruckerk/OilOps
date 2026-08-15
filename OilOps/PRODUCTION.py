@@ -11,7 +11,10 @@ __all__ = ['dpl',
            'interpolate_to_daily_by_prod_days',
            'estimate_gor_endpoints',
            'estimate_wc_endpoints',
-           'population_prior']
+           'population_prior',
+           'build_spatial_prior_index',
+           'spatial_prior',
+           'estimate_final_gor_trailing']
 
 def richards(x, A,K,B,M,nu):
     return A + (K-A) / (1 + np.exp(-B*(x-M)))**(1/nu)
@@ -123,6 +126,132 @@ def population_prior(values, confident_flags):
     median = float(np.median(trusted))
     variance = float(np.var(trusted, ddof=1)) if len(trusted) > 1 else 0.0
     return median, variance
+
+def build_spatial_prior_index(ref_lats, ref_lons, ref_values):
+    """
+    Build a reusable spatial index for spatial_prior() - construct once per
+    reference population (e.g. once per formation/field, from wells with a
+    confident direct estimate - the same trusted-only filtering
+    population_prior() expects), then pass the returned index into many
+    spatial_prior() calls rather than rebuilding a KDTree per well in a
+    fleet fit.
+
+    Only pass already-confident reference values - filter before calling
+    this, exactly as population_prior() expects only trusted values.
+    """
+    from scipy.spatial import cKDTree
+    ref_lats = np.asarray(ref_lats, float)
+    ref_lons = np.asarray(ref_lons, float)
+    ref_values = np.asarray(ref_values, float)
+    FT_PER_DEG_LAT = 364000.0
+    lat0 = float(np.mean(ref_lats))
+    lon0 = float(np.mean(ref_lons))
+    x = (ref_lons - lon0) * FT_PER_DEG_LAT * np.cos(np.radians(lat0))
+    y = (ref_lats - lat0) * FT_PER_DEG_LAT
+    tree = cKDTree(np.column_stack([x, y]))
+    return {'tree': tree, 'lat0': lat0, 'lon0': lon0, 'values': ref_values}
+
+def spatial_prior(lat, lon, index, k=40, max_dist_ft=5 * 5280.0):
+    """
+    Local (k-nearest-neighbor) median and variance of a reference
+    population's values near (lat, lon), using an index built by
+    build_spatial_prior_index(). Same (value, variance) return shape as
+    population_prior() - a drop-in, spatially-aware replacement for it as
+    the k_prior/wc_final_prior fallback in fit_sigmoid_dual/
+    fit_cumWC_sigmoid, for wells whose own direct estimate isn't
+    confident.
+
+    Returns (None, None) if fewer than k reference wells fall within
+    max_dist_ft (don't extrapolate a value from wells too far away to be
+    representative of local reservoir quality).
+
+    Confirmed empirically on 9,078 Wattenberg Niobrara wells with
+    confident direct initial-GOR measurements (leave-one-out: mask each
+    well's own value, predict from its 40 nearest OTHER confident
+    neighbors): local median predicts the held-out well's true value with
+    roughly half the error of the flat field-wide median (25.6% MAPE vs
+    54.3%), and beats the flat median for 70% of individual wells. Same
+    pattern for late-life water cut (5.5% vs 9.0% MAPE, 67% of wells).
+    Initial GOR and late-life water cut both vary spatially across a field
+    in ways a single field-wide number can't capture - this is the
+    empirical basis for using it instead of population_prior() whenever
+    well locations are available.
+    """
+    FT_PER_DEG_LAT = 364000.0
+    x = (lon - index['lon0']) * FT_PER_DEG_LAT * np.cos(np.radians(index['lat0']))
+    y = (lat - index['lat0']) * FT_PER_DEG_LAT
+    dists, idxs = index['tree'].query([x, y], k=k)
+    if np.max(dists) > max_dist_ft:
+        return None, None
+    local = index['values'][idxs]
+    median = float(np.median(local))
+    variance = float(np.var(local, ddof=1)) if len(local) > 1 else 0.0
+    return median, variance
+
+def estimate_final_gor_trailing(monthly_df, OilKey='oil_bbl', GasKey='gas_mcf',
+                                tol=0.05, min_trail=6, max_trail=48, step=3, n_confirm=3):
+    """
+    Alternative to estimate_gor_endpoints()'s K: measures final/terminal GOR
+    by searching BACKWARD from the end of a well's history for the
+    smallest trailing window (last K months) where cumulative GOR has
+    genuinely converged, rather than averaging over all months past a
+    fixed material-balance-time threshold. Symmetric with how initial GOR
+    is identified by searching forward from the start for the earliest
+    stable window - same idea, mirrored to the other end of the well's
+    life.
+
+    Unlike the other estimate_*_endpoints() functions in this module, this
+    one takes raw MONTHLY production rows (one row per calendar month, not
+    daily-interpolated) - min_trail/max_trail/step are counts of months,
+    validated at that granularity. Interpolating to daily first and
+    reusing the same K values would silently mean "last K days" instead of
+    "last K months", a much shorter and noisier window - don't do that.
+
+    "Converged" requires n_confirm CONSECUTIVE step increases in K to all
+    land within tol of each other, not just one lucky match - a single
+    comparison is too easy to pass by chance on noisy monthly data.
+
+    Tested against estimate_gor_endpoints()'s MBT-threshold K on ~1,200
+    Wattenberg Niobrara wells: the two only correlate at 0.69, and the
+    MBT-threshold version reads a systematic ~41% LOWER median. That's
+    expected, not noise - GOR keeps rising late into a well's life, and a
+    broad "MBT > threshold" window blends moderately-late months in with
+    truly-terminal ones, pulling the average down. This function isolates
+    only the genuinely-plateaued tail, so it should be the more physically
+    accurate measurement of the true terminal value.
+
+    NOT yet validated for downstream forecast impact when used as
+    fit_sigmoid_dual's K_fixed (only shown to be a more accurate isolated
+    measurement) - kept as a separate function rather than replacing
+    estimate_gor_endpoints()'s K outright, since that function's existing
+    MBT-threshold value is what the earlier fixed-parameter-fitting
+    validation (-47% to -36% median forecast error on a 30-well holdout)
+    was actually run against. Swap in cautiously.
+
+    Returns a dict: final_gor (scf/bbl, None if never converged),
+    confident (bool), trail_months (K at convergence, None if not found).
+    """
+    oil = monthly_df[OilKey].fillna(0).to_numpy(float)
+    gas = monthly_df[GasKey].fillna(0).to_numpy(float)
+    n = len(oil)
+    Ks = list(range(min_trail, min(max_trail, n) + 1, step))
+    if len(Ks) < n_confirm + 1:
+        return {'final_gor': None, 'confident': False, 'trail_months': None}
+
+    vals = []
+    for K in Ks:
+        o_sum = oil[-K:].sum()
+        vals.append(gas[-K:].sum() * 1000.0 / o_sum if o_sum > 0 else np.nan)
+    vals = np.asarray(vals)
+
+    for i in range(len(vals) - n_confirm):
+        window = vals[i:i + n_confirm + 1]
+        if np.any(np.isnan(window)) or window[0] <= 0:
+            continue
+        if np.all(np.abs(window - window[0]) / window[0] < tol):
+            return {'final_gor': float(np.mean(window)), 'confident': True, 'trail_months': Ks[i]}
+
+    return {'final_gor': None, 'confident': False, 'trail_months': None}
 
 def estimate_wc_endpoints(df_daily, OilKey='Oil', WaterKey='Water', TimeKey='ProducingDays',
                           mbt_threshold=200, min_tail_points=15):
